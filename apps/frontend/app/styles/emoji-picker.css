@@ -1,0 +1,98 @@
+.EmojiPickerReact {
+  /* DaisyUI Variable Mapping */
+  --epr-bg-color: var(--color-base-200);
+  --epr-text-color: var(--color-base-content);
+  --epr-hover-bg-color: hsl(var(--bc) / 0.08);
+  --epr-focus-bg-color: hsl(var(--bc) / 0.12);
+  --epr-highlight-color: var(--color-primary);
+  --epr-border-color: hsl(var(--bc) / 0.15);
+
+  background-color: var(--color-base-200) !important;
+  border-radius: 20px !important;
+  border: 1px solid hsl(var(--bc) / 0.15) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden !important;
+}
+
+/* ===== Header ===== */
+
+.EmojiPickerReact .epr-header {
+  background-color: var(--color-base-200) !important;
+  border-bottom: 1px solid hsl(var(--bc) / 0.08) !important;
+}
+
+/* ===== Body ===== */
+
+.EmojiPickerReact .epr-body,
+.EmojiPickerReact .epr-emoji-category-content {
+  background-color: var(--color-base-200) !important;
+}
+
+/* ===== Section Labels (Frequently Used, Smileys, etc.) ===== */
+
+.EmojiPickerReact .epr-category-label,
+.EmojiPickerReact .epr-emoji-category-label {
+  background-color: var(--color-base-200) !important;
+  color: var(--color-base-content) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  border-top: 1px solid hsl(var(--bc) / 0.06) !important;
+  border-bottom: 1px solid hsl(var(--bc) / 0.06) !important;
+  box-shadow: none !important;
+}
+
+.EmojiPickerReact .epr-category-label-container {
+  background-color: var(--color-base-200) !important;
+}
+
+/* ===== Category Navigation Icons ===== */
+
+.EmojiPickerReact .epr-category-nav button {
+  color: var(--color-base-content) !important;
+}
+
+.EmojiPickerReact .epr-category-nav button:hover {
+  background-color: hsl(var(--bc) / 0.08) !important;
+  border-radius: 8px;
+}
+
+/* ===== Search Input ===== */
+
+.EmojiPickerReact .epr-search-container input {
+  background-color: var(--color-base-100) !important;
+  color: var(--color-base-content) !important;
+  border-radius: 12px !important;
+  border: 1px solid hsl(var(--bc) / 0.12) !important;
+}
+
+/* ===== Emoji Hover Effect ===== */
+
+.EmojiPickerReact .epr-emoji {
+  transition: transform 0.12s ease, background-color 0.12s ease;
+  border-radius: 8px;
+}
+
+.EmojiPickerReact .epr-emoji:hover {
+  transform: scale(1.08);
+  background-color: hsl(var(--bc) / 0.08);
+}
+
+
+/* Scrollbar */
+.EmojiPickerReact ::-webkit-scrollbar {
+  width: 6px;
+}
+.EmojiPickerReact ::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-base-content) 20%, transparent);
+  border-radius: 999px;
+}
+
+.EmojiPickerReact .epr-emoji {
+  transition: transform 0.12s ease, background-color 0.12s ease;
+  border-radius: 8px;
+}
+
+.EmojiPickerReact .epr-emoji:hover {
+  transform: scale(1.08); 
+  background-color: hsl(var(--bc) / 0.08);
+}

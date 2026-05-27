@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: light, forest, sunset, business, dracula, lemonade, retro;
+  exclude: rootscrollgutter;
+}
+@plugin 'tailwind-scrollbar';
+
+/* :root {
+  --font-family: var(--font-inter);
+} */
+
+html {
+  font-family: var(--font-inter);
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.border-contrast {
+  border-color: hsl(var(--bc) / 0.15);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+*:hover > ::-webkit-scrollbar-thumb,
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(142, 142, 142, 0.2);
+  background-clip: padding-box;
+}
+
+*:hover > ::-webkit-scrollbar-thumb:hover,
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(142, 142, 142, 0.5);
+  background-clip: padding-box;
+}
+
+.twemoji-container img.emoji {
+  height: 1.2em;
+  width: 1.2em;
+  margin: 0 0.05em 0 0.1em;
+  vertical-align: -0.2em;
+  display: inline-block;
+}
+
