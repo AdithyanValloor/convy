@@ -12,7 +12,7 @@ import { BlockModel } from "../../user/models/block.model.js";
 import { ChatUserStateModel } from "../../chat/models/chatUserState.model.js";
 import { createInboxNotification } from "../../notifications/services/inboxNotification.service.js";
 import { emitMessageRequestSent } from "../../../socket/emitters/messageRequest.emitters.js";
-import { MessageRequestModel } from "../../user/models/messageRequest.model.js";
+import { MessageRequestModel } from "../models/messageRequest.model.js";
 import { UserModel } from "../../user/models/user.model.js";
 import { MessageFile } from "../types/message.types.js";
 import { deleteFile } from "../../s3/s3.service.js";

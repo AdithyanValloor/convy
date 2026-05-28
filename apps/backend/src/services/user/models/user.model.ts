@@ -13,7 +13,6 @@ export interface IUser extends Document {
   bio: string | null;
   dateOfBirth?: Date | null;
   profilePicture: {
-    url: string | null;
     key: string | null;
   };
   isBanned: boolean;
@@ -90,10 +89,6 @@ const userSchema: Schema<IUser> = new Schema(
       default: null,
     },
     profilePicture: {
-      url: {
-        type: String,
-        default: null,
-      },
       key: {
         type: String,
         default: null,

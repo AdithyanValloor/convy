@@ -19,8 +19,7 @@ export const cleanupUserData = async (ids: Types.ObjectId[]) => {
         bio: null,
         pronouns: null,
         status: null,
-        profilePicture: { url: null, public_id: null },
-        coverPicture: { url: null, public_id: null },
+        profilePicture: { key: null },
         friendList: [],
         scheduledDeletionAt: null,
       })

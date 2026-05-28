@@ -98,6 +98,11 @@ export const getAllRequests = async (
 };
 
 /** Accepts a friend request and emits the accepted state to both users. */
+// !!!!!! TODO implement chat creation on acceptance and emit new chat to both users; 
+// Right now client calling chat creation separately on acceptance, but this can lead to race conditions 
+// where the chat isn't created by the time the client tries to fetch it. Better to handle chat 
+// creation atomically within the acceptFriendRequest service and emit the new chat ID along with the 
+// acceptance event.
 export const acceptReq = async (
   req: AuthRequest,
   res: Response,

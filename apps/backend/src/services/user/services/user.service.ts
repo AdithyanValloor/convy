@@ -94,7 +94,6 @@ export const updateProfilePictureByUserId = async (
 
   user.profilePicture = {
     key: key,
-    url: url,
   };
 
   await user.save();

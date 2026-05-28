@@ -8,7 +8,7 @@ import {
   NotFound,
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
-import { MessageRequestModel } from "../../user/models/messageRequest.model.js";
+import { MessageRequestModel } from "../models/messageRequest.model.js";
 
 /** Message request helpers for inbox retrieval and request review actions. */
 

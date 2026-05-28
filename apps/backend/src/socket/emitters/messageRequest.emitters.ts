@@ -4,7 +4,7 @@
  */
 
 import { IChat } from "../../services/chat/models/chat.model.js";
-import { IMessageRequest } from "../../services/user/models/messageRequest.model.js";
+import { IMessageRequest } from "../../services/messages/models/messageRequest.model.js";
 import { getIO } from "../io.js";
 
 export const emitMessageRequestSent = (

@@ -87,7 +87,7 @@ export const deleteProfilePicture = async (
     }
 
     if (user?.profilePicture?.key === key) {
-      user.profilePicture = { key: null, url: null };
+      user.profilePicture = { key: null };
       await user.save();
     }
 

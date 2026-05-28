@@ -7,7 +7,7 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 
-import { toFriendRequestSocketPayload } from "../utils/normalizeFriendRequest.js";
+import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../utils/normalizeFriendRequest.js";
 import { BlockModel } from "../models/block.model.js";
 import {
   createInboxNotification,
@@ -138,7 +138,7 @@ export const sendFriendRequest = async (
 
   return {
     request,
-    payload: toFriendRequestSocketPayload(populated),
+    payload: toFriendRequestSocketPayload(populated as unknown as PopulatedFriendRequest),
     toUserId: toUser.id.toString(),
   };
 };
@@ -182,7 +182,7 @@ export const acceptFriendRequest = async (
 
   return {
     request,
-    payload: toFriendRequestSocketPayload(populated),
+    payload: toFriendRequestSocketPayload(populated as unknown as PopulatedFriendRequest),
     fromUserId,
     toUserId,
   };
