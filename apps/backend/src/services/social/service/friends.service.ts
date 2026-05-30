@@ -1,5 +1,3 @@
-import { FriendRequestModel } from "../models/friendRequest.model.js";
-import { UserModel } from "../models/user.model.js";
 import {
   BadRequest,
   Unauthorized,
@@ -7,8 +5,8 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 
-import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../utils/normalizeFriendRequest.js";
-import { BlockModel } from "../models/block.model.js";
+
+
 import {
   createInboxNotification,
   deleteNotificationByFriendRequest,
@@ -19,20 +17,35 @@ import {
 } from "../../../socket/emitters/notification.emitters.js";
 import { InboxNotificationModel } from "../../notifications/models/inboxNotification.model.js";
 
+import { BlockModel } from "../models/block.model.js";
+import { FriendshipModel } from "../models/friends.model.js";
+import { UserModel } from "../../user/models/user.model.js";
+import { FriendRequestModel } from "../models/request.model.js";
+import {
+  areFriends,
+  getFriendIds,
+  normalizeFriendship,
+} from "../utils/social.utils.js";
+import mongoose from "mongoose";
+import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../../user/utils/normalizeFriendRequest.js";
+
 /** Friend service helpers for friendship and request workflows. */
 
 /** Returns the authenticated user's populated friend list. */
+
+//TODO pagination!!!!!
 export const getFriendList = async (userId: string) => {
   if (!userId) throw Unauthorized();
 
-  const user = await UserModel.findById(userId).populate(
-    "friendList",
-    "displayName username email profilePicture",
-  );
+  const friendIds = await getFriendIds(userId);
+  const friends = await UserModel.find(
+    {
+      _id: { $in: friendIds },
+    },
+    "displayName username profilePicture",
+  ).lean();
 
-  if (!user) throw NotFound("User not found");
-
-  return user.friendList;
+  return friends;
 };
 
 /** Returns the current user's incoming and outgoing pending requests. */
@@ -72,12 +85,10 @@ export const sendFriendRequest = async (
     throw BadRequest("Cannot send friend request to yourself");
   }
 
-  // Existing friends cannot create another request.
-  if (fromUser.friendList.some((id) => id.toString() === toUser.id)) {
+  if (await areFriends(fromUser.id, toUser.id))
     throw BadRequest("Already friends");
-  }
 
-  const blockExists = await BlockModel.findOne({
+  const blockExists = await BlockModel.exists({
     $or: [
       { blocker: fromUserId, blocked: toUser.id },
       { blocker: toUser.id, blocked: fromUserId },
@@ -93,12 +104,11 @@ export const sendFriendRequest = async (
   }
 
   if (toUser.privacy?.friendRequests === "friends") {
-    const senderFriendSet = new Set(
-      fromUser.friendList.map((id) => id.toString()),
-    );
-
-    const hasMutualFriend = toUser.friendList.some((id) =>
-      senderFriendSet.has(id.toString()),
+    const senderFriendIds = await getFriendIds(fromUser.id);
+    const targetFriendIds = await getFriendIds(toUser.id);
+    const senderFriendSet = new Set(senderFriendIds);
+    const hasMutualFriend = targetFriendIds.some((id) =>
+      senderFriendSet.has(id),
     );
 
     if (!hasMutualFriend) {
@@ -117,7 +127,7 @@ export const sendFriendRequest = async (
       {
         from: toUser.id,
         to: fromUserId,
-      }
+      },
     ],
     status: "pending",
   });
@@ -146,7 +156,9 @@ export const sendFriendRequest = async (
 
   return {
     request,
-    payload: toFriendRequestSocketPayload(populated as unknown as PopulatedFriendRequest),
+    payload: toFriendRequestSocketPayload(
+      populated as unknown as PopulatedFriendRequest,
+    ),
     toUserId: toUser.id.toString(),
   };
 };
@@ -159,6 +171,10 @@ export const acceptFriendRequest = async (
   const request = await FriendRequestModel.findById(requestId);
   if (!request) throw NotFound("Request not found");
 
+  if (request.status !== "pending") {
+    throw BadRequest("Request has already been processed");
+  }
+
   if (request.to.toString() !== userId) {
     throw Forbidden("Not authorized to accept this request");
   }
@@ -166,16 +182,31 @@ export const acceptFriendRequest = async (
   const fromUserId = request.from.toString();
   const toUserId = request.to.toString();
 
-  await UserModel.findByIdAndUpdate(userId, {
-    $addToSet: { friendList: request.from },
-  });
+  if (await areFriends(fromUserId, toUserId)) {
+    throw BadRequest("Users are already friends");
+  }
 
-  await UserModel.findByIdAndUpdate(request.from, {
-    $addToSet: { friendList: request.to },
-  });
+  const [user1, user2] = normalizeFriendship(fromUserId, toUserId);
 
-  request.status = "accepted";
-  await request.save();
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await FriendshipModel.create(
+        [
+          {
+            user1,
+            user2,
+          },
+        ],
+        { session },
+      );
+
+      request.status = "accepted";
+      await request.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
 
   await createInboxNotification({
     userId: fromUserId,
@@ -190,7 +221,9 @@ export const acceptFriendRequest = async (
 
   return {
     request,
-    payload: toFriendRequestSocketPayload(populated as unknown as PopulatedFriendRequest),
+    payload: toFriendRequestSocketPayload(
+      populated as unknown as PopulatedFriendRequest,
+    ),
     fromUserId,
     toUserId,
   };
@@ -203,6 +236,10 @@ export const rejectFriendRequest = async (
 ) => {
   const request = await FriendRequestModel.findById(requestId);
   if (!request) throw NotFound("Request not found");
+
+  if (request.status !== "pending") {
+    throw BadRequest("Request has already been processed");
+  }
 
   if (request.to.toString() !== userId) {
     throw Forbidden("Not authorized to reject this request");
@@ -220,22 +257,13 @@ export const rejectFriendRequest = async (
 
 /** Removes an existing friendship from both users. */
 export const removeFriend = async (userId: string, friendId: string) => {
-  const user = await UserModel.findById(userId);
-  if (!user) throw Unauthorized();
-
-  const friend = await UserModel.findById(friendId);
-  if (!friend) throw NotFound("User not found");
-
-  if (!user.friendList.includes(friend.id)) {
+  if (!(await areFriends(userId, friendId)))
     throw BadRequest("Users are not friends");
-  }
+  const [user1, user2] = normalizeFriendship(userId, friendId);
 
-  await UserModel.findByIdAndUpdate(userId, {
-    $pull: { friendList: friend._id },
-  });
-
-  await UserModel.findByIdAndUpdate(friendId, {
-    $pull: { friendList: user._id },
+  await FriendshipModel.findOneAndDelete({
+    user1,
+    user2,
   });
 
   return true;

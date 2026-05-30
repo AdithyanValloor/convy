@@ -28,7 +28,7 @@ const friendRequestSchema: Schema<IFriendRequest> = new Schema({
 });
 
 friendRequestSchema.index(
-  { from: 1, to: 1 },
+  { from: 1, to: 1, status: 1 },
   { unique: true, partialFilterExpression: { status: "pending" } },
 );
 
