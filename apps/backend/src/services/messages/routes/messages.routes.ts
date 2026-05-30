@@ -14,7 +14,7 @@ import {
   forwardMessage,
   globalSearchMessages,
 } from "../controllers/message.controller.js";
-import { protect } from "../../auth/auth.middleware.js";
+import { protect } from "../../auth/middleware/auth.middleware.js";
 
 const router = Router();
 

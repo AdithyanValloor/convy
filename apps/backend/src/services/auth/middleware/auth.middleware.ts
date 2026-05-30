@@ -5,22 +5,22 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
   generateAccessToken,
-} from "../../utils/jwt.js";
+} from "../../../utils/jwt.js";
 
-import { Unauthorized, Forbidden } from "../../utils/errors/httpErrors.js";
-import { authCookieOptions } from "../../config/cookies.js";
+import { Unauthorized } from "../../../utils/errors/httpErrors.js";
+import { authCookieOptions } from "../../../config/cookies.js";
 
-const { JsonWebTokenError, TokenExpiredError } = jwt;
+const { TokenExpiredError } = jwt;
 
 /**
  * Authentication guard middleware.
  * Verifies access tokens and refreshes expired sessions when possible.
  */
-export const protect = (
+export const protect = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   try {
     // Read both tokens up front so access-token expiry can fall back to refresh.
     const accessToken = req.cookies?.accessToken;
@@ -48,11 +48,16 @@ export const protect = (
       throw Unauthorized("Session expired");
     }
 
-    const decodedRefresh = verifyRefreshToken(refreshToken);
+    const decoded = verifyRefreshToken(refreshToken);
+
+    // const user = await AuthUserModel.findById(decoded.id);
+    // if (!user) {
+    //   throw Unauthorized("Session invalid");
+    // }
+
     const newAccessToken = generateAccessToken({
-      id: decodedRefresh.id,
-      email: decodedRefresh.email,
-      username: decodedRefresh.username,
+      id: decoded.id,
+      email: decoded.email,
     });
 
     res.cookie("accessToken", newAccessToken, {
@@ -61,7 +66,11 @@ export const protect = (
     });
 
     // Continue the request with the refreshed user payload.
-    req.user = decodedRefresh;
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+    };
+
     next();
   } catch (err) {
     next(err);

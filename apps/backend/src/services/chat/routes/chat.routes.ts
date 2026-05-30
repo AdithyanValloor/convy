@@ -11,7 +11,7 @@ import {
   unmuteChat,
   muteChat,
 } from "../controllers/chat.controller.js";
-import { protect } from "../../auth/auth.middleware.js";
+import { protect } from "../../auth/middleware/auth.middleware.js";
 
 const router = Router();
 

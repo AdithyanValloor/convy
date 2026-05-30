@@ -66,17 +66,6 @@ export const updateProfileByUserId = async (
   return profile;
 };
 
-/** Verifies whether a provided password matches the stored hash. */
-export const checkPassword = async (userId: string, password: string) => {
-  const user = await UserModel.findById(userId).select("+password");
-
-  if (!user) throw NotFound("User not found");
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  return { isMatch };
-};
-
 /** Replaces the current profile picture and returns its download metadata. */
 export const updateProfilePictureByUserId = async (
   userId: string,

@@ -10,9 +10,11 @@ import { blockRouter } from "./services/user/routes/block.routes.js";
 import { inboxNotificationsRouter } from "./services/notifications/routes/inboxNotification.routes.js";
 import { messageRequestRouter } from "./services/messages/routes/messageRequest.routes.js";
 import { s3Router } from "./services/s3/s3.routes.js";
+import { authRouter } from "./services/auth/routes/auth.routes.js";
 
 // Central place for attaching feature routers to the app instance.
 export const registerRoutes = (app: Application): void => {
+  app.use("/api/auth", authRouter)
   app.use("/api/user", userRouter);
   app.use("/api/profile", profileRouter);
   app.use("/api/friends", friendRouter);

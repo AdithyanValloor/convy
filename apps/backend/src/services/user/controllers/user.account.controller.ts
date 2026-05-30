@@ -3,12 +3,9 @@ import { AuthRequest } from "../types/authRequest.js";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   updateUsername,
-  changePassword,
   deactivateAccount,
   scheduleAccountDeletion,
   cancelScheduledDeletion,
-  sendEmailChangeOtp,
-  verifyAndUpdateEmail,
 } from "../services/user.account.service.js";
 
 /** User account controller handlers for authenticated account management actions. */
@@ -36,28 +33,6 @@ export const updateUsernameController = async (
   }
 };
 
-/** Changes the authenticated user's password. */
-export const changePasswordController = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
-
-    const { currentPassword, newPassword } = req.body;
-
-    await changePassword(userId, currentPassword, newPassword);
-
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
 
 /** Deactivates the authenticated user's account until they log in again. */
 export const deactivateAccountController = async (
@@ -128,48 +103,6 @@ export const cancelScheduledDeletionController = async (
   }
 };
 
-/** Sends an OTP to confirm an email change for the authenticated user. */
-export const sendEmailChangeOtpController = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
 
-    const { email } = req.body;
 
-    await sendEmailChangeOtp(userId, email);
 
-    res.status(200).json({
-      success: true,
-      message: "OTP sent",
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/** Verifies an email-change OTP and saves the new email address. */
-export const updateEmailController = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
-
-    const { email, otp } = req.body;
-    const updatedUser = await verifyAndUpdateEmail(userId, email, otp);
-
-    res.status(200).json({
-      success: true,
-      message: "Email updated successfully.",
-      data: updatedUser,
-    });
-  } catch (err) {
-    next(err);
-  }
-};

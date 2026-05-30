@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect } from "../../auth/auth.middleware.js";
+import { protect } from "../../auth/middleware/auth.middleware.js";
 import {
   acceptReq,
   addFriend,
