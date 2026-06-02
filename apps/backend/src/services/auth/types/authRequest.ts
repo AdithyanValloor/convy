@@ -1,5 +1,6 @@
 import { Request } from "express";
-import { DecodedUser } from "./user.types.js";
+import { JwtPayload } from "./user.types.js";
+
 
 /** User request typing helpers for authenticated Express handlers. */
 
@@ -10,5 +11,5 @@ export interface AuthRequest<
   ReqBody = any,
   ReqQuery = any,
 > extends Request<Params, ResBody, ReqBody, ReqQuery> {
-  user?: DecodedUser;
+  user?: JwtPayload;
 }

@@ -1,11 +1,12 @@
 import { Router } from "express";
+
+import { protect } from "../../auth/middleware/auth.middleware.js";
 import {
   blockUserController,
   getBlockedByUsersController,
   getBlockedUsersController,
   unblockUserController,
-} from "../controllers/block.controller.js";
-import { protect } from "../../auth/middleware/auth.middleware.js";
+} from "../controller/block.controller.js";
 
 const router = Router();
 

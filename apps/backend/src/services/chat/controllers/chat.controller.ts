@@ -1,5 +1,4 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "../../user/types/authRequest.js";
 import {
   accessChatFunction,
   clearChatForUser,
@@ -19,6 +18,7 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 import { Chat } from "../models/chat.model.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Chat controller handlers for authenticated chat actions. */
 

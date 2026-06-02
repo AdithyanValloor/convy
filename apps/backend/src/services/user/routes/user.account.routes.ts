@@ -1,11 +1,11 @@
 import { Router } from "express";
 import {
-  updateUsernameController,
   deactivateAccountController,
   scheduleAccountDeletionController,
   cancelScheduledDeletionController,
 } from "../controllers/user.account.controller.js";
 import { protect } from "../../auth/middleware/auth.middleware.js";
+import { updateUsernameController } from "../controllers/profile.controller.js";
 
 const router = Router();
 

@@ -1,14 +1,8 @@
 import { Router } from "express";
 import { protect } from "../../auth/middleware/auth.middleware.js";
-import {
-  acceptReq,
-  addFriend,
-  cancelReq,
-  getAllFriends,
-  getAllRequests,
-  rejectReq,
-  removeFriend,
-} from "../controllers/friends.controller.js";
+import { acceptReq, addFriend, cancelReq, getAllFriends, getAllRequests, rejectReq, removeFriend } from "../controller/friends.controller.js";
+
+
 
 const router = Router();
 

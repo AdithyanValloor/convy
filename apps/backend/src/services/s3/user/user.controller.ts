@@ -1,5 +1,4 @@
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../../user/types/authRequest.js";
 import {
   BadRequest,
   NotFound,
@@ -8,6 +7,7 @@ import {
 import { deleteFile, generateUploadUrl } from "../s3.service.js";
 import { UserModel } from "../../user/models/user.model.js";
 import { PROFILE_KEY_REGEX } from "../../user/constants/regex.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 const MAX_PROFILE_SIZE = 2 * 1024 * 1024;
 

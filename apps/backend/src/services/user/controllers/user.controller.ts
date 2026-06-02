@@ -1,7 +1,7 @@
 import { NextFunction, Response } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { UserModel } from "../models/user.model.js";
-import { AuthRequest } from "../types/authRequest.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Returns the currently authenticated user. */
 export const currentUser = async (

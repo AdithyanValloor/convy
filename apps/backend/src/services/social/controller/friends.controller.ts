@@ -21,7 +21,7 @@ import {
   emitFriendRequestRejected,
   emitFriendRequestSent,
 } from "../../../socket/emitters/friend.emitter.js";
-import { AuthRequest } from "../../user/types/authRequest.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Friend controller handlers for authenticated friendship actions. */
 

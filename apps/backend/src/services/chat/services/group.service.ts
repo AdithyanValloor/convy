@@ -6,9 +6,10 @@ import {
   Forbidden,
   NotFound,
 } from "../../../utils/errors/httpErrors.js";
-import { BlockModel } from "../../user/models/block.model.js";
+
 import { createInboxNotification } from "../../notifications/services/inboxNotification.service.js";
 import { deleteFile, generateDownloadUrl } from "../../s3/s3.service.js";
+import { BlockModel } from "../../social/models/block.model.js";
 
 /** Group chat service helpers for membership, ownership, and avatar management. */
 

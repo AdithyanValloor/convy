@@ -12,7 +12,7 @@ import {
   sendEmailChangeOtp,
   verifyAndUpdateEmail,
 } from "../services/auth.service.js";
-import { AuthRequest } from "../../user/types/authRequest.js";
+import { AuthRequest } from "../types/authRequest.js";
 
 /** Auth and account bootstrap controller handlers for user onboarding and sessions. */
 

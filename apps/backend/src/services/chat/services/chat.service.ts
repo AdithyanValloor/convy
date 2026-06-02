@@ -6,9 +6,11 @@ import {
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
 import { ChatUserStateModel } from "../models/chatUserState.model.js";
-import { BlockModel } from "../../user/models/block.model.js";
+
 import { Message } from "../../messages/models/message.model.js";
-import { areFriends } from "../../user/utils/friend.utils.js";
+
+import { BlockModel } from "../../social/models/block.model.js";
+import { areFriends } from "../../social/utils/social.utils.js";
 
 /** Chat service helpers for chat access, user state, and mute/archive actions. */
 

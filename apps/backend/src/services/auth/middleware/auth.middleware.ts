@@ -66,10 +66,7 @@ export const protect = async (
     });
 
     // Continue the request with the refreshed user payload.
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-    };
+    req.user = decoded;
 
     next();
   } catch (err) {

@@ -1,5 +1,4 @@
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../../user/types/authRequest.js";
 import {
   BadRequest,
   NotFound,
@@ -12,6 +11,7 @@ import {
   generateUploadUrl,
 } from "../s3.service.js";
 import { Chat, IChat } from "../../chat/models/chat.model.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 const MAX_GROUP_SIZE = 2 * 1024 * 1024;
 

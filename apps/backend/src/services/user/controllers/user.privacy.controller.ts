@@ -1,11 +1,11 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "../types/authRequest.js";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   getPrivacySettings,
   updatePrivacySettings,
 } from "../services/user.privacy.service.js";
 import { emitPrivacyUpdated } from "../../../socket/emitters/privacy.emitter.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Privacy controller handlers for authenticated user privacy preferences. */
 

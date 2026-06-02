@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { accountRouter } from "./user.account.routes.js";
 import { privacyRouter } from "./user.privacy.routes.js";
-import { notificationSettingsRouter } from "./user.notificationSettings.routes.js";
+import { notificationSettingsRouter } from "./user.preferences.routes.js";
 import { protect } from "../../auth/middleware/auth.middleware.js";
 import { currentUser } from "../controllers/user.controller.js";
 

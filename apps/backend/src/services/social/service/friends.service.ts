@@ -4,9 +4,6 @@ import {
   NotFound,
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
-
-
-
 import {
   createInboxNotification,
   deleteNotificationByFriendRequest,
@@ -27,7 +24,7 @@ import {
   normalizeFriendship,
 } from "../utils/social.utils.js";
 import mongoose from "mongoose";
-import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../../user/utils/normalizeFriendRequest.js";
+import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../utils/normalizeFriendRequest.js";
 
 /** Friend service helpers for friendship and request workflows. */
 

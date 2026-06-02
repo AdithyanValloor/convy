@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import { AuthRequest } from "../../user/types/authRequest.js";
+
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   deleteFile,
@@ -7,6 +7,7 @@ import {
   generateUploadUrl,
 } from "../s3.service.js";
 import { Chat } from "../../chat/models/chat.model.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 

@@ -1,6 +1,5 @@
 import { IUser, UserModel } from "../../user/models/user.model.js";
-import { areFriends } from "../../user/utils/friend.utils.js";
-import { BlockModel } from "../../user/models/block.model.js";
+
 import { Chat } from "../../chat/models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import {
@@ -9,6 +8,8 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 import { MessageRequestModel } from "../models/messageRequest.model.js";
+import { BlockModel } from "../../social/models/block.model.js";
+import { areFriends } from "../../social/utils/social.utils.js";
 
 /** Message request helpers for inbox retrieval and request review actions. */
 

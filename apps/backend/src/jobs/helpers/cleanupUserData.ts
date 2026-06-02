@@ -1,7 +1,8 @@
+import { BlockModel } from "../../services/social/models/block.model.js";
+import { FriendRequestModel } from "../../services/social/models/request.model.js";
 import { UserModel } from "../../services/user/models/user.model.js";
 import { Types } from "mongoose";
-import { BlockModel } from "../../services/user/models/block.model.js";
-import { FriendRequestModel } from "../../services/user/models/friendRequest.model.js";
+
 
 export const cleanupUserData = async (ids: Types.ObjectId[]) => {
   // Run independent cleanup steps together for the deleted users.

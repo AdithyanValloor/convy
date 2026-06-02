@@ -3,8 +3,8 @@ import {
   Unauthorized,
   NotFound,
   BadRequest,
+  Conflict,
 } from "../../../utils/errors/httpErrors.js";
-import bcrypt from "bcrypt";
 import { deleteFile, generateDownloadUrl } from "../../s3/s3.service.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
 
@@ -48,9 +48,6 @@ export const updateProfileByUserId = async (
   // Apply only provided fields to avoid accidental overwrites.
   if (updates.displayName !== undefined)
     profile.displayName = updates.displayName;
-
-  if (updates.username !== undefined)
-    profile.username = updates.username;
 
   if (updates.pronouns !== undefined)
     profile.pronouns = updates.pronouns;
@@ -108,4 +105,37 @@ export const getProfilePictureDownloadUrlService = async (
   const url = await generateDownloadUrl(key);
 
   return url;
+};
+
+
+/** Updates a user's username after server-side validation and uniqueness checks. */
+export const updateUsername = async (userId: string, newUsername: string) => {
+  if (!newUsername || newUsername.length < 3) {
+    throw BadRequest("Username must be at least 3 characters");
+  }
+
+  if (!/^[a-z0-9_]+$/.test(newUsername)) {
+    throw BadRequest(
+      "Username may only contain lowercase letters, numbers, and underscores",
+    );
+  }
+
+  const taken = await UserModel.findOne({
+    username: newUsername,
+    _id: { $ne: userId },
+  });
+
+  if (taken) {
+    throw Conflict("Username is already taken");
+  }
+
+  const user = await UserModel.findByIdAndUpdate(
+    userId,
+    { username: newUsername },
+    { new: true },
+  ).select("-password");
+
+  if (!user) throw NotFound("User not found");
+
+  return user;
 };

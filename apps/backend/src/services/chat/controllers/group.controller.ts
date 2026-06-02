@@ -13,7 +13,6 @@ import {
   updateGroupAvatarById,
 } from "../services/group.service.js";
 import { handleChatError } from "../errors/chatErrors.js";
-import { AuthRequest } from "../../user/types/authRequest.js";
 import {
   BadRequest,
   Unauthorized,
@@ -29,6 +28,7 @@ import {
   emitOwnershipTransferred,
 } from "../../../socket/emitters/group.emitter.js";
 import { GROUP_KEY_REGEX } from "../../user/constants/regex.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Group chat controller handlers for authenticated group actions. */
 

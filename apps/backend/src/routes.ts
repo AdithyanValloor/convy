@@ -2,15 +2,17 @@ import { Application } from "express";
 
 import { userRouter } from "./services/user/routes/user.routes.js";
 import { profileRouter } from "./services/user/routes/profile.routes.js";
-import { friendRouter } from "./services/user/routes/friend.routes.js";
+
 import { chatRouter } from "./services/chat/routes/chat.routes.js";
 import { groupChatRouter } from "./services/chat/routes/group.routes.js";
 import { messageRouter } from "./services/messages/routes/messages.routes.js";
-import { blockRouter } from "./services/user/routes/block.routes.js";
+
 import { inboxNotificationsRouter } from "./services/notifications/routes/inboxNotification.routes.js";
 import { messageRequestRouter } from "./services/messages/routes/messageRequest.routes.js";
 import { s3Router } from "./services/s3/s3.routes.js";
 import { authRouter } from "./services/auth/routes/auth.routes.js";
+import { friendRouter } from "./services/social/routes/friend.routes.js";
+import { blockRouter } from "./services/social/routes/block.routes.js";
 
 // Central place for attaching feature routers to the app instance.
 export const registerRoutes = (app: Application): void => {

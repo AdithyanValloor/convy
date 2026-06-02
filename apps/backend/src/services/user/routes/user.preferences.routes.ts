@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getNotificationSettingsController,
   updateNotificationSettingsController,
-} from "../controllers/user.notificationSettings.controller.js";
+} from "../controllers/user.preferences.controller.js";
 import { protect } from "../../auth/middleware/auth.middleware.js";
 
 const router = Router();

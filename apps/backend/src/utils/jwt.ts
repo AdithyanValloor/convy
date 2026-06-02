@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
-import type { DecodedUser } from "../services/user/types/user.types.js";
+
 import { Unauthorized } from "./errors/httpErrors.js";
+import { JwtPayload } from "../services/auth/types/user.types.js";
 
 /**
  * JWT utilities.
@@ -15,29 +16,29 @@ if (!JWT_SECRET || !REFRESH_SECRET) {
 }
 
 // Short-lived token for authenticated API requests.
-export const generateAccessToken = (payload: DecodedUser): string =>
+export const generateAccessToken = (payload: JwtPayload): string =>
   jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
 
 // Longer-lived token used to mint new access tokens.
-export const generateRefreshToken = (payload: DecodedUser): string =>
+export const generateRefreshToken = (payload: JwtPayload): string =>
   jwt.sign(payload, REFRESH_SECRET, { expiresIn: "7d" });
 
-export const verifyAccessToken = (token: string): DecodedUser => {
+export const verifyAccessToken = (token: string): JwtPayload => {
   const decoded = jwt.verify(token, JWT_SECRET);
 
   if (typeof decoded === "string") {
     throw Unauthorized("Invalid access token payload");
   }
 
-  return decoded as DecodedUser;
+  return decoded as JwtPayload;
 };
 
-export const verifyRefreshToken = (token: string): DecodedUser => {
+export const verifyRefreshToken = (token: string): JwtPayload => {
   const decoded = jwt.verify(token, REFRESH_SECRET);
 
   if (typeof decoded === "string") {
     throw Unauthorized("Invalid refresh token payload");
   }
 
-  return decoded as DecodedUser;
+  return decoded as JwtPayload;
 };

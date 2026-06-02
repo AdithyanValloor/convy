@@ -1,11 +1,15 @@
 import { BlockModel } from "../models/block.model.js";
-import { UserModel } from "../models/user.model.js";
-import { FriendRequestModel } from "../models/friendRequest.model.js";
+
 import {
   BadRequest,
   NotFound,
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
+import { UserModel } from "../../user/models/user.model.js";
+import { FriendRequestModel } from "../models/request.model.js";
+import { FriendshipModel } from "../models/friends.model.js";
+import { normalizeFriendship } from "../utils/social.utils.js";
+import mongoose from "mongoose";
 
 /** Block service helpers for managing user block relationships. */
 
@@ -49,27 +53,31 @@ export const blockUser = async (userId: string, targetUserId: string) => {
     return { alreadyBlocked: true };
   }
 
-  await BlockModel.create({
-    blocker: userId,
-    blocked: targetUserId,
-  });
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await BlockModel.create({
+        blocker: userId,
+        blocked: targetUserId,
+      });
 
-  // Remove friendship
-  await UserModel.findByIdAndUpdate(userId, {
-    $pull: { friendList: targetUserId },
-  });
-  await UserModel.findByIdAndUpdate(targetUserId, {
-    $pull: { friendList: userId },
-  });
+      const [user1, user2] = normalizeFriendship(userId, targetUserId);
+      await FriendshipModel.findOneAndDelete({
+        user1,
+        user2,
+      });
 
-  // Cancel friend requests
-  await FriendRequestModel.deleteMany({
-    $or: [
-      { from: userId, to: targetUserId, status: "pending" },
-      { from: targetUserId, to: userId, status: "pending" },
-    ],
-  });
-
+      // Cancel friend requests
+      await FriendRequestModel.deleteMany({
+        $or: [
+          { from: userId, to: targetUserId, status: "pending" },
+          { from: targetUserId, to: userId, status: "pending" },
+        ],
+      });
+    });
+  } finally {
+    await session.endSession();
+  }
   return { success: true, blockedUser: targetUser };
 };
 

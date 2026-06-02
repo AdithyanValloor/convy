@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { FriendRequestSocketPayload } from "../types/friend.socket.js";
+import { FriendRequestSocketPayload } from "./friend.socket.js";
 
 /** Friend request utility helpers for socket payload normalization. */
 

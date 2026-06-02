@@ -1,10 +1,10 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "../types/authRequest.js";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   getNotificationSettings,
   updateNotificationSettings,
-} from "../services/user.notificationSettings.service.js";
+} from "../services/user.preferences.service.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Notification settings controller handlers for authenticated user preferences. */
 

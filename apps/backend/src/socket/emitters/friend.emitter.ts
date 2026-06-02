@@ -4,7 +4,7 @@
  */
 
 import { getIO } from "../io.js";
-import type { FriendRequestSocketPayload } from "../../services/user/types/friend.socket.js";
+import type { FriendRequestSocketPayload } from "../../services/social/utils/friend.socket.js";
 
 export const emitFriendRequestReceived = (
   userId: string,

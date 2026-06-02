@@ -7,10 +7,6 @@ export interface IUser extends Document {
   _id: Types.ObjectId;
   username: string;
   displayName: string;
-  email: string;
-  mobile?: string;
-  password: string;
-  friendList: Types.ObjectId[];
   pronouns?: string | null;
   status?: string | null;
   bio: string | null;
@@ -58,31 +54,11 @@ const userSchema: Schema<IUser> = new Schema(
     displayName: {
       type: String,
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    mobile: {
-      type: String,
-    },
-    password: {
-      type: String,
-      required: true,
-      minlength: 8,
-    },
     pronouns: {
       type: String,
       default: null,
     },
-    friendList: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
+
     bio: {
       type: String,
       default: null,

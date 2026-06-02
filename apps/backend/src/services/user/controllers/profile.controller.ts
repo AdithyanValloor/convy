@@ -1,16 +1,17 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "../types/authRequest.js";
 import {
   getProfileByUserId,
   getProfilePictureDownloadUrlService,
   updateProfileByUserId,
   updateProfilePictureByUserId,
-} from "../services/user.service.js";
+  updateUsername,
+} from "../services/user.profile.service.js";
 import {
   Unauthorized,
   BadRequest,
 } from "../../../utils/errors/httpErrors.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
+import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Profile controller handlers for authenticated profile actions. */
 
@@ -108,6 +109,29 @@ export const getProfilePictureDownloadUrl = async (
     );
 
     res.json({ url });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Updates the authenticated user's username. */
+export const updateUsernameController = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw Unauthorized();
+
+    const { username } = req.body;
+    const updatedUser = await updateUsername(userId, username);
+
+    res.status(200).json({
+      success: true,
+      message: "Username updated successfully",
+      data: updatedUser,
+    });
   } catch (err) {
     next(err);
   }

@@ -4,44 +4,12 @@ import {
   Unauthorized,
   NotFound,
   BadRequest,
-  Conflict,
 } from "../../../utils/errors/httpErrors.js";
+import { AuthUserModel } from "../../auth/models/auth.model.js";
 
 /** Account service helpers for identity, credential, and lifecycle changes. */
 
 const DELETION_GRACE_PERIOD_DAYS = 15;
-
-/** Updates a user's username after server-side validation and uniqueness checks. */
-export const updateUsername = async (userId: string, newUsername: string) => {
-  if (!newUsername || newUsername.length < 3) {
-    throw BadRequest("Username must be at least 3 characters");
-  }
-
-  if (!/^[a-z0-9_]+$/.test(newUsername)) {
-    throw BadRequest(
-      "Username may only contain lowercase letters, numbers, and underscores",
-    );
-  }
-
-  const taken = await UserModel.findOne({
-    username: newUsername,
-    _id: { $ne: userId },
-  });
-
-  if (taken) {
-    throw Conflict("Username is already taken");
-  }
-
-  const user = await UserModel.findByIdAndUpdate(
-    userId,
-    { username: newUsername },
-    { new: true },
-  ).select("-password");
-
-  if (!user) throw NotFound("User not found");
-
-  return user;
-};
 
 /** Soft-deactivates an account while retaining user data. */
 export const deactivateAccount = async (userId: string) => {
@@ -62,11 +30,11 @@ export const scheduleAccountDeletion = async (
   userId: string,
   password: string,
 ) => {
-  const user = await UserModel.findById(userId).select("+password");
+  const user = await AuthUserModel.findById(userId).select("+password");
 
   if (!user) throw NotFound("User not found");
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, user.hashedPassword);
   if (!isMatch) throw Unauthorized("Incorrect password");
 
   const scheduledDeletionAt = new Date();
