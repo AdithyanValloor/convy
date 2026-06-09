@@ -1,4 +1,4 @@
-import { IUser, UserModel } from "../../user/models/user.model.js";
+import { IUser } from "../../user/models/user.model.js";
 
 import { Chat } from "../../chat/models/chat.model.js";
 import { Message } from "../models/message.model.js";
@@ -8,8 +8,9 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 import { MessageRequestModel } from "../models/messageRequest.model.js";
-import { BlockModel } from "../../social/models/block.model.js";
 import { areFriends } from "../../social/utils/social.utils.js";
+import { canInteract } from "../gateways/social.gateway.js";
+import { findUserById } from "../../social/gateways/user.gateway.js";
 
 /** Message request helpers for inbox retrieval and request review actions. */
 
@@ -31,21 +32,16 @@ export const sendMessageRequest = async (
 ) => {
   if (!firstMessage) throw BadRequest("Message required");
 
-  const toUser = await UserModel.findById(toUserId);
+  const toUser = await findUserById(toUserId)
 
   if (!toUser) throw NotFound("User not found");
 
   if (toUser._id.toString() === fromUserId)
     throw BadRequest("Cannot message yourself");
 
-  const blocked = await BlockModel.findOne({
-    $or: [
-      { blocker: fromUserId, blocked: toUser._id },
-      { blocker: toUser._id, blocked: fromUserId },
-    ],
-  });
+  const allowed = await canInteract(toUserId, fromUserId)
 
-  if (blocked) throw Forbidden("Cannot message this user");
+  if (!allowed) throw Forbidden("Cannot message this user");
 
   const friends = await areFriends(fromUserId, toUser._id.toString());
 

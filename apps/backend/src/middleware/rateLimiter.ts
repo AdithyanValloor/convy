@@ -8,6 +8,7 @@ const rateMap = new Map<string, number>();
 const RATE_LIMIT_MS = 1000;
 const MAX_KEYS = 10_000;
 
+// TODO add rate limiter
 export const messageRateLimiter = (
   req: Request,
   res: Response,

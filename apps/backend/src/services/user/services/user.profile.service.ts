@@ -5,7 +5,7 @@ import {
   BadRequest,
   Conflict,
 } from "../../../utils/errors/httpErrors.js";
-import { deleteFile, generateDownloadUrl } from "../../s3/s3.service.js";
+import { deleteFile, generateDownloadUrl } from "../../media/s3.service.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
 
 /** Input shape for allowed profile field updates. */

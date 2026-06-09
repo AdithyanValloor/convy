@@ -5,12 +5,10 @@ import {
   NotFound,
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
-import { ChatUserStateModel } from "../models/chatUserState.model.js";
-
+import { ChatUserState } from "../models/chatUserState.model.js";
 import { Message } from "../../messages/models/message.model.js";
-
-import { BlockModel } from "../../social/models/block.model.js";
 import { areFriends } from "../../social/utils/social.utils.js";
+import { canInteract } from "../gateways/social.gateway.js";
 
 /** Chat service helpers for chat access, user state, and mute/archive actions. */
 
@@ -30,7 +28,7 @@ export const fetchChatsFunction = async (userId: string) => {
     .populate("createdBy", "-password")
     .populate("lastMessage");
 
-  const states = await ChatUserStateModel.find({ userId });
+  const states = await ChatUserState.find({ userId });
 
   const stateMap = new Map(states.map((s) => [s.chatId.toString(), s]));
 
@@ -72,14 +70,9 @@ export const accessChatFunction = async (
     throw BadRequest("Cannot create chat with yourself");
   }
 
-  const blockExists = await BlockModel.exists({
-    $or: [
-      { blocker: userId, blocked: currentUserId },
-      { blocker: currentUserId, blocked: userId },
-    ],
-  });
+  const allowed = await canInteract(userId, currentUserId)
 
-  if (blockExists) {
+  if (!allowed) {
     throw Forbidden("Cannot access chat with this user");
   }
 
@@ -144,11 +137,11 @@ export const accessChatFunction = async (
 export const togglePinChatFunction = async (userId: string, chatId: string) => {
   if (!userId) throw Unauthorized();
 
-  const state = await ChatUserStateModel.findOne({ userId, chatId });
+  const state = await ChatUserState.findOne({ userId, chatId });
 
   const newValue = !state?.isPinned;
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { isPinned: newValue },
     { upsert: true },
@@ -164,11 +157,11 @@ export const toggleArchiveChatFunction = async (
 ) => {
   if (!userId) throw Unauthorized();
 
-  const state = await ChatUserStateModel.findOne({ userId, chatId });
+  const state = await ChatUserState.findOne({ userId, chatId });
 
   const newValue = !state?.isArchived;
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { isArchived: newValue },
     { upsert: true },
@@ -199,7 +192,7 @@ export const markChatAsUnreadFunction = async (
   // Move lastReadAt just before the latest incoming message to keep one unread.
   const newLastReadAt = new Date(latestIncomingMessage.createdAt.getTime() - 1);
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { lastReadAt: newLastReadAt },
     { upsert: true },
@@ -222,7 +215,7 @@ export const markChatAsReadFunction = async (
     .sort({ createdAt: -1 })
     .select("createdAt");
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { lastReadAt: latestMessage?.createdAt ?? new Date() },
     { upsert: true },
@@ -244,7 +237,7 @@ export const clearChatForUser = async (userId: string, chatId: string) => {
 
   const now = new Date();
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     {
       clearedAt: now,
@@ -264,7 +257,7 @@ export const deleteChatForUser = async (userId: string, chatId: string) => {
 
   const now = new Date();
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { clearedAt: now, lastReadAt: now, isArchived: false, isPinned: false },
     { upsert: true },
@@ -305,7 +298,7 @@ export const muteChatFunction = async (
       ? MUTED_FOREVER_SENTINEL
       : new Date(Date.now() + MUTE_DURATIONS_MS[duration]);
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { mutedUntil },
     { upsert: true, new: true },
@@ -321,7 +314,7 @@ export const unmuteChatFunction = async (userId: string, chatId: string) => {
   const chat = await Chat.findOne({ _id: chatId, members: userId });
   if (!chat) throw Forbidden("Not allowed");
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { mutedUntil: null },
     { upsert: true, new: true },

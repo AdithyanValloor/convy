@@ -9,7 +9,7 @@ import { messageRouter } from "./services/messages/routes/messages.routes.js";
 
 import { inboxNotificationsRouter } from "./services/notifications/routes/inboxNotification.routes.js";
 import { messageRequestRouter } from "./services/messages/routes/messageRequest.routes.js";
-import { s3Router } from "./services/s3/s3.routes.js";
+import { s3Router } from "./services/media/s3.routes.js";
 import { authRouter } from "./services/auth/routes/auth.routes.js";
 import { friendRouter } from "./services/social/routes/friend.routes.js";
 import { blockRouter } from "./services/social/routes/block.routes.js";

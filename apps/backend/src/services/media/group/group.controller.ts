@@ -4,14 +4,10 @@ import {
   NotFound,
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
-import {
-  copyFile,
-  deleteFile,
-  generateDownloadUrl,
-  generateUploadUrl,
-} from "../s3.service.js";
+import { copyFile, deleteFile, generateUploadUrl } from "../s3.service.js";
 import { Chat, IChat } from "../../chat/models/chat.model.js";
 import { AuthRequest } from "../../auth/types/authRequest.js";
+import { findChatById } from "../gateways/chat.gateway.js";
 
 const MAX_GROUP_SIZE = 2 * 1024 * 1024;
 
@@ -60,7 +56,7 @@ export const uploadGroupAvatar = async (
     }
 
     if (!temp) {
-      const group = await Chat.findById(groupId);
+      const group = await findChatById(groupId);
       if (!group) throw NotFound("Group not found");
 
       if (!isGroupAdmin(group, userId)) throw Unauthorized();
@@ -102,7 +98,7 @@ export const deleteGroupAvatar = async (
       throw Unauthorized();
     }
 
-    const group = await Chat.findById(groupId);
+    const group = await findChatById(groupId);
     if (!group) throw NotFound("Group not found");
 
     if (!isGroupAdmin(group, userId)) throw Unauthorized();
@@ -147,7 +143,8 @@ export const attachGroupAvatarFromTemp = async (
       throw Unauthorized();
     }
 
-    const group = await Chat.findById(groupId);
+    const group = await findChatById(groupId);
+
     if (!group) throw NotFound("Group not found");
 
     if (!isGroupAdmin(group, userId)) throw Unauthorized();

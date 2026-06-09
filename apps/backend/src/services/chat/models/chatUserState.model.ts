@@ -52,7 +52,7 @@ const chatUserStateSchema = new Schema<IChatUserState>(
 // Ensures each user has a single state record per chat.
 chatUserStateSchema.index({ userId: 1, chatId: 1 }, { unique: true });
 
-export const ChatUserStateModel = model<IChatUserState>(
+export const ChatUserState = model<IChatUserState>(
   "ChatUserState",
   chatUserStateSchema,
 );

@@ -8,14 +8,17 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 import { extractFirstUrl } from "../utils/linkPreview.js";
-import { ChatUserStateModel } from "../../chat/models/chatUserState.model.js";
-import { createInboxNotification } from "../../notifications/services/inboxNotification.service.js";
+import { ChatUserState } from "../../chat/models/chatUserState.model.js";
 import { emitMessageRequestSent } from "../../../socket/emitters/messageRequest.emitters.js";
 import { MessageRequestModel } from "../models/messageRequest.model.js";
-import { UserModel } from "../../user/models/user.model.js";
 import { MessageFile } from "../types/message.types.js";
-import { deleteFile } from "../../s3/s3.service.js";
-import { BlockModel } from "../../social/models/block.model.js";
+import { deleteFile } from "../../media/s3.service.js";
+import { canInteract } from "../gateways/social.gateway.js";
+import { canSeeReadReceipts } from "../gateways/user.gateway.js";
+import {
+  notifyMention,
+  notifyReply,
+} from "../gateways/notification.gateway.js";
 
 /** Message service helpers for message delivery, search, reactions, and read state. */
 
@@ -39,7 +42,7 @@ const resolveMentions = (
 
 /** Returns the stored chat state for a user, if one exists. */
 export const getChatUserState = async (userId: string, chatId: string) => {
-  return ChatUserStateModel.findOne({ userId, chatId });
+  return ChatUserState.findOne({ userId, chatId });
 };
 
 /** Returns paginated messages for a chat, respecting per-user clear history. */
@@ -100,34 +103,80 @@ export const getUnreadCountsFunction = async (userId: string) => {
 
   // Collect every chat first so unread counts can be keyed by chat ID.
   const userChats = await Chat.find({ members: userId }).select("_id");
-  const chatIds = userChats.map((chat) => chat._id.toString());
+  const chatIds = userChats.map((chat) => chat._id);
 
   if (chatIds.length === 0) return {};
 
-  // New accounts may not have chat state rows yet.
-  const states = await ChatUserStateModel.find({
-    userId,
-    chatId: { $in: chatIds },
-  });
-
-  const stateMap = new Map(states.map((state) => [state.chatId.toString(), state]));
+  const unreadCounts = await Message.aggregate([
+    {
+      $match: {
+        chat: { $in: chatIds },
+        deleted: false,
+        sender: { $ne: new mongoose.Types.ObjectId(userId) },
+      },
+    },
+    {
+      $lookup: {
+        from: "chatuserstates",
+        let: {
+          chatId: "$chat",
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$chatId", "$$chatId"] },
+                  { $eq: ["$userId", new mongoose.Types.ObjectId(userId)] },
+                ],
+              },
+            },
+          },
+        ],
+        as: "state",
+      },
+    },
+    {
+      $unwind: {
+        path: "$state",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $addFields: {
+        readPoint: {
+          $ifNull: [
+            "$state.lastReadAt",
+            {
+              $ifNull: ["$state.clearedAt", new Date(0)],
+            },
+          ],
+        },
+      },
+    },
+    {
+      $match: {
+        $expr: {
+          $gt: ["$createdAt", "$readPoint"],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$chat",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
 
   const unreadData: Record<string, number> = {};
 
-  for (const chatId of chatIds) {
-    const state = stateMap.get(chatId);
+  for (let chatId of chatIds) {
+    unreadData[chatId.toString()] = 0;
+  }
 
-    const filter: FilterQuery<IMessage> = {
-      chat: chatId,
-      deleted: false,
-      sender: { $ne: userId },
-      createdAt: {
-        $gt: state?.lastReadAt ?? state?.clearedAt ?? new Date(0),
-      },
-    };
-
-    const count = await Message.countDocuments(filter);
-    unreadData[chatId] = count;
+  for (let row of unreadCounts) {
+    unreadData[row._id.toString()] = row.count;
   }
 
   return unreadData;
@@ -161,14 +210,9 @@ export const sendMessageFunction = async (
       .find((id) => id !== senderId);
 
     if (otherMember) {
-      const blockExists = await BlockModel.findOne({
-        $or: [
-          { blocker: otherMember, blocked: senderId },
-          { blocker: senderId, blocked: otherMember },
-        ],
-      });
+      const allowed = await canInteract(senderId, otherMember);
 
-      if (blockExists) {
+      if (!allowed) {
         throw Forbidden("Cannot send message to this user");
       }
     }
@@ -198,13 +242,12 @@ export const sendMessageFunction = async (
       const replyUserId = repliedMessage.sender.toString();
 
       if (replyUserId !== senderId) {
-        await createInboxNotification({
-          userId: replyUserId,
-          actorId: senderId,
-          type: "reply",
+        await notifyReply(
+          replyUserId,
+          senderId,
           chatId,
-          messageId: message._id.toString(),
-        });
+          message._id.toString(),
+        );
       }
     }
   }
@@ -264,22 +307,18 @@ export const sendMessageFunction = async (
     [...uniqueMentions]
       .filter((id) => id !== senderId && memberIds.includes(id))
       .map((userId) =>
-        createInboxNotification({
-          userId,
-          actorId: senderId,
-          type: "mention",
-          chatId,
-          messageId: message._id.toString(),
-        }),
+        notifyMention(userId, senderId, chatId, message._id.toString()),
       ),
   );
 
-  const states = await ChatUserStateModel.find({
+  const states = await ChatUserState.find({
     chatId,
     userId: { $in: memberIds },
   });
 
-  const stateMap = new Map(states.map((state) => [state.userId.toString(), state]));
+  const stateMap = new Map(
+    states.map((state) => [state.userId.toString(), state]),
+  );
   const unreadCounts: Record<string, number> = {};
 
   for (const member of memberIds) {
@@ -320,6 +359,12 @@ export const forwardMessageFunction = async (
     throw BadRequest("At least one target chat is required");
   }
 
+  if (targetChatIds.length > 10) {
+    throw BadRequest(
+      "You can forward messages to a maximum of 10 chats at once",
+    );
+  }
+
   const original = await Message.findById(messageId);
   if (!original) throw NotFound("Original message not found");
 
@@ -332,89 +377,94 @@ export const forwardMessageFunction = async (
     throw Forbidden("Not allowed to forward this message");
   }
 
-  const results = [];
+  const chats = await Chat.find({
+    _id: { $in: targetChatIds },
+    members: senderId,
+  });
 
-  for (const chatId of targetChatIds) {
-    const chat = await Chat.findOne({ _id: chatId, members: senderId });
-    if (!chat) continue;
+  const results = (
+    await Promise.all(
+      chats.map(async (chat) => {
+        if (!chat.isGroup) {
+          const otherMember = chat.members
+            .map((member) => member.toString())
+            .find((id) => id !== senderId);
 
-    if (!chat.isGroup) {
-      const otherMember = chat.members.find((member) => member.toString() !== senderId);
+          if (otherMember) {
+            const allowed = await canInteract(senderId, otherMember);
 
-      if (otherMember) {
-        const blockExists = await BlockModel.findOne({
-          $or: [
-            { blocker: otherMember, blocked: senderId },
-            { blocker: senderId, blocked: otherMember },
-          ],
+            if (!allowed) {
+              return null;
+            }
+          }
+        }
+
+        const deliveredTo = chat.members.filter(
+          (id) => id.toString() !== senderId,
+        );
+
+        const forwardedMessage = await Message.create({
+          chat: chat._id,
+          sender: senderId,
+          content: original.content,
+          deliveredTo,
+          forwarded: true,
+          forwardedFrom: original._id,
+          linkPreview: original.linkPreview || null,
         });
 
-        if (blockExists) {
-          continue;
+        chat.lastMessage = forwardedMessage._id;
+        await chat.save();
+
+        const populated = await forwardedMessage.populate([
+          { path: "sender", select: "displayName username profilePicture" },
+          {
+            path: "forwardedFrom",
+            select: "content sender",
+            populate: {
+              path: "sender",
+              select: "username displayName profilePicture",
+            },
+          },
+        ]);
+
+        const memberIds = chat.members.map((member) => member.toString());
+
+        const states = await ChatUserState.find({
+          chatId: chat._id,
+          userId: { $in: memberIds },
+        });
+
+        const stateMap = new Map(
+          states.map((state) => [state.userId.toString(), state]),
+        );
+        const unreadCounts: Record<string, number> = {};
+
+        for (const member of memberIds) {
+          if (member === senderId) continue;
+
+          const state = stateMap.get(member);
+          const boundary = state?.lastReadAt || state?.clearedAt || new Date(0);
+
+          const count = await Message.countDocuments({
+            chat: chat._id,
+            deleted: false,
+            sender: { $ne: member },
+            createdAt: { $gt: boundary },
+          });
+
+          unreadCounts[member] = count;
         }
-      }
-    }
 
-    const deliveredTo = chat.members.filter((id) => id.toString() !== senderId);
-
-    const forwardedMessage = await Message.create({
-      chat: chatId,
-      sender: senderId,
-      content: original.content,
-      deliveredTo,
-      forwarded: true,
-      forwardedFrom: original._id,
-      linkPreview: original.linkPreview || null,
-    });
-
-    chat.lastMessage = forwardedMessage._id;
-    await chat.save();
-
-    const populated = await forwardedMessage.populate([
-      { path: "sender", select: "displayName username profilePicture" },
-      {
-        path: "forwardedFrom",
-        select: "content sender",
-        populate: {
-          path: "sender",
-          select: "username displayName profilePicture",
-        },
-      },
-    ]);
-
-    const memberIds = chat.members.map((member) => member.toString());
-
-    const states = await ChatUserStateModel.find({
-      chatId,
-      userId: { $in: memberIds },
-    });
-
-    const stateMap = new Map(states.map((state) => [state.userId.toString(), state]));
-    const unreadCounts: Record<string, number> = {};
-
-    for (const member of memberIds) {
-      if (member === senderId) continue;
-
-      const state = stateMap.get(member);
-      const boundary = state?.lastReadAt || state?.clearedAt || new Date(0);
-
-      const count = await Message.countDocuments({
-        chat: chatId,
-        deleted: false,
-        sender: { $ne: member },
-        createdAt: { $gt: boundary },
-      });
-
-      unreadCounts[member] = count;
-    }
-
-    results.push({
-      chatId,
-      message: populated,
-      chatMembers: chat.members.map((member) => member.toString()),
-      unreadCounts,
-    });
-  }
+        return {
+          chatId: chat._id,
+          message: populated,
+          chatMembers: chat.members.map((member) => member.toString()),
+          unreadCounts,
+        };
+      }),
+    )
+  ).filter((result) => result !== null);
 
   return results;
 };
@@ -440,14 +490,9 @@ export const toggleReactionFunction = async (
       .find((id) => id !== userId);
 
     if (otherMember) {
-      const blockExists = await BlockModel.findOne({
-        $or: [
-          { blocker: otherMember, blocked: userId },
-          { blocker: userId, blocked: otherMember },
-        ],
-      });
+      const allowed = await canInteract(userId, otherMember);
 
-      if (blockExists) {
+      if (!allowed) {
         throw Forbidden("Cannot interact in this chat");
       }
     }
@@ -507,7 +552,7 @@ export const markChatAsReadFunction = async (
     return { unreadCount: 0 };
   }
 
-  await ChatUserStateModel.findOneAndUpdate(
+  await ChatUserState.findOneAndUpdate(
     { userId, chatId },
     { lastReadAt: latestMessage.createdAt },
     { upsert: true },
@@ -528,8 +573,7 @@ export const markMessagesAsSeenFunction = async (
   if (!chat) throw Forbidden("Not allowed");
 
   // Read receipt privacy only affects outward seen status, not unread tracking.
-  const user = await UserModel.findById(userId).select("privacy");
-  const readReceiptsEnabled = user?.privacy?.readReceipts ?? true;
+  const canSendReadReceipt = await canSeeReadReceipts(userId);
 
   const latestIncomingMessage = await Message.findOne({
     chat: chatId,
@@ -541,7 +585,7 @@ export const markMessagesAsSeenFunction = async (
 
   // Always advance lastReadAt so unread counts clear consistently.
   if (latestIncomingMessage) {
-    await ChatUserStateModel.findOneAndUpdate(
+    await ChatUserState.findOneAndUpdate(
       { userId, chatId },
       { lastReadAt: latestIncomingMessage.createdAt },
       { upsert: true },
@@ -549,7 +593,7 @@ export const markMessagesAsSeenFunction = async (
   }
 
   // When read receipts are off, keep seen state private but still clear unread counts.
-  if (readReceiptsEnabled) {
+  if (canSendReadReceipt) {
     await Message.updateMany(
       { chat: chatId, sender: { $ne: userId }, seenBy: { $ne: userId } },
       { $addToSet: { seenBy: userId } },
@@ -570,7 +614,7 @@ export const markMessagesAsSeenFunction = async (
   return {
     success: true,
     modifiedCount: updated,
-    emitSeen: readReceiptsEnabled,
+    emitSeen: canSendReadReceipt,
   };
 };
 
@@ -843,11 +887,13 @@ export const globalSearchMessagesFunction = async (
   const userChats = await Chat.find({ members: userId }).select("_id");
   const chatIds = userChats.map((chat) => chat._id);
 
-  const states = await ChatUserStateModel.find({
+  const states = await ChatUserState.find({
     userId,
     chatId: { $in: chatIds },
   });
-  const stateMap = new Map(states.map((state) => [state.chatId.toString(), state]));
+  const stateMap = new Map(
+    states.map((state) => [state.chatId.toString(), state]),
+  );
 
   const chatConditions = chatIds.map((chatId) => {
     const state = stateMap.get(chatId.toString());

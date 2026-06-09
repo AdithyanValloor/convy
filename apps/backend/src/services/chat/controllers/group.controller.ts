@@ -12,11 +12,7 @@ import {
   transferOwnershipFunction,
   updateGroupAvatarById,
 } from "../services/group.service.js";
-import { handleChatError } from "../errors/chatErrors.js";
-import {
-  BadRequest,
-  Unauthorized,
-} from "../../../utils/errors/httpErrors.js";
+import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   emitAdminToggled,
   emitGroupCreated,
@@ -36,6 +32,7 @@ import { AuthRequest } from "../../auth/types/authRequest.js";
 export const createGroupChat = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { name, userIds }: { name?: string; userIds?: string[] } = req.body;
@@ -60,7 +57,7 @@ export const createGroupChat = async (
       groupChat: group,
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -68,6 +65,7 @@ export const createGroupChat = async (
 export const getGroupById = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -80,7 +78,7 @@ export const getGroupById = async (
 
     res.status(200).json({ group });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -88,6 +86,7 @@ export const getGroupById = async (
 export const addMembers = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { chatId, members }: { chatId?: string; members?: string[] } =
@@ -113,7 +112,7 @@ export const addMembers = async (
       chat: group,
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -121,6 +120,7 @@ export const addMembers = async (
 export const removeMembers = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { chatId, member }: { chatId?: string; member?: string } = req.body;
@@ -148,7 +148,7 @@ export const removeMembers = async (
       chat: group,
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -156,6 +156,7 @@ export const removeMembers = async (
 export const toggleAdmin = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const {
@@ -186,7 +187,7 @@ export const toggleAdmin = async (
       chat: group,
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -194,6 +195,7 @@ export const toggleAdmin = async (
 export const leaveGroup = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { chatId }: { chatId?: string } = req.body;
@@ -215,7 +217,7 @@ export const leaveGroup = async (
       deleted: result.deleted,
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -223,6 +225,7 @@ export const leaveGroup = async (
 export const deleteGroup = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { chatId }: { chatId?: string } = req.body;
@@ -242,7 +245,7 @@ export const deleteGroup = async (
       message: "Group deleted successfully",
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -250,6 +253,7 @@ export const deleteGroup = async (
 export const transferOwnership = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { chatId, newOwnerId }: { chatId?: string; newOwnerId?: string } =
@@ -272,7 +276,7 @@ export const transferOwnership = async (
       chat: group,
     });
   } catch (error) {
-    handleChatError(res, error as Error);
+    next(error);
   }
 };
 
@@ -300,8 +304,8 @@ export const updateGroupAvatar = async (
     const result = await updateGroupAvatarById(userId, chatId, key);
 
     res.json(result);
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -321,8 +325,8 @@ export const getAvatarDownloadUrl = async (
     const url = await getGroupAvatarUrlService(chatId, userId);
 
     res.json({ url });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -344,7 +348,7 @@ export const editName = async (
       success: true,
       chat: updatedChat,
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };

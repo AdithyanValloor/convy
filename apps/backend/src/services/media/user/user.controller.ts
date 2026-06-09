@@ -5,9 +5,9 @@ import {
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
 import { deleteFile, generateUploadUrl } from "../s3.service.js";
-import { UserModel } from "../../user/models/user.model.js";
 import { PROFILE_KEY_REGEX } from "../../user/constants/regex.js";
 import { AuthRequest } from "../../auth/types/authRequest.js";
+import { findUserById } from "../gateways/user.gateway.js";
 
 const MAX_PROFILE_SIZE = 2 * 1024 * 1024;
 
@@ -76,7 +76,7 @@ export const deleteProfilePicture = async (
       throw Unauthorized();
     }
 
-    const user = await UserModel.findById(userId);
+    const user = await findUserById(userId)
 
     if (!user) throw NotFound("User not found");
 

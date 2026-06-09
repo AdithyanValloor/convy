@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import { UserModel } from "../services/user/models/user.model.js";
 import { cleanupUserData } from "./helpers/cleanupUserData.js";
+import { getExpiredDeletionUsers } from "../services/social/helper/userDeletion.helper.js";
 
 /**
  * Runs once a day to finalize accounts whose scheduled deletion time has passed.
@@ -16,12 +16,8 @@ export const startScheduledDeletionJob = () => {
       "[DeletionJob] Checking for accounts scheduled for deletion...",
     );
 
-    const now = new Date();
-
     // Only fetch ids because the helper performs the actual cleanup work.
-    const expiredAccounts = await UserModel.find({
-      scheduledDeletionAt: { $lte: now },
-    }).select("_id");
+    const expiredAccounts = await getExpiredDeletionUsers();
 
     if (expiredAccounts.length === 0) {
       console.log("[DeletionJob] No accounts to delete.");

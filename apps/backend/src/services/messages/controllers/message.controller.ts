@@ -46,7 +46,7 @@ export const getAllMessages = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params as Record<string, string>;;
+    const { chatId } = req.params as Record<string, string>;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
 
@@ -185,6 +185,47 @@ export const sendMessage = async (
 };
 
 /** Forwards a message to one or more chats the sender can access. */
+// export const forwardMessage = async (
+//   req: Request<{}, {}, ForwardMessageBody>,
+//   res: Response,
+//   next: NextFunction,
+// ) => {
+//   try {
+//     const senderId = req.user?.id;
+//     if (!senderId) throw Unauthorized();
+
+//     const { messageId, targetChatIds } = req.body;
+
+//     if (
+//       !messageId ||
+//       !Array.isArray(targetChatIds) ||
+//       targetChatIds.length === 0
+//     ) {
+//       throw BadRequest("MessageId and targeted chatIds are required");
+//     }
+
+//     const results = await forwardMessageFunction(
+//       messageId,
+//       targetChatIds,
+//       senderId,
+//     );
+
+//     results.forEach(({ chatId, message, chatMembers, unreadCounts }) => {
+//       emitNewMessage(chatId, toMessageSocketPayload(message));
+
+//       chatMembers.forEach((memberId) => {
+//         if (memberId !== senderId) {
+//           emitUnreadUpdate(memberId, chatId, unreadCounts[memberId]);
+//         }
+//       });
+//     });
+
+//     res.status(201).json(results.map((result) => result.message));
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
 export const forwardMessage = async (
   req: Request<{}, {}, ForwardMessageBody>,
   res: Response,
@@ -201,7 +242,7 @@ export const forwardMessage = async (
       !Array.isArray(targetChatIds) ||
       targetChatIds.length === 0
     ) {
-      throw BadRequest("MessageId and targeted chatIds are required");
+      throw BadRequest("messageId and targetChatIds are required");
     }
 
     const results = await forwardMessageFunction(
@@ -210,17 +251,21 @@ export const forwardMessage = async (
       senderId,
     );
 
-    results.forEach(({ chatId, message, chatMembers, unreadCounts }) => {
-      emitNewMessage(chatId, toMessageSocketPayload(message));
+    for (const { chatId, message, chatMembers, unreadCounts } of results) {
+      emitNewMessage(chatId.toString(), toMessageSocketPayload(message));
 
-      chatMembers.forEach((memberId) => {
-        if (memberId !== senderId) {
-          emitUnreadUpdate(memberId, chatId, unreadCounts[memberId]);
-        }
-      });
-    });
+      for (const memberId of chatMembers) {
+        if (memberId === senderId) continue;
 
-    res.status(201).json(results.map((result) => result.message));
+        emitUnreadUpdate(
+          memberId,
+          chatId.toString(),
+          unreadCounts[memberId] ?? 0,
+        );
+      }
+    }
+
+    return res.status(201).json(results.map((result) => result.message));
   } catch (err) {
     next(err);
   }

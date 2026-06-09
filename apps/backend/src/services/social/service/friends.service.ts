@@ -16,7 +16,6 @@ import { InboxNotificationModel } from "../../notifications/models/inboxNotifica
 
 import { BlockModel } from "../models/block.model.js";
 import { FriendshipModel } from "../models/friends.model.js";
-import { UserModel } from "../../user/models/user.model.js";
 import { FriendRequestModel } from "../models/request.model.js";
 import {
   areFriends,
@@ -25,6 +24,7 @@ import {
 } from "../utils/social.utils.js";
 import mongoose from "mongoose";
 import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../utils/normalizeFriendRequest.js";
+import { findUserById, findUserByName, getFriends } from "../gateways/user.gateway.js";
 
 /** Friend service helpers for friendship and request workflows. */
 
@@ -35,13 +35,7 @@ export const getFriendList = async (userId: string) => {
   if (!userId) throw Unauthorized();
 
   const friendIds = await getFriendIds(userId);
-  const friends = await UserModel.find(
-    {
-      _id: { $in: friendIds },
-    },
-    "displayName username profilePicture",
-  ).lean();
-
+  const friends = await getFriends(friendIds)
   return friends;
 };
 
@@ -71,10 +65,10 @@ export const sendFriendRequest = async (
     throw BadRequest("Invalid request parameters");
   }
 
-  const fromUser = await UserModel.findById(fromUserId);
+  const fromUser = await findUserById(fromUserId)
   if (!fromUser) throw Unauthorized();
 
-  const toUser = await UserModel.findOne({ username: toUsername });
+  const toUser = await findUserByName(toUsername)
   if (!toUser) throw NotFound("User not found");
 
   // Self-check first, since it is the most obvious validation failure.

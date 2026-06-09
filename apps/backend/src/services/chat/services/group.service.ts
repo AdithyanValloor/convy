@@ -8,8 +8,8 @@ import {
 } from "../../../utils/errors/httpErrors.js";
 
 import { createInboxNotification } from "../../notifications/services/inboxNotification.service.js";
-import { deleteFile, generateDownloadUrl } from "../../s3/s3.service.js";
-import { BlockModel } from "../../social/models/block.model.js";
+import { deleteFile, generateDownloadUrl } from "../../media/s3.service.js";
+import { getBlockedUsers } from "../utils/blockedUsers.js";
 
 /** Group chat service helpers for membership, ownership, and avatar management. */
 
@@ -57,18 +57,9 @@ export const createGroupChatFunction = async (
     throw BadRequest("Group name and at least one member are required");
   }
 
-  const allowedUserIds: string[] = [];
+  const blockedUsers = await getBlockedUsers(currentUserId, userIds);
 
-  for (const uid of userIds) {
-    const blockExists = await BlockModel.findOne({
-      $or: [
-        { blocker: currentUserId, blocked: uid },
-        { blocker: uid, blocked: currentUserId },
-      ],
-    });
-
-    if (!blockExists) allowedUserIds.push(uid);
-  }
+  const allowedUserIds = userIds.filter((id) => !blockedUsers.has(id));
 
   const members = Array.from(new Set([...allowedUserIds, currentUserId]));
 
@@ -132,26 +123,18 @@ export const addMembersFunction = async (
 
   if (!isAdmin) throw Forbidden("Only admins can add new members");
 
-  const newMemberIds: string[] = [];
+  const blockedUsers = await getBlockedUsers(userId, members);
 
-  for (const memberId of members) {
-    if (chat.members.some((m) => m.toString() === memberId)) continue;
+  const allowedUserIds = members.filter((id) => !blockedUsers.has(id));
 
-    const blockExists = await BlockModel.findOne({
-      $or: [
-        { blocker: userId, blocked: memberId },
-        { blocker: memberId, blocked: userId },
-      ],
-    });
+  const existingMembers = new Set(chat.members.map((id) => id.toString()));
 
-    if (blockExists) continue;
-
-    newMemberIds.push(memberId);
-  }
+  const newMemberIds = allowedUserIds.filter((id) => !existingMembers.has(id));
 
   chat.members.push(
     ...newMemberIds.map((id) => new mongoose.Types.ObjectId(id)),
   );
+
   await chat.save();
 
   await Promise.all(
