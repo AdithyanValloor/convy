@@ -5,7 +5,8 @@ import {
   NotFound,
   BadRequest,
 } from "../../../utils/errors/httpErrors.js";
-import { AuthUserModel } from "../../auth/models/auth.model.js";
+import { invalidateUserCache } from "../cache/user.cache.js";
+import * as AuthAPI from "../../auth/api/auth.api.js";
 
 /** Account service helpers for identity, credential, and lifecycle changes. */
 
@@ -23,6 +24,7 @@ export const deactivateAccount = async (userId: string) => {
   );
 
   if (!user) throw NotFound("User not found");
+  await invalidateUserCache(userId);
 };
 
 /** Schedules account deletion after the configured grace period. */
@@ -30,11 +32,7 @@ export const scheduleAccountDeletion = async (
   userId: string,
   password: string,
 ) => {
-  const user = await AuthUserModel.findById(userId).select("+password");
-
-  if (!user) throw NotFound("User not found");
-
-  const isMatch = await bcrypt.compare(password, user.hashedPassword);
+  const isMatch = await AuthAPI.verifyPassword(userId, password);
   if (!isMatch) throw Unauthorized("Incorrect password");
 
   const scheduledDeletionAt = new Date();
@@ -46,6 +44,8 @@ export const scheduleAccountDeletion = async (
     scheduledDeletionAt,
     isActive: false,
   });
+
+  await invalidateUserCache(userId);
 
   return { scheduledDeletionAt };
 };
@@ -68,4 +68,6 @@ export const cancelScheduledDeletion = async (userId: string) => {
     scheduledDeletionAt: null,
     isActive: true,
   });
+
+  await invalidateUserCache(userId);
 };

@@ -9,6 +9,7 @@ import http from "http";
 import { connectDb } from "./config/db.js";
 import { initSocket } from "./socket/index.js";
 import { createApp } from "./app.js";
+import { connectRedis } from "./config/redis.js";
 
 // Load environment variables before reading config values.
 dotenv.config();
@@ -18,6 +19,7 @@ const PORT = Number(process.env.PORT) || 9000;
 export const startServer = async (): Promise<void> => {
   try {
     await connectDb();
+    await connectRedis();
 
     const app = createApp();
     const server = http.createServer(app);

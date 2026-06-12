@@ -1,16 +1,15 @@
-import { Response, NextFunction } from "express";
+import { Response, NextFunction, Request } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   getNotificationSettings,
   updateNotificationSettings,
 } from "../services/user.preferences.service.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Notification settings controller handlers for authenticated user preferences. */
 
 /** Returns notification settings for the authenticated user. */
 export const getNotificationSettingsController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -31,7 +30,7 @@ export const getNotificationSettingsController = async (
 
 /** Updates notification settings for the authenticated user. */
 export const updateNotificationSettingsController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {

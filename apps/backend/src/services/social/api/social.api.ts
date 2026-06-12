@@ -1,6 +1,25 @@
-import { BlockModel } from "../../social/models/block.model.js";
+import { BlockModel } from "../models/block.model.js";
+import { areFriendsCheck } from "../utils/social.utils.js";
 
-export const getBlockedUsers = async (
+export const areFriends = async (
+  userA: string,
+  userB: string,
+) => {
+  return areFriendsCheck(userA, userB);
+};
+
+export const blockExists = async (userA: string, userB: string) => {
+  const blocked = await BlockModel.findOne({
+    $or: [
+      { blocker: userA, blocked: userB },
+      { blocker: userB, blocked: userA },
+    ],
+  });
+
+  return !blocked;
+};
+
+export const getBlockedRelationshipUserIds = async (
   currentUserId: string,
   userIds: string[],
 ) => {

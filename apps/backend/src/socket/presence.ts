@@ -1,62 +1,58 @@
 /**
- * In-memory presence tracker.
- *
- * Uses heartbeat timestamps to determine online/offline status.
- * NOTE: This works only for single-instance deployments.
- * Use Redis or a shared store for horizontal scaling.
+ * In-memory presence tracker with Redis.
  */
 
+import { redis } from "../config/redis.js";
 import { getIO } from "./io.js";
 
-type PresenceEntry = {
-  lastActive: number;
-  connections: number;
-};
-
-const presence = new Map<string, PresenceEntry>();
 const TIMEOUT = 75_000;
 
 /* -------------------- USER JOIN -------------------- */
 
-export const userJoined = (userId: string): void => {
-  const existing = presence.get(userId);
+export const userJoined = async (
+  userId: string,
+  socketId: string,
+): Promise<void> => {
+  await redis.sAdd(`user:${userId}:sockets`, socketId);
 
-  if (existing) {
-    existing.connections += 1;
-    existing.lastActive = Date.now();
-    return;
+  const added = await redis.sAdd("online_users", userId);
+
+  await redis.zAdd("presence:last_seen", {
+    score: Date.now(),
+    value: userId,
+  });
+
+  if (added === 1) {
+    getIO().emit("presence_update", {
+      userId,
+      status: "online",
+    });
   }
-
-  presence.set(userId, {
-    lastActive: Date.now(),
-    connections: 1,
-  });
-
-  getIO().emit("presence_update", {
-    userId,
-    status: "online",
-  });
 };
 
 /* -------------------- HEARTBEAT -------------------- */
 
-export const heartbeat = (userId: string): void => {
-  const entry = presence.get(userId);
-  if (!entry) return;
-
-  entry.lastActive = Date.now();
+export const heartbeat = async (userId: string): Promise<void> => {
+  await redis.zAdd("presence:last_seen", {
+    score: Date.now(),
+    value: userId,
+  });
 };
 
 /* -------------------- USER DISCONNECTED -------------------- */
 
-export const userDisconnected = (userId: string): void => {
-  const entry = presence.get(userId);
-  if (!entry) return;
+export const userDisconnected = async (
+  userId: string,
+  socketId: string,
+): Promise<void> => {
+  await redis.sRem(`user:${userId}:sockets`, socketId);
 
-  entry.connections -= 1;
+  const count = await redis.sCard(`user:${userId}:sockets`);
 
-  if (entry.connections <= 0) {
-    presence.delete(userId);
+  if (count === 0) {
+    await redis.sRem("online_users", userId);
+    await redis.zRem("presence:last_seen", userId);
+    await redis.del(`user:${userId}:sockets`);
 
     getIO().emit("presence_update", {
       userId,
@@ -67,23 +63,36 @@ export const userDisconnected = (userId: string): void => {
 
 /* -------------------- CLEANUP FALLBACK -------------------- */
 
-export const cleanupPresence = (): void => {
-  const now = Date.now();
+export const cleanupPresence = async (): Promise<void> => {
+  const cutoff = Date.now() - TIMEOUT;
 
-  for (const [userId, entry] of presence.entries()) {
-    if (now - entry.lastActive > TIMEOUT) {
-      presence.delete(userId);
+  const expiredUsers = await redis.zRangeByScore(
+    "presence:last_seen",
+    0,
+    cutoff,
+  );
 
-      getIO().emit("presence_update", {
-        userId,
-        status: "offline",
-      });
-    }
+  const pipeline = redis.multi();
+
+  for (const userId of expiredUsers) {
+    pipeline.sRem("online_users", userId);
+    pipeline.del(`user:${userId}:sockets`);
+  }
+
+  pipeline.zRemRangeByScore("presence:last_seen", 0, cutoff);
+
+  await pipeline.exec();
+
+  for (const userId of expiredUsers) {
+    getIO().emit("presence_update", {
+      userId,
+      status: "offline",
+    });
   }
 };
-
 /* -------------------- ONLINE USERS -------------------- */
 
-export const getOnlineUsers = (): string[] => {
-  return [...presence.keys()];
+export const getOnlineUsers = async (): Promise<string[]> => {
+  const onlineUsers = await redis.sMembers("online_users");
+  return onlineUsers;
 };

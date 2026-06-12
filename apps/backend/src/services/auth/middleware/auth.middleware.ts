@@ -5,7 +5,7 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
   generateAccessToken,
-} from "../../../utils/jwt.js";
+} from "../utils/jwt.js";
 
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { authCookieOptions } from "../../../config/cookies.js";

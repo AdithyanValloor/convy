@@ -67,7 +67,7 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >("auth/loginUser", async ({ email, password }, { rejectWithValue }) => {
   try {
-    const response = await api.post("/user/login", { email, password });
+    const response = await api.post("/auth/login", { email, password });
 
     return {
       user: mapAuthUser(response.data.user),
@@ -110,7 +110,7 @@ export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      await api.post("/user/logout");
+      await api.post("/auth/logout");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         return rejectWithValue(err.response?.data?.message ?? "Logout failed");
@@ -152,7 +152,7 @@ export const updateEmail = createAsyncThunk<
   { rejectValue: string }
 >("auth/updateEmail", async ({ email, otp }, { rejectWithValue }) => {
   try {
-    const res = await api.patch("/user/account/email", { email, otp });
+    const res = await api.patch("/auth/email", { email, otp });
     return mapAuthUser(res.data.data);
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
@@ -176,7 +176,7 @@ export const changePassword = createAsyncThunk<
   "auth/changePassword",
   async ({ currentPassword, newPassword }, { rejectWithValue }) => {
     try {
-      await api.patch("/user/account/password", {
+      await api.patch("/auth/password", {
         currentPassword,
         newPassword,
       });
@@ -266,7 +266,7 @@ export const checkPassword = createAsyncThunk<
   { rejectValue: string }
 >("auth/checkPassword", async ({ password }, { rejectWithValue }) => {
   try {
-    const res = await api.post("/user/account/check-password", { password });
+    const res = await api.post("/auth/check-password", { password });
 
     if (!res.data.isMatch) {
       return rejectWithValue("Incorrect password");

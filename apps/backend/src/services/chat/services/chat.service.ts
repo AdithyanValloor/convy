@@ -6,9 +6,9 @@ import {
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
 import { ChatUserState } from "../models/chatUserState.model.js";
-import { Message } from "../../messages/models/message.model.js";
-import { areFriends } from "../../social/utils/social.utils.js";
-import { canInteract } from "../gateways/social.gateway.js";
+
+import * as SocialAPI from "../../social/api/social.api.js";
+import * as MessagesAPI from "../../messages/api/messages.api.js";
 
 /** Chat service helpers for chat access, user state, and mute/archive actions. */
 
@@ -70,7 +70,7 @@ export const accessChatFunction = async (
     throw BadRequest("Cannot create chat with yourself");
   }
 
-  const allowed = await canInteract(userId, currentUserId)
+  const allowed = await SocialAPI.blockExists(userId, currentUserId);
 
   if (!allowed) {
     throw Forbidden("Cannot access chat with this user");
@@ -94,7 +94,7 @@ export const accessChatFunction = async (
     };
   }
 
-  const friends = await areFriends(currentUserId, userId);
+  const friends = await SocialAPI.areFriends(currentUserId, userId);
 
   if (!friends) {
     const chat = await Chat.create({
@@ -177,13 +177,8 @@ export const markChatAsUnreadFunction = async (
 ) => {
   if (!userId) throw Unauthorized();
 
-  const latestIncomingMessage = await Message.findOne({
-    chat: chatId,
-    deleted: false,
-    sender: { $ne: userId },
-  })
-    .sort({ createdAt: -1 })
-    .select("createdAt");
+  const latestIncomingMessage =
+    await MessagesAPI.latestIncomingMessageOfOtherUSer(chatId, userId);
 
   if (!latestIncomingMessage) {
     return { chatId, count: 0 };
@@ -201,27 +196,40 @@ export const markChatAsUnreadFunction = async (
   return { chatId, count: 1 };
 };
 
-/** Advances the read boundary to the latest message in the chat. */
+/** Marks a chat as read for a user by advancing their read boundary. */
 export const markChatAsReadFunction = async (
   userId: string,
   chatId: string,
 ) => {
   if (!userId) throw Unauthorized();
+  if (!chatId) throw BadRequest("ChatId is required");
 
-  const latestMessage = await Message.findOne({
-    chat: chatId,
-    deleted: false,
-  })
-    .sort({ createdAt: -1 })
-    .select("createdAt");
+  const chat = await Chat.findOne({
+    _id: chatId,
+    members: userId,
+  });
+  if (!chat) throw Forbidden("Not allowed");
+
+  const latestMessage = await MessagesAPI.latestMessage(chatId);
+
+  if (!latestMessage) {
+    return { unreadCount: 0 };
+  }
 
   await ChatUserState.findOneAndUpdate(
     { userId, chatId },
-    { lastReadAt: latestMessage?.createdAt ?? new Date() },
-    { upsert: true },
+    {
+      $max: {
+        lastReadAt: latestMessage.createdAt,
+      },
+    },
+    {
+      upsert: true,
+      new: true,
+    },
   );
 
-  return { chatId };
+  return { unreadCount: 0 };
 };
 
 /** Clears chat history for a user without deleting the shared chat itself. */

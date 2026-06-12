@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
-import { Unauthorized } from "./errors/httpErrors.js";
-import { JwtPayload } from "../services/auth/types/user.types.js";
+import { Unauthorized } from "../../../utils/errors/httpErrors.js";
+import { JwtPayload } from "../types/user.types.js";
 
 /**
  * JWT utilities.

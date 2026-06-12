@@ -6,9 +6,10 @@ import { Server } from "socket.io";
 import type { Server as HttpServer } from "http";
 
 import { setIO } from "./io.js";
-import { cleanupPresence } from "./presence.js";
+import { cleanupPresence, getOnlineUsers, userJoined } from "./presence.js";
 import { registerConnectionHandlers } from "./handlers/connection.js";
 import { registerTypingHandlers } from "./handlers/typing.js";
+import { socketAuth } from "./middleware/auth.js";
 
 const clientOrigins =
   process.env.CLIENT_URLS?.split(",")
@@ -33,8 +34,19 @@ export const initSocket = (server: HttpServer) => {
   // Store the instance so non-socket modules can emit events.
   setIO(io);
 
-  io.on("connection", (socket) => {
+  io.use(socketAuth);
+
+  io.on("connection", async (socket) => {
     console.log(`Socket connected: ${socket.id}`);
+
+    const userId = socket.data.userId;
+
+    if (userId) {
+      await userJoined(userId, socket.id);
+      socket.join(userId);
+
+      socket.emit("online_users", await getOnlineUsers());
+    }
 
     // Split per-socket behavior into focused handler modules.
     registerConnectionHandlers(socket);

@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import { Response, Request, NextFunction } from "express";
 import {
   getProfileByUserId,
   getProfilePictureDownloadUrlService,
@@ -11,7 +11,6 @@ import {
   BadRequest,
 } from "../../../utils/errors/httpErrors.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Profile controller handlers for authenticated profile actions. */
 
@@ -25,7 +24,7 @@ interface EditProfileBody {
 
 /** Returns the authenticated user's profile. */
 export const viewProfile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -43,7 +42,7 @@ export const viewProfile = async (
 
 /** Updates editable profile fields for the authenticated user. */
 export const editProfile = async (
-  req: AuthRequest<{}, {}, EditProfileBody>,
+  req: Request<{}, {}, EditProfileBody>,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -65,7 +64,7 @@ export const editProfile = async (
 
 /** Attaches a validated profile picture key to the authenticated user. */
 export const updateProfilePicture = async (
-  req: AuthRequest<{}, {}, { key: string }>,
+  req: Request<{}, {}, { key: string }>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -93,7 +92,7 @@ export const updateProfilePicture = async (
 
 /** Returns a signed download URL for the authenticated user's profile picture. */
 export const getProfilePictureDownloadUrl = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -116,7 +115,7 @@ export const getProfilePictureDownloadUrl = async (
 
 /** Updates the authenticated user's username. */
 export const updateUsernameController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {

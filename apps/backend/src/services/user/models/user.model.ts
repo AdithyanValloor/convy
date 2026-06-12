@@ -1,8 +1,4 @@
 import mongoose, { Document, Schema, Types, model } from "mongoose";
-
-
-// TODO remove AuthUser fields from here!!!!!!
-
 export interface IUser extends Document {
   _id: Types.ObjectId;
   username: string;

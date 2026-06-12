@@ -6,7 +6,7 @@ import {
   getBlockedByUsersController,
   getBlockedUsersController,
   unblockUserController,
-} from "../controller/block.controller.js";
+} from "../controllers/block.controller.js";
 
 const router = Router();
 

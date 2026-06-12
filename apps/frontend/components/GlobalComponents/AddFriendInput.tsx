@@ -57,7 +57,7 @@ export default function AddFriendInput() {
         <input
           value={username}
           onChange={(e) => {
-            setUsername(e.target.value);
+            setUsername(e.target.value.toLowerCase());
             if (statusMsg) setStatusMsg("");
           }}
           placeholder="Enter friend's Whisp username"

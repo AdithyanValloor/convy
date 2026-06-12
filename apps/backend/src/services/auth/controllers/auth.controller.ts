@@ -12,7 +12,6 @@ import {
   sendEmailChangeOtp,
   verifyAndUpdateEmail,
 } from "../services/auth.service.js";
-import { AuthRequest } from "../types/authRequest.js";
 
 /** Auth and account bootstrap controller handlers for user onboarding and sessions. */
 
@@ -180,7 +179,7 @@ export const checkPasswordController = async (
 
 /** Sends an OTP to confirm an email change for the authenticated user. */
 export const sendEmailChangeOtpController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -203,7 +202,7 @@ export const sendEmailChangeOtpController = async (
 
 /** Verifies an email-change OTP and saves the new email address. */
 export const updateEmailController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -226,7 +225,7 @@ export const updateEmailController = async (
 
 /** Changes the authenticated user's password. */
 export const changePasswordController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {

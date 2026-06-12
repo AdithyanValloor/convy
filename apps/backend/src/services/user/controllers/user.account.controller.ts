@@ -1,17 +1,16 @@
-import { Response, NextFunction } from "express";
+import { Response, Request, NextFunction } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   deactivateAccount,
   scheduleAccountDeletion,
   cancelScheduledDeletion,
 } from "../services/user.account.service.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** User account controller handlers for authenticated account management actions. */
 
 /** Deactivates the authenticated user's account until they log in again. */
 export const deactivateAccountController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -32,7 +31,7 @@ export const deactivateAccountController = async (
 
 /** Schedules account deletion after confirming the user's password. */
 export const scheduleAccountDeletionController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -59,7 +58,7 @@ export const scheduleAccountDeletionController = async (
 
 /** Cancels a previously scheduled account deletion. */
 export const cancelScheduledDeletionController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {

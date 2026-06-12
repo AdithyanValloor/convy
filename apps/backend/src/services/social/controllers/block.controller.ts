@@ -5,7 +5,7 @@ import {
   getBlockedByUsers,
   getBlockedUsers,
   unblockUser,
-} from "../service/block.service.js";
+} from "../services/block.service.js";
 import {
   emitUserBlocked,
   emitUserUnblocked,

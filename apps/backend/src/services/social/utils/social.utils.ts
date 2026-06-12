@@ -24,7 +24,7 @@ export const normalizeFriendship = (
     : [userB, userA];
 };
 
-export const areFriends = async (
+export const areFriendsCheck = async (
   userA: string,
   userB: string,
 ) => {

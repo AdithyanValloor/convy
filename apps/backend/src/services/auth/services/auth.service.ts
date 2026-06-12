@@ -4,7 +4,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-} from "../../../utils/jwt.js";
+} from "../utils/jwt.js";
 import {
   BadRequest,
   Unauthorized,
@@ -15,11 +15,14 @@ import {
   markVerified,
   isVerified,
   clearEmail,
-} from "../../../utils/otp/otpStore.js";
+} from "../otp/otpStore.js";
 import { validateEmail } from "../utils/email.js";
 import { sendOtpToEmail, verifyEmailOtp } from "./otp.service.js";
 import { AuthUserModel, IAuthUser } from "../models/auth.model.js";
 import mongoose from "mongoose";
+import * as UserAPI from "../../user/api/user.api.js";
+
+//TODO fix register accessing UserModel when implementing message queue.
 
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
 const HASH_SALT = 10;
@@ -95,7 +98,7 @@ export const registerUser = async (
   if (await AuthUserModel.findOne({ email }))
     throw Conflict("Email already exists");
 
-  if (await UserModel.findOne({ username }))
+  if (await UserAPI.userNameExists(username))
     throw Conflict("Username already exists");
 
   const hashedPassword = await bcrypt.hash(password, HASH_SALT);
@@ -155,13 +158,18 @@ export const registerUser = async (
 export const loginUser = async (email: string, password: string) => {
   if (!email || !password) throw BadRequest("Email and password required");
 
+  console.log(email);
+  
+
   const authUser = await AuthUserModel.findOne({ email });
+
+  console.log(authUser);
+  
 
   // Use the same auth error for missing users and invalid passwords.
   if (!authUser) throw Unauthorized("Invalid email or password");
-
-  const profileUser = await UserModel.findById(authUser._id).select("-__v");
-  if (!profileUser) throw NotFound("User not found");
+  
+  const profileUser = await UserAPI.findUserById(authUser._id.toString());
 
   const match = await bcrypt.compare(password, authUser.hashedPassword);
   if (!match) throw Unauthorized("Invalid email or password");
@@ -169,7 +177,7 @@ export const loginUser = async (email: string, password: string) => {
   return {
     accessToken: generateAccessToken(buildJwtPayload(authUser)),
     refreshToken: generateRefreshToken(buildJwtPayload(authUser)),
-    safeUser: buildSafeUser(profileUser),
+    safeUser: profileUser,
   };
 };
 

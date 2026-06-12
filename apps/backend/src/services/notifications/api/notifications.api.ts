@@ -1,4 +1,5 @@
-import { createInboxNotification } from "../../notifications/services/inboxNotification.service.js";
+import { InboxNotificationModel } from "../models/inboxNotification.model.js";
+import { createInboxNotification } from "../services/inboxNotification.service.js";
 
 export const notifyMention = async (
   userId: string,
@@ -41,4 +42,13 @@ export const notifyGroupAdded = async (
     type: "group_added",
     groupId,
   });
+};
+
+export const countUnread = async (userId: string) => {
+  const count = await InboxNotificationModel.countDocuments({
+    user: userId,
+    read: false,
+  });
+
+  return count;
 };

@@ -1,5 +1,4 @@
 import mongoose, { FilterQuery, Types } from "mongoose";
-import { Chat } from "../../chat/models/chat.model.js";
 import { IMessage, Message } from "../models/message.model.js";
 import {
   BadRequest,
@@ -7,18 +6,22 @@ import {
   NotFound,
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
+
 import { extractFirstUrl } from "../utils/linkPreview.js";
-import { ChatUserState } from "../../chat/models/chatUserState.model.js";
 import { emitMessageRequestSent } from "../../../socket/emitters/messageRequest.emitters.js";
 import { MessageRequestModel } from "../models/messageRequest.model.js";
 import { MessageFile } from "../types/message.types.js";
 import { deleteFile } from "../../media/s3.service.js";
-import { canInteract } from "../gateways/social.gateway.js";
-import { canSeeReadReceipts } from "../gateways/user.gateway.js";
+
+import * as UserAPI from "../../user/api/user.api.js";
+import * as SocialAPI from "../../social/api/social.api.js";
+import * as NotificationAPI from "../../notifications/api/notifications.api.js";
+import * as ChatAPI from "../../chat/api/chat.api.js";
 import {
-  notifyMention,
-  notifyReply,
-} from "../gateways/notification.gateway.js";
+  getCachedUnreadCountOfUser,
+  incrementUnreadCount,
+  setCachedUnreadCountOfUser,
+} from "../cache/messages.cache.js";
 
 /** Message service helpers for message delivery, search, reactions, and read state. */
 
@@ -40,11 +43,6 @@ const resolveMentions = (
     .map((id) => new mongoose.Types.ObjectId(id));
 };
 
-/** Returns the stored chat state for a user, if one exists. */
-export const getChatUserState = async (userId: string, chatId: string) => {
-  return ChatUserState.findOne({ userId, chatId });
-};
-
 /** Returns paginated messages for a chat, respecting per-user clear history. */
 export const getAllMessagesFunction = async (
   chatId: string,
@@ -54,16 +52,13 @@ export const getAllMessagesFunction = async (
 ) => {
   if (!chatId) throw BadRequest("ChatId is required");
 
-  const chat = await Chat.findOne({
-    _id: chatId,
-    members: userId,
-  });
+  const chat = await ChatAPI.findChat(chatId, userId);
 
   if (!chat) {
     throw Forbidden("Not allowed to access this chat");
   }
 
-  const state = await getChatUserState(userId, chatId);
+  const state = await ChatAPI.getChatUserState(userId, chatId);
   const skip = (page - 1) * limit;
 
   const filter: FilterQuery<IMessage> = { chat: chatId };
@@ -101,8 +96,11 @@ export const getAllMessagesFunction = async (
 export const getUnreadCountsFunction = async (userId: string) => {
   if (!userId) throw Unauthorized();
 
+  const unread = await getCachedUnreadCountOfUser(userId);
+  if (unread) return unread;
+
   // Collect every chat first so unread counts can be keyed by chat ID.
-  const userChats = await Chat.find({ members: userId }).select("_id");
+  const userChats = await ChatAPI.findUserChatIds(userId);
   const chatIds = userChats.map((chat) => chat._id);
 
   if (chatIds.length === 0) return {};
@@ -179,6 +177,8 @@ export const getUnreadCountsFunction = async (userId: string) => {
     unreadData[row._id.toString()] = row.count;
   }
 
+  await setCachedUnreadCountOfUser(userId, unreadData);
+
   return unreadData;
 };
 
@@ -197,11 +197,7 @@ export const sendMessageFunction = async (
     throw BadRequest("Message must contain content or file");
   }
 
-  const chat = await Chat.findOne({
-    _id: chatId,
-    members: senderId,
-  });
-
+  const chat = await ChatAPI.findChat(chatId, senderId);
   if (!chat) throw Forbidden("Not allowed to send message in this chat");
 
   if (!chat.isGroup) {
@@ -210,7 +206,7 @@ export const sendMessageFunction = async (
       .find((id) => id !== senderId);
 
     if (otherMember) {
-      const allowed = await canInteract(senderId, otherMember);
+      const allowed = await SocialAPI.blockExists(senderId, otherMember);
 
       if (!allowed) {
         throw Forbidden("Cannot send message to this user");
@@ -242,7 +238,7 @@ export const sendMessageFunction = async (
       const replyUserId = repliedMessage.sender.toString();
 
       if (replyUserId !== senderId) {
-        await notifyReply(
+        await NotificationAPI.notifyReply(
           replyUserId,
           senderId,
           chatId,
@@ -265,8 +261,7 @@ export const sendMessageFunction = async (
   ]);
 
   // Persist the latest message pointer before unread counts are recalculated.
-  chat.lastMessage = message._id;
-  await chat.save();
+  await ChatAPI.updateLastMessage(chatId, message._id.toString());
 
   if (
     !chat.isGroup &&
@@ -295,7 +290,6 @@ export const sendMessageFunction = async (
           { path: "from", select: "username displayName profilePicture" },
           { path: "to", select: "username displayName profilePicture" },
         ]);
-
         emitMessageRequestSent(senderId, toUserId, populatedRequest);
       }
     }
@@ -307,35 +301,25 @@ export const sendMessageFunction = async (
     [...uniqueMentions]
       .filter((id) => id !== senderId && memberIds.includes(id))
       .map((userId) =>
-        notifyMention(userId, senderId, chatId, message._id.toString()),
+        NotificationAPI.notifyMention(
+          userId,
+          senderId,
+          chatId,
+          message._id.toString(),
+        ),
       ),
   );
 
-  const states = await ChatUserState.find({
-    chatId,
-    userId: { $in: memberIds },
-  });
-
-  const stateMap = new Map(
-    states.map((state) => [state.userId.toString(), state]),
-  );
   const unreadCounts: Record<string, number> = {};
 
-  for (const member of memberIds) {
-    if (member === senderId) continue;
-
-    const state = stateMap.get(member);
-    const boundary = state?.lastReadAt ?? state?.clearedAt ?? new Date(0);
-
-    const count = await Message.countDocuments({
-      chat: chatId,
-      deleted: false,
-      sender: { $ne: member },
-      createdAt: { $gt: boundary },
+  const updates = memberIds
+    .filter((member) => member !== senderId)
+    .map(async (member) => {
+      const count = await incrementUnreadCount(member, chatId);
+      unreadCounts[member] = count;
     });
 
-    unreadCounts[member] = count;
-  }
+  await Promise.all(updates);
 
   return {
     populated,
@@ -368,19 +352,13 @@ export const forwardMessageFunction = async (
   const original = await Message.findById(messageId);
   if (!original) throw NotFound("Original message not found");
 
-  const originChat = await Chat.findOne({
-    _id: original.chat,
-    members: senderId,
-  });
+  const originChat = await ChatAPI.findChat(original.chat.toString(), senderId);
 
   if (!originChat) {
     throw Forbidden("Not allowed to forward this message");
   }
 
-  const chats = await Chat.find({
-    _id: { $in: targetChatIds },
-    members: senderId,
-  });
+  const chats = await ChatAPI.findChats(targetChatIds, senderId);
 
   const results = (
     await Promise.all(
@@ -391,7 +369,7 @@ export const forwardMessageFunction = async (
             .find((id) => id !== senderId);
 
           if (otherMember) {
-            const allowed = await canInteract(senderId, otherMember);
+            const allowed = await SocialAPI.blockExists(senderId, otherMember);
 
             if (!allowed) {
               return null;
@@ -413,8 +391,10 @@ export const forwardMessageFunction = async (
           linkPreview: original.linkPreview || null,
         });
 
-        chat.lastMessage = forwardedMessage._id;
-        await chat.save();
+        await ChatAPI.updateLastMessage(
+          chat._id.toString(),
+          forwardedMessage._id.toString(),
+        );
 
         const populated = await forwardedMessage.populate([
           { path: "sender", select: "displayName username profilePicture" },
@@ -430,31 +410,16 @@ export const forwardMessageFunction = async (
 
         const memberIds = chat.members.map((member) => member.toString());
 
-        const states = await ChatUserState.find({
-          chatId: chat._id,
-          userId: { $in: memberIds },
-        });
-
-        const stateMap = new Map(
-          states.map((state) => [state.userId.toString(), state]),
-        );
         const unreadCounts: Record<string, number> = {};
 
-        for (const member of memberIds) {
-          if (member === senderId) continue;
-
-          const state = stateMap.get(member);
-          const boundary = state?.lastReadAt || state?.clearedAt || new Date(0);
-
-          const count = await Message.countDocuments({
-            chat: chat._id,
-            deleted: false,
-            sender: { $ne: member },
-            createdAt: { $gt: boundary },
+        const updates = memberIds
+          .filter((member) => member !== senderId)
+          .map(async (member) => {
+            const count = await incrementUnreadCount(member, chat._id.toString());
+            unreadCounts[member] = count;
           });
 
-          unreadCounts[member] = count;
-        }
+        await Promise.all(updates);
 
         return {
           chatId: chat._id,
@@ -481,7 +446,7 @@ export const toggleReactionFunction = async (
   const message = await Message.findById(messageId);
   if (!message) throw NotFound("Message not found");
 
-  const chat = await Chat.findById(message.chat);
+  const chat = await ChatAPI.findChatById(message.chat.toString());
   if (!chat) throw Forbidden("Chat does not exist");
 
   if (!chat.isGroup) {
@@ -490,7 +455,7 @@ export const toggleReactionFunction = async (
       .find((id) => id !== userId);
 
     if (otherMember) {
-      const allowed = await canInteract(userId, otherMember);
+      const allowed = await SocialAPI.blockExists(userId, otherMember);
 
       if (!allowed) {
         throw Forbidden("Cannot interact in this chat");
@@ -530,36 +495,6 @@ export const toggleReactionFunction = async (
   };
 };
 
-/** Marks a chat as read for a user by advancing their read boundary. */
-export const markChatAsReadFunction = async (
-  userId: string,
-  chatId: string,
-) => {
-  if (!userId) throw Unauthorized();
-  if (!chatId) throw BadRequest("ChatId is required");
-
-  const chat = await Chat.findOne({ _id: chatId, members: userId });
-  if (!chat) throw Forbidden("Not allowed");
-
-  const latestMessage = await Message.findOne({
-    chat: chatId,
-    deleted: false,
-  })
-    .sort({ createdAt: -1 })
-    .select("createdAt");
-
-  if (!latestMessage) {
-    return { unreadCount: 0 };
-  }
-
-  await ChatUserState.findOneAndUpdate(
-    { userId, chatId },
-    { lastReadAt: latestMessage.createdAt },
-    { upsert: true },
-  );
-
-  return { unreadCount: 0 };
-};
 
 /** Marks incoming messages as seen, honoring the user's read receipt preference. */
 export const markMessagesAsSeenFunction = async (
@@ -569,11 +504,11 @@ export const markMessagesAsSeenFunction = async (
   if (!userId) throw Unauthorized();
   if (!chatId) throw BadRequest("ChatId is required");
 
-  const chat = await Chat.findOne({ _id: chatId, members: userId });
+  const chat = await ChatAPI.findChat(chatId, userId);
   if (!chat) throw Forbidden("Not allowed");
 
   // Read receipt privacy only affects outward seen status, not unread tracking.
-  const canSendReadReceipt = await canSeeReadReceipts(userId);
+  const privacy = await UserAPI.getUserPrivacy(userId);
 
   const latestIncomingMessage = await Message.findOne({
     chat: chatId,
@@ -585,15 +520,15 @@ export const markMessagesAsSeenFunction = async (
 
   // Always advance lastReadAt so unread counts clear consistently.
   if (latestIncomingMessage) {
-    await ChatUserState.findOneAndUpdate(
-      { userId, chatId },
-      { lastReadAt: latestIncomingMessage.createdAt },
-      { upsert: true },
+    await ChatAPI.updateChatState(
+      userId,
+      chatId,
+      latestIncomingMessage.createdAt,
     );
   }
 
   // When read receipts are off, keep seen state private but still clear unread counts.
-  if (canSendReadReceipt) {
+  if (privacy.readReceipts) {
     await Message.updateMany(
       { chat: chatId, sender: { $ne: userId }, seenBy: { $ne: userId } },
       { $addToSet: { seenBy: userId } },
@@ -614,7 +549,7 @@ export const markMessagesAsSeenFunction = async (
   return {
     success: true,
     modifiedCount: updated,
-    emitSeen: canSendReadReceipt,
+    emitSeen: privacy.readReceipts,
   };
 };
 
@@ -698,14 +633,11 @@ export const searchMessagesFunction = async (
   if (!chatId) throw BadRequest("ChatId is required");
   if (!userId) throw Unauthorized();
 
-  const chat = await Chat.findOne({
-    _id: chatId,
-    members: userId,
-  });
+  const chat = await ChatAPI.findChat(chatId, userId);
 
   if (!chat) throw Forbidden("Not allowed to search this chat");
 
-  const state = await getChatUserState(userId, chatId);
+  const state = await ChatAPI.getChatUserState(userId, chatId);
   const skip = (page - 1) * limit;
 
   const filter: FilterQuery<IMessage> = { chat: chatId, deleted: false };
@@ -787,10 +719,10 @@ export const getMessageContextFunction = async (
   const target = await Message.findById(messageId).populate(populateConfig);
   if (!target) throw NotFound("Message not found");
 
-  const chat = await Chat.findOne({ _id: target.chat, members: userId });
+  const chat = await ChatAPI.findChat(target.chat.toString(), userId);
   if (!chat) throw Forbidden("Not allowed");
 
-  const state = await getChatUserState(userId, target.chat.toString());
+  const state = await ChatAPI.getChatUserState(userId, target.chat.toString());
 
   if (state?.clearedAt && target.createdAt <= state.clearedAt) {
     throw Forbidden("Message no longer accessible");
@@ -836,11 +768,11 @@ export const getNewerMessagesFunction = async (
   userId: string,
   limit: number = 20,
 ) => {
-  const chat = await Chat.findOne({ _id: chatId, members: userId });
+  const chat = await ChatAPI.findChat(chatId, userId);
   if (!chat) throw Forbidden("Not allowed");
 
   const afterDate = new Date(after);
-  const state = await getChatUserState(userId, chatId);
+  const state = await ChatAPI.getChatUserState(userId, chatId);
 
   const filter: FilterQuery<IMessage> = {
     chat: chatId,
@@ -884,13 +816,11 @@ export const globalSearchMessagesFunction = async (
   if (!query?.trim()) throw BadRequest("Query is required");
 
   // Build per-chat visibility rules so cleared history stays excluded.
-  const userChats = await Chat.find({ members: userId }).select("_id");
-  const chatIds = userChats.map((chat) => chat._id);
+  const userChats = await ChatAPI.findUserChatIds(userId);
+  const chatIds = userChats.map((chat) => chat._id.toString());
 
-  const states = await ChatUserState.find({
-    userId,
-    chatId: { $in: chatIds },
-  });
+  const states = await ChatAPI.getChatStatesForUser(userId, chatIds);
+
   const stateMap = new Map(
     states.map((state) => [state.chatId.toString(), state]),
   );

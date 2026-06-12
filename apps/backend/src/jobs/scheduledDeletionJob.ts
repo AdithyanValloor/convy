@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { cleanupUserData } from "./helpers/cleanupUserData.js";
-import { getExpiredDeletionUsers } from "../services/social/helper/userDeletion.helper.js";
+import { getExpiredDeletionUsers } from "../services/user/helper/userDeletion.helper.js";
 
 /**
  * Runs once a day to finalize accounts whose scheduled deletion time has passed.

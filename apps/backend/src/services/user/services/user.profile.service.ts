@@ -7,6 +7,12 @@ import {
 } from "../../../utils/errors/httpErrors.js";
 import { deleteFile, generateDownloadUrl } from "../../media/s3.service.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
+import {
+  getCachedUser,
+  invalidateUserCache,
+  setCachedUser,
+} from "../cache/user.cache.js";
+import { findUserById } from "../api/user.api.js";
 
 /** Input shape for allowed profile field updates. */
 interface UpdateProfileInput {
@@ -19,19 +25,13 @@ interface UpdateProfileInput {
 
 /** User profile service helpers for account-facing profile operations. */
 
-/** Returns the authenticated user's profile without the password field. */
+/** Returns the authenticated user's profile. */
 export const getProfileByUserId = async (userId: string) => {
   if (!userId) {
     throw Unauthorized("No user info found");
   }
 
-  const profile = await UserModel.findById(userId).select("-password");
-
-  if (!profile) {
-    throw NotFound("User not found");
-  }
-
-  return profile;
+  return findUserById(userId);
 };
 
 /** Updates only the editable profile fields provided by the caller. */
@@ -48,17 +48,12 @@ export const updateProfileByUserId = async (
   // Apply only provided fields to avoid accidental overwrites.
   if (updates.displayName !== undefined)
     profile.displayName = updates.displayName;
-
-  if (updates.pronouns !== undefined)
-    profile.pronouns = updates.pronouns;
-
-  if (updates.bio !== undefined)
-    profile.bio = updates.bio;
-
-  if (updates.status !== undefined)
-    profile.status = updates.status;
+  if (updates.pronouns !== undefined) profile.pronouns = updates.pronouns;
+  if (updates.bio !== undefined) profile.bio = updates.bio;
+  if (updates.status !== undefined) profile.status = updates.status;
 
   await profile.save();
+  await invalidateUserCache(userId);
 
   return profile;
 };
@@ -76,13 +71,12 @@ export const updateProfilePictureByUserId = async (
     await deleteFile(user.profilePicture.key);
   }
 
-  const url = await generateDownloadUrl(key);
-
   user.profilePicture = {
     key: key,
   };
 
   await user.save();
+  await invalidateUserCache(userId);
 
   return {
     profilePicture: user.profilePicture,
@@ -106,7 +100,6 @@ export const getProfilePictureDownloadUrlService = async (
 
   return url;
 };
-
 
 /** Updates a user's username after server-side validation and uniqueness checks. */
 export const updateUsername = async (userId: string, newUsername: string) => {
@@ -133,9 +126,11 @@ export const updateUsername = async (userId: string, newUsername: string) => {
     userId,
     { username: newUsername },
     { new: true },
-  ).select("-password");
+  );
 
   if (!user) throw NotFound("User not found");
+
+  await invalidateUserCache(userId)
 
   return user;
 };

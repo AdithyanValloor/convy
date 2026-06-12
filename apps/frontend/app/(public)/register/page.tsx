@@ -84,7 +84,7 @@ export default function RegisterPage() {
     setSendingOtp(true);
     setOtpError("");
     try {
-      await api.post("/user/send-otp", { email });
+      await api.post("/auth/send-otp", { email });
       setOtpSent(true);
       setStep("otp");
       setCountdown(60);
@@ -147,10 +147,10 @@ export default function RegisterPage() {
 
     try {
       // 1. Verify OTP
-      await api.post("/user/verify-otp", { email, otp: otpValue });
+      await api.post("/auth/verify-otp", { email, otp: otpValue });
 
       // 2. Register
-      await api.post("/user/register", {
+      await api.post("/auth/register", {
         displayName,
         username,
         email,
@@ -187,7 +187,7 @@ export default function RegisterPage() {
     setSendingOtp(true);
     setOtpError("");
     try {
-      await api.post("/user/send-otp", { email });
+      await api.post("/auth/send-otp", { email });
       setCountdown(60);
       setOtp(Array(OTP_LENGTH).fill(""));
       otpRefs.current[0]?.focus();
@@ -333,6 +333,7 @@ export default function RegisterPage() {
               onClick={() => {
                 setStep("form");
                 setOtpError("");
+                setOtp(Array(OTP_LENGTH).fill(""));
                 setError("");
               }}
               className="absolute top-5 left-5 text-base-content/50 hover:text-base-content transition text-sm flex items-center gap-1"

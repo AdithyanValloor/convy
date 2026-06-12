@@ -43,8 +43,8 @@ export const acceptMessageRequestController = async (
     if(!requestId) throw Unauthorized();
 
     const result = await service.acceptMessageRequest(requestId, userId);
-
-    const [userA, userB] = result.chat.members as any[];
+    
+    const [userA, userB] = result.chat?.members as any[];
 
     emitMessageRequestAccepted(userA._id.toString(), userB._id.toString(), {
       requestId,

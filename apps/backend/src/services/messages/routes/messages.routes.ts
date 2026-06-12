@@ -4,7 +4,6 @@ import {
   sendMessage,
   editMessage,
   deleteMessage,
-  markChatAsRead,
   getUnreadCounts,
   markMessagesAsSeen,
   toggleReaction,
@@ -15,6 +14,7 @@ import {
   globalSearchMessages,
 } from "../controllers/message.controller.js";
 import { protect } from "../../auth/middleware/auth.middleware.js";
+import { messageRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
@@ -22,7 +22,6 @@ const router = Router();
 
 // Message status and search routes.
 router.get("/unread", protect, getUnreadCounts);
-router.post("/mark-read/:chatId", protect, markChatAsRead);
 router.post("/mark-seen/:chatId", protect, markMessagesAsSeen);
 router.get("/search/global", protect, globalSearchMessages);
 router.get("/search", protect, searchMessages);
@@ -30,7 +29,7 @@ router.get("/context/:messageId", protect, getMessageContext);
 
 // Message CRUD and chat actions.
 router.get("/:chatId", protect, getAllMessages);
-router.post("/", protect, sendMessage);
+router.post("/", protect, messageRateLimiter, sendMessage);
 router.post("/forward", protect, forwardMessage);
 router.put("/:messageId", protect, editMessage);
 router.post("/react/:messageId", protect, toggleReaction);

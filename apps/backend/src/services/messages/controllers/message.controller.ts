@@ -14,7 +14,6 @@ import {
   getNewerMessagesFunction,
   getUnreadCountsFunction,
   globalSearchMessagesFunction,
-  markChatAsReadFunction,
   markMessagesAsSeenFunction,
   searchMessagesFunction,
   sendMessageFunction,
@@ -33,8 +32,7 @@ import {
 } from "../../../socket/emitters/message.emmitter.js";
 import { fetchLinkPreview } from "../utils/linkPreview.js";
 import { Message } from "../models/message.model.js";
-import { Chat } from "../../chat/models/chat.model.js";
-
+import * as ChatAPI from "../../chat/api/chat.api.js"
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /** Message controller handlers for authenticated message actions. */
@@ -46,6 +44,8 @@ export const getAllMessages = async (
 ) => {
   try {
     const userId = req.user?.id;
+    if(!userId) throw Unauthorized();
+    
     const { chatId } = req.params as Record<string, string>;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
@@ -93,7 +93,7 @@ export const sendMessage = async (
         throw BadRequest("Invalid file key");
       }
 
-      const chat = await Chat.findById(chatIdFromKey);
+      const chat = await ChatAPI.findChatById(chatId);
 
       if (!chat || !chat.members.some((id) => id.toString() === senderId)) {
         throw Unauthorized("Not allowed to send file in this chat");
@@ -185,47 +185,6 @@ export const sendMessage = async (
 };
 
 /** Forwards a message to one or more chats the sender can access. */
-// export const forwardMessage = async (
-//   req: Request<{}, {}, ForwardMessageBody>,
-//   res: Response,
-//   next: NextFunction,
-// ) => {
-//   try {
-//     const senderId = req.user?.id;
-//     if (!senderId) throw Unauthorized();
-
-//     const { messageId, targetChatIds } = req.body;
-
-//     if (
-//       !messageId ||
-//       !Array.isArray(targetChatIds) ||
-//       targetChatIds.length === 0
-//     ) {
-//       throw BadRequest("MessageId and targeted chatIds are required");
-//     }
-
-//     const results = await forwardMessageFunction(
-//       messageId,
-//       targetChatIds,
-//       senderId,
-//     );
-
-//     results.forEach(({ chatId, message, chatMembers, unreadCounts }) => {
-//       emitNewMessage(chatId, toMessageSocketPayload(message));
-
-//       chatMembers.forEach((memberId) => {
-//         if (memberId !== senderId) {
-//           emitUnreadUpdate(memberId, chatId, unreadCounts[memberId]);
-//         }
-//       });
-//     });
-
-//     res.status(201).json(results.map((result) => result.message));
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
 export const forwardMessage = async (
   req: Request<{}, {}, ForwardMessageBody>,
   res: Response,
@@ -308,29 +267,6 @@ export const getUnreadCounts = async (
     const unread = await getUnreadCountsFunction(userId);
 
     res.status(200).json({ unread });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/** Marks a chat as read and resets its unread counter for the current user. */
-export const markChatAsRead = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
-
-    const { unreadCount } = await markChatAsReadFunction(
-      userId,
-      req.params.chatId as string,
-    );
-
-    emitUnreadUpdate(userId, req.params.chatId as string, unreadCount);
-
-    res.status(200).json({ success: true });
   } catch (err) {
     next(err);
   }

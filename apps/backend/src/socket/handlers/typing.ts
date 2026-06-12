@@ -1,7 +1,7 @@
 /** Typing indicator socket handlers. */
 
 import type { Socket } from "socket.io";
-import { UserModel } from "../../services/user/models/user.model.js";
+import * as UserAPI from  "../../services/user/api/user.api.js";
 
 export const registerTypingHandlers = (socket: Socket): void => {
   let typingEnabled: boolean | null = null;
@@ -10,8 +10,8 @@ export const registerTypingHandlers = (socket: Socket): void => {
     if (typingEnabled !== null) return typingEnabled;
 
     const userId = socket.data.userId;
-    const user = await UserModel.findById(userId).select("privacy");
-    typingEnabled = user?.privacy?.typingIndicators ?? true;
+    const privacy = await UserAPI.getUserPrivacy(userId);
+    typingEnabled = privacy.typingIndicators ?? true;
     return typingEnabled;
   };
 

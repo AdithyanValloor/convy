@@ -8,9 +8,10 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 import { MessageRequestModel } from "../models/messageRequest.model.js";
-import { areFriends } from "../../social/utils/social.utils.js";
-import { canInteract } from "../gateways/social.gateway.js";
-import { findUserById } from "../../social/gateways/user.gateway.js";
+
+import * as UserAPI from "../../user/api/user.api.js";
+import * as SocialAPI from "../../social/api/social.api.js";
+import * as ChatAPI from "../../chat/api/chat.api.js";
 
 /** Message request helpers for inbox retrieval and request review actions. */
 
@@ -32,18 +33,16 @@ export const sendMessageRequest = async (
 ) => {
   if (!firstMessage) throw BadRequest("Message required");
 
-  const toUser = await findUserById(toUserId)
-
-  if (!toUser) throw NotFound("User not found");
+  const toUser = await UserAPI.findUserById(toUserId);
 
   if (toUser._id.toString() === fromUserId)
     throw BadRequest("Cannot message yourself");
 
-  const allowed = await canInteract(toUserId, fromUserId)
+  const allowed = await SocialAPI.blockExists(toUserId, fromUserId);
 
   if (!allowed) throw Forbidden("Cannot message this user");
 
-  const friends = await areFriends(fromUserId, toUser._id.toString());
+  const friends = await SocialAPI.areFriends(fromUserId, toUser._id.toString());
 
   if (friends) throw BadRequest("Users are already friends");
 
@@ -92,26 +91,22 @@ export const acceptMessageRequest = async (
 
   if (request.to.toString() !== userId) throw Forbidden("Not authorized");
 
-  const chat = await Chat.findOne({
-    isGroup: false,
-    members: { $all: [request.from, request.to], $size: 2 },
-    requestPending: true,
-  });
+  const chat = await ChatAPI.findPendingDirectChat(
+    request.from.toString(),
+    request.to.toString(),
+  );
 
   if (!chat) throw NotFound("Chat not found");
 
-  chat.requestPending = false;
-  await chat.save();
-
-  const populated = await chat.populate<{ members: IUser[] }>(
-    "members",
-    "-password",
+  const newChat = await ChatAPI.acceptPendingDirectChat(
+    request.from.toString(),
+    request.to.toString(),
   );
 
   request.status = "accepted";
   await request.save();
 
-  return { chat: populated };
+  return { chat: newChat };
 };
 
 /** Rejects a pending request and removes its temporary chat history. */
@@ -125,12 +120,11 @@ export const rejectMessageRequest = async (
 
   if (request.to.toString() !== userId) throw Forbidden("Not authorized");
 
-  const chat = await Chat.findOneAndDelete({
-    isGroup: false,
-    members: { $all: [request.from, request.to], $size: 2 },
-    requestPending: true,
-    requestInitiator: request.from,
-  });
+  const chat = await ChatAPI.deletePendingDirectChat(
+    request.from.toString(),
+    request.to.toString(),
+    request.from.toString(),
+  );
 
   if (!chat) throw NotFound("Chat not found");
 

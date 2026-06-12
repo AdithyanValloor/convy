@@ -78,7 +78,7 @@ const getCurrentUserId = (): string | undefined =>
 export const joinGroupRoom = (chatId: string) => {
   const userId = getCurrentUserId();
   if (!userId || !socket) return;
-  socket.emit("joinGroup", { chatId, userId });
+  socket.emit("joinGroup", { chatId });
 };
 
 /**
@@ -110,15 +110,15 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
 
       if (userId) {
         store.dispatch(updatePresence({ userId, status: "online" }));
-        socket?.emit("join", userId);
       }
+
       allChats.forEach((chatId) => joinGroupRoom(chatId));
 
       if (heartbeatInterval) clearInterval(heartbeatInterval);
 
       heartbeatInterval = setInterval(() => {
         if (socket?.connected && userId) {
-          socket.emit("heartbeat", { userId });
+          socket.emit("heartbeat");
         }
       }, 10_000);
     });
@@ -538,7 +538,6 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
     });
 
     socket.on("reconnect", () => {
-      if (userId) socket?.emit("join", userId);
       allChats.forEach((chatId) => joinGroupRoom(chatId));
     });
   } else if (!socket.connected) {

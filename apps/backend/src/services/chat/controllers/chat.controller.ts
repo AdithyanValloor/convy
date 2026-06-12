@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import { Response, NextFunction, Request } from "express";
 import {
   accessChatFunction,
   clearChatForUser,
@@ -18,13 +18,17 @@ import {
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
 import { Chat } from "../models/chat.model.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
+import { emitUnreadUpdate } from "../../../socket/emitters/message.emmitter.js";
+
+interface ChatParams {
+  chatId: string;
+}
 
 /** Chat controller handlers for authenticated chat actions. */
 
 /** Returns chats visible to the current user. */
 export const fetchChats = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -45,7 +49,7 @@ export const fetchChats = async (
 
 /** Returns an existing direct chat or creates one when allowed. */
 export const accessChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -71,13 +75,13 @@ export const accessChat = async (
 
 /** Toggles the pinned state for a chat owned by the current user. */
 export const togglePinChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
 
     if (!userId) {
       throw Unauthorized();
@@ -100,13 +104,13 @@ export const togglePinChat = async (
 
 /** Toggles the archived state for a chat owned by the current user. */
 export const toggleArchiveChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
 
     if (!userId) {
       throw Unauthorized();
@@ -129,13 +133,13 @@ export const toggleArchiveChat = async (
 
 /** Marks a chat as unread for the current user. */
 export const markChatAsUnread = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
 
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
@@ -150,20 +154,22 @@ export const markChatAsUnread = async (
 
 /** Marks a chat as read for the current user. */
 export const markChatAsRead = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
-): Promise<void> => {
+) => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
-
     if (!userId) throw Unauthorized();
-    if (!chatId) throw BadRequest("ChatId is required");
 
-    const result = await markChatAsReadFunction(userId, chatId);
+    const { unreadCount } = await markChatAsReadFunction(
+      userId,
+      req.params.chatId as string,
+    );
 
-    res.status(200).json(result);
+    emitUnreadUpdate(userId, req.params.chatId as string, unreadCount);
+
+    res.status(200).json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -171,13 +177,13 @@ export const markChatAsRead = async (
 
 /** Clears chat history from the current user's perspective. */
 export const clearChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
 
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
@@ -192,13 +198,13 @@ export const clearChat = async (
 
 /** Removes a chat from the current user's chat list. */
 export const deleteChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
 
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
@@ -215,13 +221,13 @@ const VALID_DURATIONS: MuteDuration[] = ["1h", "8h", "24h", "1w", "forever"];
 
 /** Mutes a chat for a supported duration. */
 export const muteChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
     const { duration } = req.body as { duration?: MuteDuration };
 
     if (!userId) throw Unauthorized();
@@ -243,13 +249,13 @@ export const muteChat = async (
 
 /** Removes any active mute for a chat. */
 export const unmuteChat = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { chatId } = req.params;
+    const { chatId } = req.params as { chatId: string };
 
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");

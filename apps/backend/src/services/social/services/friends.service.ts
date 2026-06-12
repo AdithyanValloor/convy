@@ -12,19 +12,24 @@ import {
   emitNotificationRemoved,
   emitUnreadNotificationCount,
 } from "../../../socket/emitters/notification.emitters.js";
-import { InboxNotificationModel } from "../../notifications/models/inboxNotification.model.js";
 
-import { BlockModel } from "../models/block.model.js";
 import { FriendshipModel } from "../models/friends.model.js";
 import { FriendRequestModel } from "../models/request.model.js";
 import {
-  areFriends,
+
+  areFriendsCheck,
   getFriendIds,
   normalizeFriendship,
 } from "../utils/social.utils.js";
 import mongoose from "mongoose";
-import { PopulatedFriendRequest, toFriendRequestSocketPayload } from "../utils/normalizeFriendRequest.js";
-import { findUserById, findUserByName, getFriends } from "../gateways/user.gateway.js";
+import {
+  PopulatedFriendRequest,
+  toFriendRequestSocketPayload,
+} from "../utils/normalizeFriendRequest.js";
+import * as ChatAPI from "../../chat/api/chat.api.js";
+import * as SocialAPI from "../api/social.api.js";
+import * as UserAPI from "../../user/api/user.api.js";
+import * as NotificationAPI from "../../notifications/api/notifications.api.js";
 
 /** Friend service helpers for friendship and request workflows. */
 
@@ -33,9 +38,8 @@ import { findUserById, findUserByName, getFriends } from "../gateways/user.gatew
 //TODO pagination!!!!!
 export const getFriendList = async (userId: string) => {
   if (!userId) throw Unauthorized();
-
   const friendIds = await getFriendIds(userId);
-  const friends = await getFriends(friendIds)
+  const friends = await UserAPI.fetchUsers(friendIds);
   return friends;
 };
 
@@ -65,10 +69,10 @@ export const sendFriendRequest = async (
     throw BadRequest("Invalid request parameters");
   }
 
-  const fromUser = await findUserById(fromUserId)
+  const fromUser = await UserAPI.findUserById(fromUserId);
   if (!fromUser) throw Unauthorized();
 
-  const toUser = await findUserByName(toUsername)
+  const toUser = await UserAPI.findUserByName(toUsername);
   if (!toUser) throw NotFound("User not found");
 
   // Self-check first, since it is the most obvious validation failure.
@@ -76,15 +80,10 @@ export const sendFriendRequest = async (
     throw BadRequest("Cannot send friend request to yourself");
   }
 
-  if (await areFriends(fromUser.id, toUser.id))
+  if (await areFriendsCheck(fromUser.id, toUser.id))
     throw BadRequest("Already friends");
 
-  const blockExists = await BlockModel.exists({
-    $or: [
-      { blocker: fromUserId, blocked: toUser.id },
-      { blocker: toUser.id, blocked: fromUserId },
-    ],
-  });
+  const blockExists = await SocialAPI.blockExists(fromUserId, toUser.id);
 
   if (blockExists) {
     throw BadRequest("Cannot send friend request to this user");
@@ -173,7 +172,7 @@ export const acceptFriendRequest = async (
   const fromUserId = request.from.toString();
   const toUserId = request.to.toString();
 
-  if (await areFriends(fromUserId, toUserId)) {
+  if (await areFriendsCheck(fromUserId, toUserId)) {
     throw BadRequest("Users are already friends");
   }
 
@@ -198,6 +197,8 @@ export const acceptFriendRequest = async (
   } finally {
     await session.endSession();
   }
+
+  await ChatAPI.ensureChatExists(fromUserId, toUserId);
 
   await createInboxNotification({
     userId: fromUserId,
@@ -248,7 +249,7 @@ export const rejectFriendRequest = async (
 
 /** Removes an existing friendship from both users. */
 export const removeFriend = async (userId: string, friendId: string) => {
-  if (!(await areFriends(userId, friendId)))
+  if (!(await areFriendsCheck(userId, friendId)))
     throw BadRequest("Users are not friends");
   const [user1, user2] = normalizeFriendship(userId, friendId);
 
@@ -284,10 +285,8 @@ export const cancelFriendRequest = async (
   if (deleted) {
     emitNotificationRemoved(toUserId, reqId);
 
-    const freshCount = await InboxNotificationModel.countDocuments({
-      user: deleted.userId,
-      read: false,
-    });
+    const freshCount = await NotificationAPI.countUnread(deleted.userId);
+
     emitUnreadNotificationCount(deleted.userId, freshCount);
   }
 

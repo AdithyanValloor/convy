@@ -1,5 +1,6 @@
 import { UserModel } from "../models/user.model.js";
 import { NotFound } from "../../../utils/errors/httpErrors.js";
+import { getCachedUser, invalidateUserCache, setCachedUser } from "../cache/user.cache.js";
 
 export interface NotificationSettings {
   allNotifications: boolean;
@@ -15,9 +16,16 @@ export interface NotificationSettings {
 
 /** Returns the current user's notification settings. */
 export const getNotificationSettings = async (userId: string) => {
-  const user = await UserModel.findById(userId).select("notificationSettings");
+  const cached = await getCachedUser(userId);
 
+  if (cached) {
+    return cached.notificationSettings;
+  }
+
+  const user = await UserModel.findById(userId).lean();
   if (!user) throw NotFound("User not found");
+
+  await setCachedUser(userId, user);
 
   return user.notificationSettings;
 };
@@ -54,6 +62,7 @@ export const updateNotificationSettings = async (
     user.notificationSettings.groupAdded = updates.groupAdded;
 
   await user.save();
+  await invalidateUserCache(userId);
 
   return user.notificationSettings;
 };

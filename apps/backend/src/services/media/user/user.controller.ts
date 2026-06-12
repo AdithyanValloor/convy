@@ -1,4 +1,4 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Response, Request } from "express";
 import {
   BadRequest,
   NotFound,
@@ -6,8 +6,7 @@ import {
 } from "../../../utils/errors/httpErrors.js";
 import { deleteFile, generateUploadUrl } from "../s3.service.js";
 import { PROFILE_KEY_REGEX } from "../../user/constants/regex.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
-import { findUserById } from "../gateways/user.gateway.js";
+import * as UserAPI from "../../user/api/user.api.js"
 
 const MAX_PROFILE_SIZE = 2 * 1024 * 1024;
 
@@ -15,7 +14,7 @@ const ALLOWED_PROFILE_TYPES = new Set(["image/png", "image/jpeg"]);
 
 /** Returns a signed upload URL for a user's profile picture. */
 export const uploadProfilePicture = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -55,7 +54,7 @@ export const uploadProfilePicture = async (
 
 /** Deletes the current user's stored profile picture after key validation. */
 export const deleteProfilePicture = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -76,7 +75,7 @@ export const deleteProfilePicture = async (
       throw Unauthorized();
     }
 
-    const user = await findUserById(userId)
+    const user = await UserAPI.findUserById(userId)
 
     if (!user) throw NotFound("User not found");
 

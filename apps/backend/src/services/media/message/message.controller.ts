@@ -1,4 +1,4 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Response, Request } from "express";
 
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
@@ -6,8 +6,7 @@ import {
   generateDownloadUrl,
   generateUploadUrl,
 } from "../s3.service.js";
-import { Chat } from "../../chat/models/chat.model.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
+import * as ChatAPI from "../../chat/api/chat.api.js"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -17,7 +16,7 @@ const VALID_KEY_REGEX = /^chat\/[^/]+\/[a-f0-9-]+\.(png|jpg|pdf)$/;
 
 /** Returns a signed upload URL for chat attachments after membership checks. */
 export const getChatUploadUrl = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -29,7 +28,7 @@ export const getChatUploadUrl = async (
 
     if (!chatId) throw BadRequest("ChatId required");
 
-    const chat = await Chat.findById(chatId);
+    const chat = await ChatAPI.findChatById(chatId)
 
     if (!chat || !chat.members.some((id) => id.toString() === userId)) {
       throw Unauthorized("Not part of this chat");
@@ -65,7 +64,7 @@ export const getChatUploadUrl = async (
 
 /** Returns a signed download URL for a chat attachment visible to the user. */
 export const getChatDownloadUrl = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -88,7 +87,7 @@ export const getChatDownloadUrl = async (
 
     if (!chatId) throw BadRequest("Invalid key structure");
 
-    const chat = await Chat.findById(chatId);
+    const chat = await ChatAPI.findChatById(chatId);
 
     if (!chat || !chat.members.some((id) => id.toString() === userId)) {
       throw Unauthorized("Not allowed to access this file");
@@ -104,7 +103,7 @@ export const getChatDownloadUrl = async (
 
 /** Deletes a chat attachment key after validating ownership of the upload path. */
 export const deleteChatFile = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {

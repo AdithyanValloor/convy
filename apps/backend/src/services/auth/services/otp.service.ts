@@ -1,6 +1,6 @@
 import crypto from "crypto";
-import { saveOtp, verifyOtp } from "../../../utils/otp/otpStore.js";
-import { sendOtpEmail } from "../../../utils/otp/mailer.js";
+import { saveOtp, verifyOtp } from "../otp/otpStore.js";
+import { sendOtpEmail } from "../otp/mailer.js";
 
 import { BadRequest } from "../../../utils/errors/httpErrors.js";
 

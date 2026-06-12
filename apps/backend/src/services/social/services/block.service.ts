@@ -5,11 +5,11 @@ import {
   NotFound,
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
-import { UserModel } from "../../user/models/user.model.js";
 import { FriendRequestModel } from "../models/request.model.js";
 import { FriendshipModel } from "../models/friends.model.js";
 import { normalizeFriendship } from "../utils/social.utils.js";
 import mongoose from "mongoose";
+import * as UserAPI from "../../user/api/user.api.js"
 
 /** Block service helpers for managing user block relationships. */
 
@@ -41,8 +41,7 @@ export const blockUser = async (userId: string, targetUserId: string) => {
     throw BadRequest("Cannot block yourself");
   }
 
-  const targetUser = await UserModel.findById(targetUserId);
-  if (!targetUser) throw NotFound("User not found");
+  const targetUser = await UserAPI.findUserById(targetUserId)
 
   const existingBlock = await BlockModel.findOne({
     blocker: userId,

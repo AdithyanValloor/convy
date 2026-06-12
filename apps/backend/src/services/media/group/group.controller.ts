@@ -1,4 +1,4 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Response, Request } from "express";
 import {
   BadRequest,
   NotFound,
@@ -6,8 +6,7 @@ import {
 } from "../../../utils/errors/httpErrors.js";
 import { copyFile, deleteFile, generateUploadUrl } from "../s3.service.js";
 import { Chat, IChat } from "../../chat/models/chat.model.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
-import { findChatById } from "../gateways/chat.gateway.js";
+import * as ChatAPI from "../../chat/api/chat.api.js"
 
 const MAX_GROUP_SIZE = 2 * 1024 * 1024;
 
@@ -25,7 +24,7 @@ export const isGroupAdmin = (group: IChat, userId: string) => {
 
 /** Returns a signed upload URL for a group avatar or temporary group avatar asset. */
 export const uploadGroupAvatar = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -56,7 +55,7 @@ export const uploadGroupAvatar = async (
     }
 
     if (!temp) {
-      const group = await findChatById(groupId);
+      const group = await ChatAPI.findChatById(groupId);
       if (!group) throw NotFound("Group not found");
 
       if (!isGroupAdmin(group, userId)) throw Unauthorized();
@@ -76,7 +75,7 @@ export const uploadGroupAvatar = async (
 
 /** Deletes a stored group avatar after ownership and key validation checks. */
 export const deleteGroupAvatar = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -98,7 +97,7 @@ export const deleteGroupAvatar = async (
       throw Unauthorized();
     }
 
-    const group = await findChatById(groupId);
+    const group = await ChatAPI.findChatById(groupId);
     if (!group) throw NotFound("Group not found");
 
     if (!isGroupAdmin(group, userId)) throw Unauthorized();
@@ -125,7 +124,7 @@ export const deleteGroupAvatar = async (
 
 /** Promotes a temporary uploaded avatar into the group's permanent storage path. */
 export const attachGroupAvatarFromTemp = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -143,7 +142,7 @@ export const attachGroupAvatarFromTemp = async (
       throw Unauthorized();
     }
 
-    const group = await findChatById(groupId);
+    const group = await ChatAPI.findChatById(groupId);
 
     if (!group) throw NotFound("Group not found");
 

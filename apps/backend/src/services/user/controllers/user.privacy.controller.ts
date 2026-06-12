@@ -1,17 +1,16 @@
-import { Response, NextFunction } from "express";
+import { Response, NextFunction, Request } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   getPrivacySettings,
   updatePrivacySettings,
 } from "../services/user.privacy.service.js";
 import { emitPrivacyUpdated } from "../../../socket/emitters/privacy.emitter.js";
-import { AuthRequest } from "../../auth/types/authRequest.js";
 
 /** Privacy controller handlers for authenticated user privacy preferences. */
 
 /** Returns privacy settings for the authenticated user. */
 export const getPrivacyController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
@@ -29,7 +28,7 @@ export const getPrivacyController = async (
 
 /** Updates privacy settings and emits the change for the authenticated user. */
 export const updatePrivacyController = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {

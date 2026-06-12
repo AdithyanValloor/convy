@@ -9,7 +9,7 @@ import {
 
 import { createInboxNotification } from "../../notifications/services/inboxNotification.service.js";
 import { deleteFile, generateDownloadUrl } from "../../media/s3.service.js";
-import { getBlockedUsers } from "../utils/blockedUsers.js";
+import * as SocialAPI from "../../social/api/social.api.js"
 
 /** Group chat service helpers for membership, ownership, and avatar management. */
 
@@ -57,7 +57,7 @@ export const createGroupChatFunction = async (
     throw BadRequest("Group name and at least one member are required");
   }
 
-  const blockedUsers = await getBlockedUsers(currentUserId, userIds);
+  const blockedUsers = await SocialAPI.getBlockedRelationshipUserIds(currentUserId, userIds);
 
   const allowedUserIds = userIds.filter((id) => !blockedUsers.has(id));
 
@@ -123,7 +123,7 @@ export const addMembersFunction = async (
 
   if (!isAdmin) throw Forbidden("Only admins can add new members");
 
-  const blockedUsers = await getBlockedUsers(userId, members);
+  const blockedUsers = await SocialAPI.getBlockedRelationshipUserIds(userId, members);
 
   const allowedUserIds = members.filter((id) => !blockedUsers.has(id));
 
