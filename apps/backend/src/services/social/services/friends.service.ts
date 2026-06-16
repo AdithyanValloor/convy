@@ -16,7 +16,6 @@ import {
 import { FriendshipModel } from "../models/friends.model.js";
 import { FriendRequestModel } from "../models/request.model.js";
 import {
-
   areFriendsCheck,
   getFriendIds,
   normalizeFriendship,
@@ -75,6 +74,14 @@ export const sendFriendRequest = async (
   const toUser = await UserAPI.findUserByName(toUsername);
   if (!toUser) throw NotFound("User not found");
 
+  console.log("from.id", fromUser.id, typeof fromUser.id);
+  console.log("to.id", toUser.id, typeof toUser.id);
+
+  console.log("from.id", fromUser.id);
+  console.log("to.id", toUser.id);
+
+  console.log("from === to", fromUser.id === toUser.id);
+
   // Self-check first, since it is the most obvious validation failure.
   if (fromUser.id === toUser.id) {
     throw BadRequest("Cannot send friend request to yourself");
@@ -85,7 +92,7 @@ export const sendFriendRequest = async (
 
   const blockExists = await SocialAPI.blockExists(fromUserId, toUser.id);
 
-  if (blockExists) {
+  if (blockExists) { 
     throw BadRequest("Cannot send friend request to this user");
   }
 

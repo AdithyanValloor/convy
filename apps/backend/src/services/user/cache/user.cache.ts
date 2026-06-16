@@ -1,13 +1,12 @@
-import { FlattenMaps } from "mongoose";
 import { redis } from "../../../config/redis.js";
-import { IUser } from "../models/user.model.js";
+import { UserDTO } from "../types/user.dto.js";
 
 const TTL = 60 * 5;
 
-export const getCachedUser = async (userId: string) => {
+export const getCachedUser = async (userId: string): Promise<UserDTO | null> => {
   const cached = await redis.get(`user:${userId}`);
   if (!cached) return null;
-  return JSON.parse(cached) as FlattenMaps<IUser>;
+  return JSON.parse(cached) as UserDTO;
 };
 
 export const setCachedUser = async (userId: string, user: unknown) => {

@@ -6,7 +6,7 @@ import * as UserAPI from  "../../services/user/api/user.api.js";
 export const registerTypingHandlers = (socket: Socket): void => {
   let typingEnabled: boolean | null = null;
 
-  const getTypingEnabled = async (): Promise<boolean> => {
+  const getTypingEnabled = async (): Promise<boolean|null> => {
     if (typingEnabled !== null) return typingEnabled;
 
     const userId = socket.data.userId;

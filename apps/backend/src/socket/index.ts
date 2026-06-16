@@ -38,6 +38,10 @@ export const initSocket = (server: HttpServer) => {
 
   io.on("connection", async (socket) => {
     console.log(`Socket connected: ${socket.id}`);
+    
+    // Split per-socket behavior into focused handler modules.
+    registerConnectionHandlers(socket);
+    registerTypingHandlers(socket);
 
     const userId = socket.data.userId;
 
@@ -48,9 +52,6 @@ export const initSocket = (server: HttpServer) => {
       socket.emit("online_users", await getOnlineUsers());
     }
 
-    // Split per-socket behavior into focused handler modules.
-    registerConnectionHandlers(socket);
-    registerTypingHandlers(socket);
   });
 
   // Periodically clear stale in-memory presence state.

@@ -14,9 +14,9 @@ export const blockExists = async (userA: string, userB: string) => {
       { blocker: userA, blocked: userB },
       { blocker: userB, blocked: userA },
     ],
-  });
+  });  
 
-  return !blocked;
+  return blocked;
 };
 
 export const getBlockedRelationshipUserIds = async (

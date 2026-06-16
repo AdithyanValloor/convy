@@ -5,7 +5,7 @@ import {
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
 import { copyFile, deleteFile, generateUploadUrl } from "../s3.service.js";
-import { Chat, IChat } from "../../chat/models/chat.model.js";
+import { IChat } from "../../chat/models/chat.model.js";
 import * as ChatAPI from "../../chat/api/chat.api.js"
 
 const MAX_GROUP_SIZE = 2 * 1024 * 1024;

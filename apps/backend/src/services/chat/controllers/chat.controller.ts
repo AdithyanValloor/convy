@@ -20,10 +20,6 @@ import {
 import { Chat } from "../models/chat.model.js";
 import { emitUnreadUpdate } from "../../../socket/emitters/message.emmitter.js";
 
-interface ChatParams {
-  chatId: string;
-}
-
 /** Chat controller handlers for authenticated chat actions. */
 
 /** Returns chats visible to the current user. */
@@ -159,6 +155,10 @@ export const markChatAsRead = async (
   next: NextFunction,
 ) => {
   try {
+    
+    console.log("READ HIT -----------");
+    
+
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 

@@ -29,6 +29,7 @@ import {
   leaveGroup,
   deleteGroup,
   transferOwnership,
+  markAsRead,
 } from "@/redux/features/chatSlice";
 import GroupSidebar from "../layout/GroupchatSideBar";
 import MessageInput from "./MessageInput";
@@ -60,7 +61,7 @@ interface ChatViewProps {
       username: string;
       displayName?: string;
       profilePicture?: { key: string | null };
-      avatar?: {key: string | null}
+      avatar?: { key: string | null };
       status?: "online" | "offline";
     }[];
   };
@@ -101,7 +102,6 @@ export default function ChatView({ chat, currentUser, socket }: ChatViewProps) {
     open: boolean;
     msg: MessageType | null;
   }>({ open: false, msg: null });
-  const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
   const [replyingTo, setReplyingTo] = useState<MessageType | null>(null);
   const [forward, setForward] = useState<MessageType | null>(null);
   const [stagedFile, setStagedFile] = useState<SelectedFile | null>(null);
@@ -112,6 +112,9 @@ export default function ChatView({ chat, currentUser, socket }: ChatViewProps) {
     selectMessagesByChat(state, chat._id),
   );
   const typingUsers = useAppSelector((s) => s.typing.byChat[chat._id] ?? {});
+  const unreadCount = useAppSelector((state) =>
+    chat._id ? (state.unread.perChat[chat._id] ?? 0) : 0,
+  );
 
   const isBlocked = useAppSelector((state: RootState) => {
     if (chat.isGroup) return false;
@@ -177,14 +180,17 @@ export default function ChatView({ chat, currentUser, socket }: ChatViewProps) {
   const displayName = displayUser.displayName;
   const name = displayUser.username;
 
-const groupAvatarKey = (chat as Chat)?.avatar?.key;
+  const groupAvatarKey = (chat as Chat)?.avatar?.key;
 
-const userAvatarKey = displayUser?.profilePicture?.key;
+  const userAvatarKey = displayUser?.profilePicture?.key;
 
-const signedUrl = useSignedUrl(groupAvatarKey || userAvatarKey);
+  const signedUrl = useSignedUrl(groupAvatarKey || userAvatarKey);
 
-
-const displayPic = signedUrl ? signedUrl : chat.isGroup ? "/default-group-icon.png" : "/default-pfp.png";
+  const displayPic = signedUrl
+    ? signedUrl
+    : chat.isGroup
+      ? "/default-group-icon.png"
+      : "/default-pfp.png";
 
   // ─── Scroll helper — delegates into Messages via imperative handle ─────────
   const scrollToBottom = useCallback(() => {
@@ -232,6 +238,17 @@ const displayPic = signedUrl ? signedUrl : chat.isGroup ? "/default-group-icon.p
       }
     };
   }, [chat._id]);
+
+  // ─── Mark chat as read ───────────────────────────────────────────
+  useEffect(() => {
+    if (!messages.length) return;
+    if (unreadCount === 0) return;
+    if (hasMarkedInitialRef.current) return;
+
+    hasMarkedInitialRef.current = true;
+
+    dispatch(markAsRead(chat._id));
+  }, [chat._id, unreadCount, messages.length]);
 
   // ─── Fetch messages (skips if already fetched) ────────────────────────────
   useEffect(() => {

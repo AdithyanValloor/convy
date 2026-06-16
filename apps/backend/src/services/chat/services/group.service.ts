@@ -86,6 +86,9 @@ export const createGroupChatFunction = async (
 
   const group = await populateGroup(groupChat._id.toString());
 
+  console.log("GROUP CREATED");
+  
+
   return {
     group,
     memberIds: members,

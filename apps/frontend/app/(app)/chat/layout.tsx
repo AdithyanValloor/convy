@@ -93,6 +93,8 @@ export default function ChatLayout({
       .unwrap()
       .then((res) => {
         allChatIdsRef.current = res.chats.map((c) => c._id);
+        console.log("ALL CHATS : ", allChatIdsRef.current);
+        
         setBootstrapDone(true);
       })
       .catch((err) => {

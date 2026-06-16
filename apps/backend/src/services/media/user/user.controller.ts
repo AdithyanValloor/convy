@@ -76,6 +76,7 @@ export const deleteProfilePicture = async (
     }
 
     const user = await UserAPI.findUserById(userId)
+    
 
     if (!user) throw NotFound("User not found");
 
@@ -87,7 +88,7 @@ export const deleteProfilePicture = async (
 
     if (user?.profilePicture?.key === key) {
       user.profilePicture = { key: null };
-      await user.save();
+      await UserAPI.clearProfilePicture(userId, key);
     }
 
     res.json({

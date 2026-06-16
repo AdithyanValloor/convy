@@ -76,6 +76,13 @@ const getCurrentUserId = (): string | undefined =>
  * Reads userId from the store at call-time — never from a stale closure.
  */
 export const joinGroupRoom = (chatId: string) => {
+  
+  console.log(
+    "[CLIENT] joinGroupRoom",
+    chatId,
+    socket?.connected
+  );
+
   const userId = getCurrentUserId();
   if (!userId || !socket) return;
   socket.emit("joinGroup", { chatId });
@@ -112,6 +119,8 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
         store.dispatch(updatePresence({ userId, status: "online" }));
       }
 
+      console.log("====================== ALL chats :", allChats);
+      
       allChats.forEach((chatId) => joinGroupRoom(chatId));
 
       if (heartbeatInterval) clearInterval(heartbeatInterval);

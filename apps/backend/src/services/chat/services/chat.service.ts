@@ -229,6 +229,9 @@ export const markChatAsReadFunction = async (
     },
   );
 
+  console.log("Chat state updated =========== ");
+  await MessagesAPI.resetUnreadCount(userId, chatId)
+
   return { unreadCount: 0 };
 };
 

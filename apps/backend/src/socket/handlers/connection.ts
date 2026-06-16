@@ -14,6 +14,9 @@ export const registerConnectionHandlers = (socket: Socket): void => {
     const chat = await ChatAPI.canJoinChat(chatId, userId)
     if (!chat) return;
 
+    console.log(`User ${userId} joined chat: ${chatId}`);
+  
+
     socket.join(chatId);
   });
 

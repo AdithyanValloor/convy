@@ -40,7 +40,7 @@ export default function CreateGroup({
   return (
     <div className="h-full w-full flex flex-col gap-3">
       <div className="flex justify-center">
-        <GroupAvatarUploader value={groupAvatar} onChange={setGroupAvatar} />
+        <GroupAvatarUploader canEdit={true} value={groupAvatar} onChange={setGroupAvatar} />
       </div>
       <div className="px-2">
         <input

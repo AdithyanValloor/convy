@@ -1,6 +1,3 @@
-import { IUser } from "../../user/models/user.model.js";
-
-import { Chat } from "../../chat/models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import {
   BadRequest,
@@ -35,14 +32,14 @@ export const sendMessageRequest = async (
 
   const toUser = await UserAPI.findUserById(toUserId);
 
-  if (toUser._id.toString() === fromUserId)
+  if (toUser.id.toString() === fromUserId)
     throw BadRequest("Cannot message yourself");
 
   const allowed = await SocialAPI.blockExists(toUserId, fromUserId);
 
   if (!allowed) throw Forbidden("Cannot message this user");
 
-  const friends = await SocialAPI.areFriends(fromUserId, toUser._id.toString());
+  const friends = await SocialAPI.areFriends(fromUserId, toUser.id.toString());
 
   if (friends) throw BadRequest("Users are already friends");
 
@@ -61,14 +58,14 @@ export const sendMessageRequest = async (
 
   const existing = await MessageRequestModel.findOne({
     from: fromUserId,
-    to: toUser._id,
+    to: toUser.id,
     status: "pending",
   });
   if (existing) throw BadRequest("Message request already pending");
 
   const request = await MessageRequestModel.create({
     from: fromUserId,
-    to: toUser._id,
+    to: toUser.id,
     firstMessage,
   });
 

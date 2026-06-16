@@ -38,6 +38,9 @@ export const createGroupChat = async (
     const { name, userIds }: { name?: string; userIds?: string[] } = req.body;
     const currentUserId = req.user?.id;
 
+    console.log("CREATE GROUP HIT. ");
+    
+
     if (!currentUserId) throw Unauthorized();
 
     if (!name || !Array.isArray(userIds) || userIds.length === 0) {

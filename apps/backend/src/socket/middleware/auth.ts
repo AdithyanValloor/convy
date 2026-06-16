@@ -18,7 +18,7 @@ export const socketAuth = async (
     const payload = verifyAccessToken(accessToken);
 
     socket.data.userId = payload.id;
-
+    
     next();
   } catch (error) {
     next(new Error("Unauthorized"));

@@ -1,3 +1,4 @@
+import { markRead } from "../cache/messages.cache.js";
 import { Message } from "../models/message.model.js";
 
 export const latestIncomingMessageOfOtherUSer = async (
@@ -28,3 +29,9 @@ export const latestMessage = async (
   return latestMessage;
 };
 
+export const resetUnreadCount = (
+  userId: string,
+  chatId: string,
+) => {
+  return markRead(userId, chatId);
+};
