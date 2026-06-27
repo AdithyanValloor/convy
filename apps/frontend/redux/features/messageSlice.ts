@@ -3,6 +3,7 @@ import api from "@/utils/axiosInstance";
 import { resetUnread } from "./unreadSlice";
 import { RootState } from "../store";
 import { clearChat, deleteChat } from "./chatSlice";
+import axios from "axios";
 
 /* -------------------- TYPES -------------------- */
 
@@ -114,6 +115,20 @@ const initialState: MessagesState = {
   downloadUrls: {},
 };
 
+/* -------------------- ERROR HELPER -------------------- */
+
+export const getErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.message || "Server error";
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unknown error";
+};
+
 /* -------------------- THUNKS -------------------- */
 
 /**
@@ -148,8 +163,8 @@ export const fetchMessages = createAsyncThunk<
       page: payload.currentPage ?? page,
       totalPages: payload.totalPages,
     };
-  } catch {
-    return rejectWithValue("Failed to fetch messages");
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error));
   }
 });
 
@@ -176,8 +191,8 @@ export const sendMessage = createAsyncThunk<
       withCredentials: true,
     });
     return res.data;
-  } catch {
-    return rejectWithValue("Failed to send message");
+  } catch (error){
+    return rejectWithValue(getErrorMessage(error));
   }
 });
 
@@ -199,8 +214,8 @@ export const forwardMessageApi = createAsyncThunk<
       );
 
       return res.data;
-    } catch {
-      return rejectWithValue("Failed to forward message");
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
     }
   },
 );
@@ -222,8 +237,8 @@ export const toggleReaction = createAsyncThunk<
         { withCredentials: true },
       );
       return res.data;
-    } catch {
-      return rejectWithValue("Failed to toggle reaction");
+    } catch (error){
+      return rejectWithValue(getErrorMessage(error));
     }
   },
 );
@@ -259,8 +274,8 @@ export const markMessagesAsSeen = createAsyncThunk<
       dispatch(markAllMessagesSeen({ chatId, userId }));
 
       return { chatId, userId };
-    } catch (err) {
-      return rejectWithValue("Failed to mark messages as seen");
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error));
     }
   },
 );
@@ -282,8 +297,8 @@ export const editMessageApi = createAsyncThunk<
         { withCredentials: true },
       );
       return res.data;
-    } catch {
-      return rejectWithValue("Failed to edit message");
+    } catch (error){
+      return rejectWithValue(getErrorMessage(error));
     }
   },
 );
@@ -301,8 +316,8 @@ export const deleteMessageApi = createAsyncThunk<
       withCredentials: true,
     });
     return res.data;
-  } catch {
-    return rejectWithValue("Failed to delete message");
+  } catch (error){
+    return rejectWithValue(getErrorMessage(error));
   }
 });
 
@@ -343,8 +358,8 @@ export const searchMessagesApi = createAsyncThunk<
       page: res.data.currentPage,
       hasMore: res.data.hasMore,
     };
-  } catch {
-    return rejectWithValue("Search failed");
+  } catch (error){
+    return rejectWithValue(getErrorMessage(error));
   }
 });
 
@@ -372,8 +387,8 @@ export const fetchMessageContext = createAsyncThunk<
         before: res.data.before,
         after: res.data.after,
       };
-    } catch {
-      return rejectWithValue("Failed to fetch message context");
+    } catch (error){
+      return rejectWithValue(getErrorMessage(error));
     }
   },
 );
@@ -397,8 +412,8 @@ export const fetchNewerMessages = createAsyncThunk<
         messages: res.data.messages ?? res.data,
         hasMore: res.data.hasMore ?? false,
       };
-    } catch {
-      return rejectWithValue("Failed to fetch newer messages");
+    } catch (error){
+      return rejectWithValue(getErrorMessage(error));
     }
   },
 );
@@ -418,8 +433,8 @@ export const getDownloadUrl = createAsyncThunk<
     });
 
     return { key, url: res.data.url };
-  } catch {
-    return rejectWithValue("Failed to get download URL");
+  } catch (error){
+    return rejectWithValue(getErrorMessage(error));
   }
 });
 

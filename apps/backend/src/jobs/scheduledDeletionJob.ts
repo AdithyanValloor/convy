@@ -31,3 +31,4 @@ export const startScheduledDeletionJob = () => {
     console.log(`[DeletionJob] Soft-deleted ${ids.length} account(s).`);
   });
 };
+

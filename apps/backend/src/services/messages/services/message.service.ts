@@ -206,9 +206,9 @@ export const sendMessageFunction = async (
       .find((id) => id !== senderId);
 
     if (otherMember) {
-      const allowed = await SocialAPI.blockExists(senderId, otherMember);
+      const blockExists = await SocialAPI.blockExists(senderId, otherMember);
 
-      if (!allowed) {
+      if (blockExists) {
         throw Forbidden("Cannot send message to this user");
       }
     }
@@ -369,9 +369,9 @@ export const forwardMessageFunction = async (
             .find((id) => id !== senderId);
 
           if (otherMember) {
-            const allowed = await SocialAPI.blockExists(senderId, otherMember);
+            const blockExists = await SocialAPI.blockExists(senderId, otherMember);
 
-            if (!allowed) {
+            if (blockExists) {
               return null;
             }
           }
@@ -455,9 +455,9 @@ export const toggleReactionFunction = async (
       .find((id) => id !== userId);
 
     if (otherMember) {
-      const allowed = await SocialAPI.blockExists(userId, otherMember);
+      const blockExists = await SocialAPI.blockExists(userId, otherMember);
 
-      if (!allowed) {
+      if (blockExists) {
         throw Forbidden("Cannot interact in this chat");
       }
     }

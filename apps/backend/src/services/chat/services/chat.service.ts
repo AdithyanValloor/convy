@@ -70,9 +70,9 @@ export const accessChatFunction = async (
     throw BadRequest("Cannot create chat with yourself");
   }
 
-  const allowed = await SocialAPI.blockExists(userId, currentUserId);
+  const blockExists = await SocialAPI.blockExists(userId, currentUserId);
 
-  if (!allowed) {
+  if (blockExists) {
     throw Forbidden("Cannot access chat with this user");
   }
 

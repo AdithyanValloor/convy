@@ -35,9 +35,9 @@ export const sendMessageRequest = async (
   if (toUser.id.toString() === fromUserId)
     throw BadRequest("Cannot message yourself");
 
-  const allowed = await SocialAPI.blockExists(toUserId, fromUserId);
+  const blockExists = await SocialAPI.blockExists(toUserId, fromUserId);
 
-  if (!allowed) throw Forbidden("Cannot message this user");
+  if (blockExists) throw Forbidden("Cannot message this user");
 
   const friends = await SocialAPI.areFriends(fromUserId, toUser.id.toString());
 
