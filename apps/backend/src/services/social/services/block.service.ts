@@ -9,7 +9,7 @@ import { FriendRequestModel } from "../models/request.model.js";
 import { FriendshipModel } from "../models/friends.model.js";
 import { normalizeFriendship } from "../utils/social.utils.js";
 import mongoose from "mongoose";
-import * as UserAPI from "../../user/api/user.api.js"
+import * as UserAPI from "../../user/api/user.api.js";
 
 /** Block service helpers for managing user block relationships. */
 
@@ -41,7 +41,7 @@ export const blockUser = async (userId: string, targetUserId: string) => {
     throw BadRequest("Cannot block yourself");
   }
 
-  const targetUser = await UserAPI.findUserById(targetUserId)
+  const targetUser = await UserAPI.findUserById(targetUserId);
 
   const existingBlock = await BlockModel.findOne({
     blocker: userId,
@@ -55,24 +55,34 @@ export const blockUser = async (userId: string, targetUserId: string) => {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      await BlockModel.create({
-        blocker: userId,
-        blocked: targetUserId,
-      });
+      await BlockModel.create(
+        [
+          {
+            blocker: userId,
+            blocked: targetUserId,
+          },
+        ],
+        { session },
+      );
 
       const [user1, user2] = normalizeFriendship(userId, targetUserId);
-      await FriendshipModel.findOneAndDelete({
-        user1,
-        user2,
-      });
-
+      await FriendshipModel.findOneAndDelete(
+        {
+          user1,
+          user2,
+        },
+        { session },
+      );
       // Cancel friend requests
-      await FriendRequestModel.deleteMany({
-        $or: [
-          { from: userId, to: targetUserId, status: "pending" },
-          { from: targetUserId, to: userId, status: "pending" },
-        ],
-      });
+      await FriendRequestModel.deleteMany(
+        {
+          $or: [
+            { from: userId, to: targetUserId, status: "pending" },
+            { from: targetUserId, to: userId, status: "pending" },
+          ],
+        },
+        { session },
+      );
     });
   } finally {
     await session.endSession();

@@ -20,6 +20,7 @@ const authUserSchema: Schema<IAuthUser> = new Schema(
     hashedPassword: {
       type: String,
       required: true,
+      select: false,
     },
   },
   {

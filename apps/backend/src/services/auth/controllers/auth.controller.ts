@@ -1,17 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { authCookieOptions } from "../../../config/cookies.js";
-import {
-  loginUser,
-  registerUser,
-  sendRegistrationOtp,
-  verifyRegistrationOtp,
-  refreshTokenFunction,
-  checkPassword,
-  changePassword,
-  sendEmailChangeOtp,
-  verifyAndUpdateEmail,
-} from "../services/auth.service.js";
+// import {
+//   loginUser,
+//   registerUser,
+//   sendRegistrationOtp,
+//   verifyRegistrationOtp,
+//   refreshTokenFunction,
+//   checkPassword,
+//   changePassword,
+//   sendEmailChangeOtp,
+//   verifyAndUpdateEmail,
+// } from "../services/auth.service.js";
+
+import { authService } from "../../composition/auth.container.js";
 
 /** Auth and account bootstrap controller handlers for user onboarding and sessions. */
 
@@ -36,7 +38,7 @@ export const sendOtp = async (
   try {
     const { email } = req.body;
 
-    await sendRegistrationOtp(email);
+    await authService.sendRegistrationOtp(email);
 
     res.status(200).json({ message: `OTP sent to ${email}` });
   } catch (err) {
@@ -53,7 +55,7 @@ export const verifyOtp = async (
   try {
     const { email, otp } = req.body;
 
-    await verifyRegistrationOtp(email, otp);
+    await authService.verifyRegistrationOtp(email, otp);
 
     res.status(200).json({ message: "Email verified" });
   } catch (err) {
@@ -74,7 +76,7 @@ export const register = async (
       throw BadRequest("Invalid request body");
     }
 
-    const { accessToken, refreshToken, safeUser } = await registerUser(
+    const { accessToken, refreshToken, safeUser } = await authService.registerUser(
       displayName,
       username,
       email,
@@ -109,7 +111,7 @@ export const login = async (
       throw BadRequest("Email and password required");
     }
 
-    const { accessToken, refreshToken, safeUser } = await loginUser(
+    const { accessToken, refreshToken, safeUser } = await authService.loginUser(
       email,
       password,
     );
@@ -144,7 +146,7 @@ export const refreshToken = async (
 ) => {
   try {
     const token = req.cookies?.refreshToken;
-    const { accessToken, user } = await refreshTokenFunction(token);
+    const { accessToken, user } = await authService.refreshTokenFunction(token);
 
     res.cookie("accessToken", accessToken, {
       ...authCookieOptions,
@@ -169,7 +171,7 @@ export const checkPasswordController = async (
     if (!userId) throw Unauthorized();
 
     const { password } = req.body;
-    const { isMatch } = await checkPassword(userId, password);
+    const { isMatch } = await authService.checkPassword(userId, password);
 
     res.status(200).json({ success: true, isMatch });
   } catch (err) {
@@ -189,7 +191,7 @@ export const sendEmailChangeOtpController = async (
 
     const { email } = req.body;
 
-    await sendEmailChangeOtp(userId, email);
+    await authService.sendEmailChangeOtp(userId, email);
 
     res.status(200).json({
       success: true,
@@ -211,7 +213,7 @@ export const updateEmailController = async (
     if (!userId) throw Unauthorized();
 
     const { email, otp } = req.body;
-    const updatedUser = await verifyAndUpdateEmail(userId, email, otp);
+    const updatedUser = await authService.verifyAndUpdateEmail(userId, email, otp);
 
     res.status(200).json({
       success: true,
@@ -235,7 +237,7 @@ export const changePasswordController = async (
 
     const { currentPassword, newPassword } = req.body;
 
-    await changePassword(userId, currentPassword, newPassword);
+    await authService.changePassword(userId, currentPassword, newPassword);
 
     res.status(200).json({
       success: true,
