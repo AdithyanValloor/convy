@@ -1,7 +1,9 @@
 import { NextFunction, Response, Request } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
-import { UserModel } from "../models/user.model.js";
 import { getCachedUser, setCachedUser } from "../cache/user.cache.js";
+import { MongoUserRepository } from "../repositories/mongo-user.repository.js";
+
+const userRepository = new MongoUserRepository();
 
 /** Returns the currently authenticated user. */
 export const currentUser = async (
@@ -11,9 +13,6 @@ export const currentUser = async (
 ) => {
   try {
     const userId = req.user?.id;
-
-    if (!userId) throw Unauthorized();
-
     const cached = await getCachedUser(userId);
 
     if (cached) {
@@ -23,7 +22,7 @@ export const currentUser = async (
       });
     }
 
-    const user = await UserModel.findById(userId).lean();
+    const user = await userRepository.findById(userId);
     if (!user) throw Unauthorized("User no longer exists");
     await setCachedUser(userId, user);
 

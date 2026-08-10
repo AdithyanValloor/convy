@@ -1,4 +1,4 @@
-import { UserModel } from "../models/user.model.js";
+import { IUser, UserModel } from "../models/user.model.js";
 import {
   Unauthorized,
   NotFound,
@@ -7,15 +7,13 @@ import {
 } from "../../../utils/errors/httpErrors.js";
 import { deleteFile, generateDownloadUrl } from "../../media/s3.service.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
-import {
-  getCachedUser,
-  invalidateUserCache,
-  setCachedUser,
-} from "../cache/user.cache.js";
+import { invalidateUserCache } from "../cache/user.cache.js";
 import { findUserById } from "../api/user.api.js";
+import { IUserRepository } from "../repositories/user.repository.js";
+import { FlattenMaps } from "mongoose";
 
 /** Input shape for allowed profile field updates. */
-interface UpdateProfileInput {
+export interface UpdateProfileInput {
   displayName?: string;
   username?: string;
   pronouns?: string;
@@ -25,112 +23,86 @@ interface UpdateProfileInput {
 
 /** User profile service helpers for account-facing profile operations. */
 
-/** Returns the authenticated user's profile. */
-export const getProfileByUserId = async (userId: string) => {
-  if (!userId) {
-    throw Unauthorized("No user info found");
+export class UserProfileService {
+  constructor(private readonly userRepository: IUserRepository) {}
+
+  /** Returns the authenticated user's profile. */
+  async getProfileByUserId(userId: string) {
+    const user = this.userRepository.findById(userId);
+    if (!user) throw NotFound("User not found");
+
+    return user;
   }
 
-  return findUserById(userId);
-};
+  /** Updates only the editable profile fields provided by the caller. */
+  async updateProfileByUserId(
+    userId: string,
+    updates: Partial<UpdateProfileInput>,
+  ) {
+    const user = await this.userRepository.updateUserProfile(userId, updates);
+    if (!user) throw NotFound("User not found");
 
-/** Updates only the editable profile fields provided by the caller. */
-export const updateProfileByUserId = async (
-  userId: string,
-  updates: UpdateProfileInput,
-) => {
-  const profile = await UserModel.findById(userId);
-
-  if (!profile) {
-    throw NotFound("User not found");
+    await invalidateUserCache(userId);
+    return user;
   }
 
-  // Apply only provided fields to avoid accidental overwrites.
-  if (updates.displayName !== undefined)
-    profile.displayName = updates.displayName;
-  if (updates.pronouns !== undefined) profile.pronouns = updates.pronouns;
-  if (updates.bio !== undefined) profile.bio = updates.bio;
-  if (updates.status !== undefined) profile.status = updates.status;
+  /** Replaces the current profile picture and returns its download metadata. */
+  async updateProfilePictureByUserId(userId: string, key: string) {
+    const user = await this.userRepository.updateProfilePicture(userId, key);
 
-  await profile.save();
-  await invalidateUserCache(userId);
+    if (!user) throw NotFound("User not found");
 
-  return profile;
-};
+    await invalidateUserCache(userId);
 
-/** Replaces the current profile picture and returns its download metadata. */
-export const updateProfilePictureByUserId = async (
-  userId: string,
-  key: string,
-) => {
-  const user = await UserModel.findById(userId);
-
-  if (!user) throw NotFound("User not found");
-
-  if (user.profilePicture?.key) {
-    await deleteFile(user.profilePicture.key);
+    return {
+      profilePicture: user.profilePicture,
+    };
   }
 
-  user.profilePicture = {
-    key: key,
-  };
+  /** Returns a temporary download URL for a validated profile picture key. */
+  async getProfilePictureDownloadUrlService(key: string) {
+    if (!key || typeof key !== "string") {
+      throw BadRequest("Invalid key");
+    }
 
-  await user.save();
-  await invalidateUserCache(userId);
+    if (!PROFILE_KEY_REGEX.test(key)) {
+      throw BadRequest("Invalid key format");
+    }
 
-  return {
-    profilePicture: user.profilePicture,
-  };
-};
+    const url = await generateDownloadUrl(key);
 
-/** Returns a temporary download URL for a validated profile picture key. */
-export const getProfilePictureDownloadUrlService = async (
-  userId: string,
-  key: string,
-) => {
-  if (!key || typeof key !== "string") {
-    throw BadRequest("Invalid key");
+    return url;
   }
 
-  if (!PROFILE_KEY_REGEX.test(key)) {
-    throw BadRequest("Invalid key format");
-  }
+  /** Updates a user's username after server-side validation and uniqueness checks. */
+  async updateUsername(userId: string, newUsername: string) {
+    if (!newUsername || newUsername.length < 3) {
+      throw BadRequest("Username must be at least 3 characters");
+    }
 
-  const url = await generateDownloadUrl(key);
+    if (!/^[a-z0-9_]+$/.test(newUsername)) {
+      throw BadRequest(
+        "Username may only contain lowercase letters, numbers, and underscores",
+      );
+    }
 
-  return url;
-};
-
-/** Updates a user's username after server-side validation and uniqueness checks. */
-export const updateUsername = async (userId: string, newUsername: string) => {
-  if (!newUsername || newUsername.length < 3) {
-    throw BadRequest("Username must be at least 3 characters");
-  }
-
-  if (!/^[a-z0-9_]+$/.test(newUsername)) {
-    throw BadRequest(
-      "Username may only contain lowercase letters, numbers, and underscores",
+    const taken = await this.userRepository.isUsernameTakenByAnotherUser(
+      userId,
+      newUsername,
     );
+
+    if (taken) {
+      throw Conflict("Username is already taken");
+    }
+
+    const user = await this.userRepository.updateUsername(userId, newUsername);
+
+    if (!user) {
+      throw NotFound("User not found");
+    }
+
+    await invalidateUserCache(userId);
+
+    return user;
   }
-
-  const taken = await UserModel.findOne({
-    username: newUsername,
-    _id: { $ne: userId },
-  });
-
-  if (taken) {
-    throw Conflict("Username is already taken");
-  }
-
-  const user = await UserModel.findByIdAndUpdate(
-    userId,
-    { username: newUsername },
-    { new: true },
-  );
-
-  if (!user) throw NotFound("User not found");
-
-  await invalidateUserCache(userId)
-
-  return user;
-};
+}

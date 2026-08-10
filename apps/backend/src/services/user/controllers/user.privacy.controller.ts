@@ -1,10 +1,7 @@
 import { Response, NextFunction, Request } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
-import {
-  getPrivacySettings,
-  updatePrivacySettings,
-} from "../services/user.privacy.service.js";
 import { emitPrivacyUpdated } from "../../../socket/emitters/privacy.emitter.js";
+import { userPrivacyService } from "../composition/user.container.js";
 
 /** Privacy controller handlers for authenticated user privacy preferences. */
 
@@ -18,7 +15,7 @@ export const getPrivacyController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const privacy = await getPrivacySettings(userId);
+    const privacy = await userPrivacyService.getPrivacySettings(userId);
 
     res.status(200).json({ success: true, data: privacy });
   } catch (err) {
@@ -37,7 +34,7 @@ export const updatePrivacyController = async (
     if (!userId) throw Unauthorized();
 
     const updates = req.body;
-    const privacy = await updatePrivacySettings(userId, updates);
+    const privacy = await userPrivacyService.updatePrivacySettings(userId, updates);
 
     emitPrivacyUpdated(userId);
 

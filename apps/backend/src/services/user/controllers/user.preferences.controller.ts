@@ -1,9 +1,7 @@
 import { Response, NextFunction, Request } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
-import {
-  getNotificationSettings,
-  updateNotificationSettings,
-} from "../services/user.preferences.service.js";
+import { userPreferencesService } from "../composition/user.container.js";
+
 
 /** Notification settings controller handlers for authenticated user preferences. */
 
@@ -17,7 +15,7 @@ export const getNotificationSettingsController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const settings = await getNotificationSettings(userId);
+    const settings = await userPreferencesService.getNotificationSettings(userId);
 
     res.status(200).json({
       success: true,
@@ -39,7 +37,7 @@ export const updateNotificationSettingsController = async (
     if (!userId) throw Unauthorized();
 
     const updates = req.body;
-    const settings = await updateNotificationSettings(userId, updates);
+    const settings = await userPreferencesService.updateNotificationSettings(userId, updates);
 
     res.status(200).json({
       success: true,

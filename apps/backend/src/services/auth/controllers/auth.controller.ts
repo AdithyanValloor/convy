@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { authCookieOptions } from "../../../config/cookies.js";
+import { authService } from "../composition/auth.container.js";
+
+
 // import {
 //   loginUser,
 //   registerUser,
@@ -13,7 +16,6 @@ import { authCookieOptions } from "../../../config/cookies.js";
 //   verifyAndUpdateEmail,
 // } from "../services/auth.service.js";
 
-import { authService } from "../../composition/auth.container.js";
 
 /** Auth and account bootstrap controller handlers for user onboarding and sessions. */
 

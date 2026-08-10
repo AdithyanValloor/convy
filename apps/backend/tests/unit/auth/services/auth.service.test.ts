@@ -44,7 +44,6 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../../../../src/services/auth/utils/jwt.js";
-import { exec } from "child_process";
 
 const mockedSendOtp = vi.mocked(sendOtpToEmail);
 const mockedVerifyOtp = vi.mocked(verifyEmailOtp);

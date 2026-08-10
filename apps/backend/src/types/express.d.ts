@@ -6,7 +6,7 @@ declare global {
   namespace Express {
     /** Adds the decoded authenticated user to Express requests. */
     interface Request {
-      user?: JwtPayload;
+      user: JwtPayload;
     }
   }
 }

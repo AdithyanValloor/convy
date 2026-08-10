@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema, Types, model } from "mongoose";
 export interface IUser extends Document {
   _id: Types.ObjectId;
+  authUserId: string;
   username: string;
   displayName: string;
   pronouns?: string | null;
@@ -40,6 +41,12 @@ export interface IUser extends Document {
 /** User schema for identity, profile data, account state, and preferences. */
 const userSchema: Schema<IUser> = new Schema(
   {
+    authUserId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     username: {
       type: String,
       required: true,

@@ -1,5 +1,4 @@
-import { IUser } from "../../user/models/user.model.js";
-import {  IAuthUser } from "../models/auth.model.js";
+import { IAuthUser } from "../models/auth.model.js";
 
 export interface CreateAccountData {
   email: string;
@@ -13,10 +12,12 @@ export interface IAuthRepository {
   findByEmail(email: string): Promise<IAuthUser | null>;
   emailExists(email: string): Promise<boolean>;
   isEmailTakenByAnotherUser(userId: string, email: string): Promise<boolean>;
-  createAccount(data: CreateAccountData): Promise<{
-    authUser: IAuthUser;
-    profileUser: IUser;
-  }>;
+  create(data: {
+    id: string;
+    email: string;
+    hashedPassword: string;
+  }): Promise<IAuthUser>;
+  deleteById(userId: string): Promise<void>;
   updatePassword(
     userId: string,
     hashedPassword: string,
@@ -24,4 +25,3 @@ export interface IAuthRepository {
   updateEmail(userId: string, email: string): Promise<IAuthUser | null>;
   findAuthUserForPasswordCheck(userId: string): Promise<IAuthUser | null>;
 }
-

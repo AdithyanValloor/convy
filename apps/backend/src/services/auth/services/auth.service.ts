@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import {
   generateAccessToken,
   generateRefreshToken,
+  verifyAccessToken,
   verifyRefreshToken,
 } from "../utils/jwt.js";
 import {
@@ -16,19 +17,108 @@ import { sendOtpToEmail, verifyEmailOtp } from "./otp.service.js";
 import * as UserAPI from "../../user/api/user.api.js";
 
 import { CreateAccountData, IAuthRepository } from "../repositories/index.js";
+import jwt from "jsonwebtoken";
+import { JwtPayload } from "../types/user.types.js";
+import { IAuthUser } from "../models/auth.model.js";
+import { randomUUID } from "crypto";
+import { UserDTO } from "../../user/types/user.dto.js";
 //TODO fix register accessing UserModel when implementing message queue.
 
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
+
+interface AuthSession {
+  user: JwtPayload;
+  newAccessToken?: string;
+}
 
 export class AuthService {
   constructor(private readonly authRepository: IAuthRepository) {}
 
   private HASH_SALT = 10;
 
+  private async createAccount(data: CreateAccountData): Promise<{
+    authUser: IAuthUser;
+    profileUser: UserDTO;
+  }> {
+    const authUserId = randomUUID();
+
+    const authUser = await this.authRepository.create({
+      id: authUserId,
+      email: data.email,
+      hashedPassword: data.hashedPassword,
+    });
+
+    try {
+      const profileUser = await UserAPI.createProfile({
+        authUserId,
+        username: data.username,
+        displayName: data.displayName,
+      });
+
+      return {
+        authUser,
+        profileUser,
+      };
+    } catch (error) {
+      try {
+        await this.authRepository.deleteById(authUserId);
+      } catch (compensationError) {
+        console.error(
+          "Failed to compensate auth user creation:",
+          compensationError,
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async authenticateSession(
+    accessToken?: string,
+    refreshToken?: string,
+  ): Promise<AuthSession> {
+    if (!accessToken && !refreshToken) {
+      throw Unauthorized("Unauthenticated");
+    }
+
+    if (accessToken) {
+      try {
+        const user = verifyAccessToken(accessToken);
+        return {
+          user,
+          newAccessToken: undefined,
+        };
+      } catch (err) {
+        if (!(err instanceof jwt.TokenExpiredError)) {
+          throw Unauthorized("Invalid access token");
+        }
+      }
+    }
+
+    if (!refreshToken) {
+      throw Unauthorized("Session expired");
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+
+    const user = await this.authRepository.findById(decoded.id);
+    if (!user) {
+      throw Unauthorized("Session invalid");
+    }
+
+    const newAccessToken = generateAccessToken({
+      id: decoded.id,
+      email: decoded.email,
+    });
+
+    return {
+      user: decoded,
+      newAccessToken,
+    };
+  }
+
   private async validateNewEmail(userId: string, email: string) {
     const normalized = validateEmail(email);
-
-    // const currentUser = await AuthUserModel.findById(userId).select("email");
 
     const currentUser = await this.authRepository.findById(userId);
 
@@ -47,17 +137,11 @@ export class AuthService {
     return normalized;
   }
 
-  private buildJwtPayload(user: { _id: any; email: string }) {
+  private buildJwtPayload(user: { id: any; email: string }) {
     return {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
     };
-  }
-
-  private buildSafeUser(user: any) {
-    return user.toObject({
-      versionKey: false,
-    });
   }
 
   async sendRegistrationOtp(email: string): Promise<void> {
@@ -107,8 +191,7 @@ export class AuthService {
       hashedPassword,
     };
 
-    const { authUser, profileUser } =
-      await this.authRepository.createAccount(accountData);
+    const { authUser, profileUser } = await this.createAccount(accountData);
 
     // Clear the temporary verification marker after successful account creation.
     clearEmail(email);
@@ -116,7 +199,7 @@ export class AuthService {
     return {
       accessToken: generateAccessToken(this.buildJwtPayload(authUser)),
       refreshToken: generateRefreshToken(this.buildJwtPayload(authUser)),
-      safeUser: this.buildSafeUser(profileUser),
+      safeUser: profileUser,
     };
   }
 
@@ -128,7 +211,7 @@ export class AuthService {
     // Use the same auth error for missing users and invalid passwords.
     if (!authUser) throw Unauthorized("Invalid email or password");
 
-    const profileUser = await UserAPI.findUserById(authUser._id.toString());
+    const profileUser = await UserAPI.findUserByAuthUserId(authUser.id)
 
     const match = await bcrypt.compare(password, authUser.hashedPassword);
     if (!match) throw Unauthorized("Invalid email or password");

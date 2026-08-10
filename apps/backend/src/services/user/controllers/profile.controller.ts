@@ -1,16 +1,7 @@
 import { Response, Request, NextFunction } from "express";
-import {
-  getProfileByUserId,
-  getProfilePictureDownloadUrlService,
-  updateProfileByUserId,
-  updateProfilePictureByUserId,
-  updateUsername,
-} from "../services/user.profile.service.js";
-import {
-  Unauthorized,
-  BadRequest,
-} from "../../../utils/errors/httpErrors.js";
+import { Unauthorized, BadRequest } from "../../../utils/errors/httpErrors.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
+import { userProfileService } from "../composition/user.container.js";
 
 /** Profile controller handlers for authenticated profile actions. */
 
@@ -30,9 +21,8 @@ export const viewProfile = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
 
-    const profile = await getProfileByUserId(userId);
+    const profile = await userProfileService.getProfileByUserId(userId);
 
     res.status(200).json(profile);
   } catch (err) {
@@ -48,13 +38,15 @@ export const editProfile = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
 
     if (!Object.keys(req.body).length) {
       throw BadRequest("No fields provided to update");
     }
 
-    const updatedProfile = await updateProfileByUserId(userId, req.body);
+    const updatedProfile = await userProfileService.updateProfileByUserId(
+      userId,
+      req.body,
+    );
 
     res.status(200).json(updatedProfile);
   } catch (err) {
@@ -70,7 +62,6 @@ export const updateProfilePicture = async (
 ) => {
   try {
     const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
 
     const { key } = req.body;
 
@@ -82,7 +73,10 @@ export const updateProfilePicture = async (
       throw Unauthorized();
     }
 
-    const updated = await updateProfilePictureByUserId(userId, key);
+    const updated = await userProfileService.updateProfilePictureByUserId(
+      userId,
+      key,
+    );
 
     res.json(updated);
   } catch (err) {
@@ -97,13 +91,9 @@ export const getProfilePictureDownloadUrl = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
 
     const { key } = req.query;
-
-    const url = await getProfilePictureDownloadUrlService(
-      userId,
+    const url = await userProfileService.getProfilePictureDownloadUrlService(
       key as string,
     );
 
@@ -121,10 +111,12 @@ export const updateUsernameController = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
 
     const { username } = req.body;
-    const updatedUser = await updateUsername(userId, username);
+    const updatedUser = await userProfileService.updateUsername(
+      userId,
+      username,
+    );
 
     res.status(200).json({
       success: true,

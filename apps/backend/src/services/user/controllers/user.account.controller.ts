@@ -1,10 +1,6 @@
 import { Response, Request, NextFunction } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
-import {
-  deactivateAccount,
-  scheduleAccountDeletion,
-  cancelScheduledDeletion,
-} from "../services/user.account.service.js";
+import { userAccountService } from "../composition/user.container.js";
 
 /** User account controller handlers for authenticated account management actions. */
 
@@ -18,7 +14,7 @@ export const deactivateAccountController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    await deactivateAccount(userId);
+    await userAccountService.deactivateAccount(userId);
 
     res.status(200).json({
       success: true,
@@ -40,7 +36,7 @@ export const scheduleAccountDeletionController = async (
     if (!userId) throw Unauthorized();
 
     const { password } = req.body;
-    const { scheduledDeletionAt } = await scheduleAccountDeletion(
+    const { scheduledDeletionAt } = await userAccountService.scheduleAccountDeletion(
       userId,
       password,
     );
@@ -66,7 +62,7 @@ export const cancelScheduledDeletionController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    await cancelScheduledDeletion(userId);
+    await userAccountService.cancelScheduledDeletion(userId);
 
     res.status(200).json({
       success: true,
