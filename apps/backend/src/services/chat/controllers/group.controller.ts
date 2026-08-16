@@ -1,17 +1,4 @@
 import { NextFunction, Response, Request } from "express";
-import {
-  addMembersFunction,
-  createGroupChatFunction,
-  deleteGroupFunction,
-  editGroupNameService,
-  getGroupAvatarUrlService,
-  getGroupByIdFunction,
-  leaveGroupFunction,
-  removeMembersFunction,
-  toggleAdminFunction,
-  transferOwnershipFunction,
-  updateGroupAvatarById,
-} from "../services/group.service.js";
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   emitAdminToggled,
@@ -24,6 +11,7 @@ import {
   emitOwnershipTransferred,
 } from "../../../socket/emitters/group.emitter.js";
 import { GROUP_KEY_REGEX } from "../../user/constants/regex.js";
+import { groupService } from "../composition/container.js";
 
 /** Group chat controller handlers for authenticated group actions. */
 
@@ -47,7 +35,7 @@ export const createGroupChat = async (
       throw BadRequest("Group name and member list are required");
     }
 
-    const { group, memberIds } = await createGroupChatFunction(
+    const { group, memberIds } = await groupService.createGroupChatFunction(
       name,
       userIds,
       currentUserId,
@@ -77,7 +65,7 @@ export const getGroupById = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("Group ID is required");
 
-    const group = await getGroupByIdFunction(userId, chatId);
+    const group = await groupService.getGroupByIdFunction(userId, chatId);
 
     res.status(200).json({ group });
   } catch (error) {
@@ -102,7 +90,7 @@ export const addMembers = async (
       throw BadRequest("Chat ID and members array are required");
     }
 
-    const { group, newMemberIds } = await addMembersFunction(
+    const { group, newMemberIds } = await groupService.addMembersFunction(
       chatId,
       members,
       userId,
@@ -135,7 +123,7 @@ export const removeMembers = async (
       throw BadRequest("Chat ID and member ID are required");
     }
 
-    const { group, removedMemberId } = await removeMembersFunction(
+    const { group, removedMemberId } = await groupService.removeMembersFunction(
       userId,
       chatId,
       member,
@@ -176,7 +164,7 @@ export const toggleAdmin = async (
       throw BadRequest("Invalid admin toggle payload");
     }
 
-    const { group, memberId, isAdmin } = await toggleAdminFunction(
+    const { group, memberId, isAdmin } = await groupService.toggleAdminFunction(
       userId,
       chatId,
       member,
@@ -207,7 +195,7 @@ export const leaveGroup = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("Chat ID is required");
 
-    const result = await leaveGroupFunction(userId, chatId);
+    const result = await groupService.leaveGroupFunction(userId, chatId);
 
     if (result.deleted) {
       emitGroupDeleted(result.chatId, result.memberIds!);
@@ -237,7 +225,7 @@ export const deleteGroup = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("Chat ID is required");
 
-    const { chatId: deletedChatId, memberIds } = await deleteGroupFunction(
+    const { chatId: deletedChatId, memberIds } = await groupService.deleteGroupFunction(
       userId,
       chatId,
     );
@@ -270,7 +258,7 @@ export const transferOwnership = async (
     }
 
     const { group, newOwnerId: resolvedNewOwnerId } =
-      await transferOwnershipFunction(userId, chatId, newOwnerId);
+      await groupService.transferOwnershipFunction(userId, chatId, newOwnerId);
 
     emitOwnershipTransferred(chatId, resolvedNewOwnerId);
 
@@ -304,7 +292,7 @@ export const updateGroupAvatar = async (
       throw Unauthorized();
     }
 
-    const result = await updateGroupAvatarById(userId, chatId, key);
+    const result = await groupService.updateGroupAvatarById(userId, chatId, key);
 
     res.json(result);
   } catch (error) {
@@ -325,7 +313,7 @@ export const getAvatarDownloadUrl = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("Chat ID is required");
 
-    const url = await getGroupAvatarUrlService(chatId, userId);
+    const url = await groupService.getGroupAvatarUrlService(chatId, userId);
 
     res.json({ url });
   } catch (error) {
@@ -345,7 +333,7 @@ export const editName = async (
 
     const { chatId, newName } = req.body;
 
-    const updatedChat = await editGroupNameService(userId, chatId, newName);
+    const updatedChat = await groupService.editGroupNameService(userId, chatId, newName);
 
     res.status(200).json({
       success: true,

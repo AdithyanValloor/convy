@@ -1,16 +1,6 @@
 import { Response, NextFunction, Request } from "express";
 import {
-  accessChatFunction,
-  clearChatForUser,
-  deleteChatForUser,
-  fetchChatsFunction,
-  markChatAsReadFunction,
-  markChatAsUnreadFunction,
-  muteChatFunction,
   MuteDuration,
-  toggleArchiveChatFunction,
-  togglePinChatFunction,
-  unmuteChatFunction,
 } from "../services/chat.service.js";
 import {
   Unauthorized,
@@ -19,6 +9,7 @@ import {
 } from "../../../utils/errors/httpErrors.js";
 import { Chat } from "../models/chat.model.js";
 import { emitUnreadUpdate } from "../../../socket/emitters/message.emmitter.js";
+import { chatService } from "../composition/container.js";
 
 /** Chat controller handlers for authenticated chat actions. */
 
@@ -35,7 +26,7 @@ export const fetchChats = async (
       throw Unauthorized();
     }
 
-    const chats = await fetchChatsFunction(userId);
+    const chats = await chatService.fetchChatsFunction(userId);
 
     res.status(200).json(chats);
   } catch (err) {
@@ -61,7 +52,9 @@ export const accessChat = async (
       throw Unauthorized();
     }
 
-    const chat = await accessChatFunction(userId, currentUserId, message);
+    // TODO UPDATE NEW MESSAGE IN REQUEST...
+    // const chat = await chatService.accessChatFunction(userId, currentUserId, message);
+    const chat = await chatService.accessChatFunction(userId, currentUserId);
 
     res.status(200).json(chat);
   } catch (err) {
@@ -90,7 +83,7 @@ export const togglePinChat = async (
 
     if (!chat) throw Forbidden("Not allowed");
 
-    const result = await togglePinChatFunction(userId, chatId);
+    const result = await chatService.togglePinChatFunction(userId, chatId);
 
     res.status(200).json(result);
   } catch (err) {
@@ -119,7 +112,7 @@ export const toggleArchiveChat = async (
 
     if (!chat) throw Forbidden("Not allowed");
 
-    const result = await toggleArchiveChatFunction(userId, chatId);
+    const result = await chatService.toggleArchiveChatFunction(userId, chatId);
 
     res.status(200).json(result);
   } catch (err) {
@@ -140,7 +133,7 @@ export const markChatAsUnread = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
 
-    const result = await markChatAsUnreadFunction(userId, chatId);
+    const result = await chatService.markChatAsUnreadFunction(userId, chatId);
 
     res.status(200).json(result);
   } catch (err) {
@@ -162,7 +155,7 @@ export const markChatAsRead = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const { unreadCount } = await markChatAsReadFunction(
+    const { unreadCount } = await chatService.markChatAsReadFunction(
       userId,
       req.params.chatId as string,
     );
@@ -188,7 +181,7 @@ export const clearChat = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
 
-    await clearChatForUser(userId, chatId);
+    await chatService.clearChatForUser(userId, chatId);
 
     res.status(200).json({ success: true });
   } catch (err) {
@@ -209,7 +202,7 @@ export const deleteChat = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
 
-    await deleteChatForUser(userId, chatId);
+    await chatService.deleteChatForUser(userId, chatId);
 
     res.status(200).json({ success: true, chatId });
   } catch (err) {
@@ -239,7 +232,7 @@ export const muteChat = async (
       );
     }
 
-    const result = await muteChatFunction(userId, chatId, duration);
+    const result = await chatService.muteChatFunction(userId, chatId, duration);
 
     res.status(200).json(result);
   } catch (err) {
@@ -260,7 +253,7 @@ export const unmuteChat = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("ChatId is required");
 
-    const result = await unmuteChatFunction(userId, chatId);
+    const result = await chatService.unmuteChatFunction(userId, chatId);
 
     res.status(200).json(result);
   } catch (err) {

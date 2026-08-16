@@ -207,14 +207,12 @@ export class AuthService {
     if (!email || !password) throw BadRequest("Email and password required");
 
     const authUser = await this.authRepository.findByEmail(email);
-
-    // Use the same auth error for missing users and invalid passwords.
     if (!authUser) throw Unauthorized("Invalid email or password");
-
-    const profileUser = await UserAPI.findUserByAuthUserId(authUser.id)
 
     const match = await bcrypt.compare(password, authUser.hashedPassword);
     if (!match) throw Unauthorized("Invalid email or password");
+
+    const profileUser = await UserAPI.findUserByAuthUserId(authUser.id);
 
     return {
       accessToken: generateAccessToken(this.buildJwtPayload(authUser)),
