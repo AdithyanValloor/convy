@@ -1,3 +1,5 @@
+import { UserDTO } from "../../user/types/user.dto.js";
+
 /** Shared message route params and request body types. */
 
 export interface MessageParams {
@@ -46,4 +48,12 @@ export interface MessageBody {
   targetChatIds?: string[];
   mentionIds?: string[];
   file?: MessageFile;
+}
+
+export interface MessageRequestDTO {
+  from: UserDTO;
+  to: UserDTO;
+  status: "pending" | "accepted" | "rejected";
+  firstMessage: string;
+  createdAt: Date;
 }

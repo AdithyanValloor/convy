@@ -1,6 +1,6 @@
 import { Schema, Document, model, Types } from "mongoose";
 
-export interface IMessage extends Document {
+export interface IMessage {
   _id: Types.ObjectId;
   chat: Types.ObjectId;
   sender: Types.ObjectId;

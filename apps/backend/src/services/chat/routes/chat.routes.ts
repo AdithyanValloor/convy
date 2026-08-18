@@ -10,6 +10,7 @@ import {
   deleteChat,
   unmuteChat,
   muteChat,
+  getUnreadCounts,
 } from "../controllers/chat.controller.js";
 import { protect } from "../../auth/middleware/auth.middleware.js";
 
@@ -25,6 +26,9 @@ router.patch("/pin/:chatId", protect, togglePinChat);
 router.patch("/archive/:chatId", protect, toggleArchiveChat);
 router.patch("/unread/:chatId", protect, markChatAsUnread);
 router.patch("/read/:chatId", protect, markChatAsRead);
+
+router.get("/get-unread", protect, getUnreadCounts);
+
 
 // Chat cleanup and mute actions.
 router.delete("/:chatId/clear", protect, clearChat);

@@ -95,6 +95,7 @@ export class ChatUserStateRepository implements IChatUserStateRepository {
         clearedAt: date,
         lastReadAt: date,
         isArchived: false,
+        unreadCount: 0,
       },
       { upsert: true },
     );
@@ -124,5 +125,50 @@ export class ChatUserStateRepository implements IChatUserStateRepository {
         new: true,
       },
     );
+  }
+
+  async incrementUnreadCount(userId: string, chatId: string): Promise<number> {
+    const state = await ChatUserState.findOneAndUpdate(
+      { userId, chatId },
+      {
+        $inc: {
+          unreadCount: 1,
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      },
+    ).lean();
+
+    return state.unreadCount;
+  }
+
+  async resetUnreadCount(userId: string, chatId: string): Promise<void> {
+    await ChatUserState.findOneAndUpdate(
+      { userId, chatId },
+      {
+        $set: {
+          unreadCount: 0,
+        },
+      },
+      {
+        upsert: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+  }
+
+  async findUnreadCountsByUser(
+    userId: string,
+  ): Promise<FlattenMaps<IChatUserState>[]> {
+    return ChatUserState.find(
+      { userId },
+      {
+        chatId: 1,
+        unreadCount: 1,
+      },
+    ).lean();
   }
 }

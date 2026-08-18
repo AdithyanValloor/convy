@@ -36,7 +36,7 @@ export const fetchUnreadCounts = createAsyncThunk<
 >("unread/fetchUnreadCounts", async (_, { rejectWithValue }) => {
   try {
     const res = await api.get<{ unread: Record<string, number> }>(
-      "/message/unread",
+      "/chat/get-unread",
       { withCredentials: true }
     );
     return res.data.unread;

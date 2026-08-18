@@ -8,6 +8,7 @@ export interface IChatUserState {
   clearedAt?: Date | null;
   lastReadAt?: Date | null;
   mutedUntil?: Date | null;
+  unreadCount: number;
 }
 
 /** Per-user chat state such as archive, pin, read, clear, and mute metadata. */
@@ -44,6 +45,11 @@ const chatUserStateSchema = new Schema<IChatUserState>(
     mutedUntil: {
       type: Date,
       default: null,
+    },
+    unreadCount: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   { timestamps: true },

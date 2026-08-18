@@ -9,126 +9,143 @@ import { MessageRequestModel } from "../models/messageRequest.model.js";
 import * as UserAPI from "../../user/api/user.api.js";
 import * as SocialAPI from "../../social/api/social.api.js";
 import * as ChatAPI from "../../chat/api/chat.api.js";
+import { IMessageRequestRepository } from "../repositories/messageRequest.repository.js";
+import { IMessageRepository } from "../repositories/message.repository.js";
 
 /** Message request helpers for inbox retrieval and request review actions. */
 
-/** Returns pending incoming message requests for the recipient. */
-export const getMessageRequests = async (userId: string) => {
-  const incoming = await MessageRequestModel.find({
-    status: "pending",
-    to: userId,
-  }).populate("from to", "username displayName profilePicture");
+export class MessageRequestService {
+  constructor(
+    private readonly messageRequestRepository: IMessageRequestRepository,
+    private readonly messageRepository: IMessageRepository,
+  ) {}
 
-  return { incoming };
-};
+  /** Returns pending incoming message requests for the recipient. */
+  async getMessageRequests(userId: string) {
+    const requests =
+      await this.messageRequestRepository.findPendingRequestsForUser(userId);
 
-/** Creates a new message request for a non-friend when messaging is allowed. */
-export const sendMessageRequest = async (
-  fromUserId: string,
-  toUserId: string,
-  firstMessage: string,
-) => {
-  if (!firstMessage) throw BadRequest("Message required");
+    const userIds = new Set<string>();
 
-  const toUser = await UserAPI.findUserById(toUserId);
+    for (const request of requests) {
+      userIds.add(request.from.toString());
+      userIds.add(request.to.toString());
+    }
 
-  if (toUser.id.toString() === fromUserId)
-    throw BadRequest("Cannot message yourself");
+    const users = await UserAPI.fetchUsers([...userIds]);
 
-  const blockExists = await SocialAPI.blockExists(toUserId, fromUserId);
+    const userMap = new Map(users.map((user) => [user.id, user]));
 
-  if (blockExists) throw Forbidden("Cannot message this user");
+    const incoming = requests.map((request) => ({
+      ...request,
+      from: userMap.get(request.from.toString()),
+      to: userMap.get(request.to.toString()),
+    }));
 
-  const friends = await SocialAPI.areFriends(fromUserId, toUser.id.toString());
+    return { incoming };
+  }
+  /** Creates a new message request for a non-friend when messaging is allowed. */
+  async sendMessageRequest(
+    fromUserId: string,
+    toUserId: string,
+    firstMessage: string,
+  ) {
+    if (!firstMessage) throw BadRequest("Message required");
 
-  if (friends) throw BadRequest("Users are already friends");
+    const toUser = await UserAPI.findUserById(toUserId);
 
-  // Rate-limit new requests per sender on a calendar-day basis.
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+    if (toUser.id.toString() === fromUserId)
+      throw BadRequest("Cannot message yourself");
 
-  const dailyCount = await MessageRequestModel.countDocuments({
-    from: fromUserId,
-    createdAt: { $gte: startOfDay },
-  });
+    const blockExists = await SocialAPI.blockExists(toUserId, fromUserId);
 
-  if (dailyCount >= 20) {
-    throw Forbidden("Too many message requests today");
+    if (blockExists) throw Forbidden("Cannot message this user");
+
+    const friends = await SocialAPI.areFriends(
+      fromUserId,
+      toUser.id.toString(),
+    );
+
+    if (friends) throw BadRequest("Users are already friends");
+
+    // Rate-limit new requests per sender on a calendar-day basis.
+    const dailyCount =
+      await this.messageRequestRepository.dailyCount(fromUserId);
+
+    if (dailyCount >= 20) {
+      throw Forbidden("Too many message requests today");
+    }
+
+    const existing = await this.messageRequestRepository.findPendingRequest(
+      fromUserId,
+      toUser.id,
+    );
+
+    if (existing) throw BadRequest("Message request already pending");
+
+    const request = await this.messageRequestRepository.createRequest({
+      from: fromUserId,
+      to: toUser.id,
+      firstMessage,
+    });
+
+    const userIds = new Set([request.to.toString(), request.from.toString()]);
+
+    const users = await UserAPI.fetchUsers([...userIds]);
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    return {
+      ...request,
+      from: userMap.get(request.from.toString()),
+      to: userMap.get(request.to.toString()),
+    };
   }
 
-  const existing = await MessageRequestModel.findOne({
-    from: fromUserId,
-    to: toUser.id,
-    status: "pending",
-  });
-  if (existing) throw BadRequest("Message request already pending");
+  /** Accepts a pending request and converts its placeholder chat into a normal direct chat. */
+  async acceptMessageRequest(requestId: string, userId: string) {
+    const request = await this.messageRequestRepository.findById(requestId);
+    if (!request) throw NotFound("Request not found");
 
-  const request = await MessageRequestModel.create({
-    from: fromUserId,
-    to: toUser.id,
-    firstMessage,
-  });
+    if (request.to.toString() !== userId) throw Forbidden("Not authorized");
 
-  const populated = await request.populate([
-    { path: "from", select: "username displayName profilePicture" },
-    { path: "to", select: "username displayName profilePicture" },
-  ]);
+    const chat = await ChatAPI.findPendingDirectChat(
+      request.from.toString(),
+      request.to.toString(),
+    );
 
-  return populated;
-};
+    if (!chat) throw NotFound("Chat not found");
 
-/** Accepts a pending request and converts its placeholder chat into a normal direct chat. */
-export const acceptMessageRequest = async (
-  requestId: string,
-  userId: string,
-) => {
-  const request = await MessageRequestModel.findById(requestId);
+    const newChat = await ChatAPI.acceptPendingDirectChat(
+      request.from.toString(),
+      request.to.toString(),
+    );
 
-  if (!request) throw NotFound("Request not found");
+    await this.messageRequestRepository.acceptRequest(requestId);
 
-  if (request.to.toString() !== userId) throw Forbidden("Not authorized");
+    return { chat: newChat };
+  }
 
-  const chat = await ChatAPI.findPendingDirectChat(
-    request.from.toString(),
-    request.to.toString(),
-  );
+  /** Rejects a pending request and removes its temporary chat history. */
+  async rejectMessageRequest(requestId: string, userId: string) {
+    const request = await this.messageRequestRepository.findById(requestId);
 
-  if (!chat) throw NotFound("Chat not found");
+    if (!request) throw NotFound("Request not found");
 
-  const newChat = await ChatAPI.acceptPendingDirectChat(
-    request.from.toString(),
-    request.to.toString(),
-  );
+    if (request.to.toString() !== userId) throw Forbidden("Not authorized");
 
-  request.status = "accepted";
-  await request.save();
+    const chat = await ChatAPI.deletePendingDirectChat(
+      request.from.toString(),
+      request.to.toString(),
+      request.from.toString(),
+    );
 
-  return { chat: newChat };
-};
+    if (!chat) throw NotFound("Chat not found");
 
-/** Rejects a pending request and removes its temporary chat history. */
-export const rejectMessageRequest = async (
-  requestId: string,
-  userId: string,
-) => {
-  const request = await MessageRequestModel.findById(requestId);
+    await this.messageRepository.deleteMessageByChatId(chat._id.toString());
 
-  if (!request) throw NotFound("Request not found");
+    await this.messageRequestRepository.rejectRequest(requestId);
 
-  if (request.to.toString() !== userId) throw Forbidden("Not authorized");
-
-  const chat = await ChatAPI.deletePendingDirectChat(
-    request.from.toString(),
-    request.to.toString(),
-    request.from.toString(),
-  );
-
-  if (!chat) throw NotFound("Chat not found");
-
-  await Message.deleteMany({ chat: chat._id });
-
-  request.status = "rejected";
-  await request.save();
-
-  return { request, chatId: chat._id.toString() };
-};
+    return { request, chatId: chat._id.toString() };
+  }
+}

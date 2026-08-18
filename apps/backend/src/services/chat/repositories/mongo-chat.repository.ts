@@ -314,6 +314,18 @@ export class ChatRepository implements IChatRepository {
     ).lean();
   }
 
+  async deleteGroupAvatar(chatId: string): Promise<void> {
+    await Chat.findByIdAndUpdate(
+      chatId,
+      {
+        "avatar.key": null,
+      },
+      {
+        new: true,
+      },
+    );
+  }
+
   async updateGroupName(chatId: string, name: string): Promise<IChat | null> {
     return Chat.findByIdAndUpdate(
       chatId,

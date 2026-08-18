@@ -241,7 +241,7 @@ export class ChatService {
       latestMessage.createdAt,
     );
 
-    await MessagesAPI.resetUnreadCount(userId, chatId);
+    await this.chatUserStateRepository.resetUnreadCount(userId, chatId);
 
     return { unreadCount: 0 };
   }
@@ -326,4 +326,27 @@ export class ChatService {
       mutedUntil: null,
     };
   }
+
+  async incrementUnreadCount(userId: string, chatId: string): Promise<number> {
+    return this.chatUserStateRepository.incrementUnreadCount(userId, chatId);
+  }
+
+  async resetUnreadCount(userId: string, chatId: string): Promise<void> {
+    await this.chatUserStateRepository.resetUnreadCount(userId, chatId);
+  }
+
+  async getUnreadCounts(userId: string): Promise<Record<string, number>> {
+    const states =
+      await this.chatUserStateRepository.findUnreadCountsByUser(userId);
+
+    const unreadCounts: Record<string, number> = {};
+
+    for (const state of states) {
+      unreadCounts[state.chatId.toString()] = state.unreadCount;
+    }
+
+    return unreadCounts;
+  }
+
+  
 }

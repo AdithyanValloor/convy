@@ -1,3 +1,4 @@
+import { chatService } from "../composition/container.js";
 import { IChat } from "../models/chat.model.js";
 import { ChatRepository } from "../repositories/mongo-chat.repository.js";
 import { ChatUserStateRepository } from "../repositories/mongo-chatUserState.repository.js";
@@ -77,3 +78,29 @@ export const updateChatState = (
 ) => {
   return chatUserStateRepository.updateLastReadAt(userId, chatId, lastReadAt);
 };
+
+export const incrementUnreadCount = async (
+  userId: string,
+  chatId: string,
+) => {
+  return chatService.incrementUnreadCount(userId, chatId);
+};
+
+export const resetUnreadCount = async (
+  userId: string,
+  chatId: string,
+) => {
+  return chatService.resetUnreadCount(userId, chatId);
+};
+
+export const getUnreadCounts = async (userId: string) => {
+  return chatService.getUnreadCounts(userId);
+};
+
+export const updateGroupAvatar = async (chatId: string, key: string) => {
+  return chatRepository.updateGroupAvatar(chatId, key);
+}
+
+export const deleteGroupAvatar = async (chatId: string) => {
+  return chatRepository.deleteGroupAvatar(chatId);
+}

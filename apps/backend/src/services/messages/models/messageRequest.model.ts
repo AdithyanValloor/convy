@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
-export interface IMessageRequest extends Document {
+export interface IMessageRequest {
   from: Types.ObjectId;
   to: Types.ObjectId;
   status: "pending" | "accepted" | "rejected";

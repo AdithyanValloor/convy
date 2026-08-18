@@ -90,5 +90,7 @@ export interface IChatRepository {
 
   updateGroupAvatar(chatId: string, key: string): Promise<IChat | null>;
 
+  deleteGroupAvatar(chatId: string): Promise<void>;
+
   updateGroupName(chatId: string, name: string): Promise<IChat | null>;
 }

@@ -5,20 +5,9 @@ import {
   MessageParams,
   SendMessageBody,
 } from "../types/message.types.js";
-import {
-  deleteMessageFunction,
-  editMessageFunction,
-  forwardMessageFunction,
-  getAllMessagesFunction,
-  getMessageContextFunction,
-  getNewerMessagesFunction,
-  getUnreadCountsFunction,
-  globalSearchMessagesFunction,
-  markMessagesAsSeenFunction,
-  searchMessagesFunction,
-  sendMessageFunction,
-  toggleReactionFunction,
-} from "../services/message.service.js";
+
+
+
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { toMessageSocketPayload } from "../utils/normalizeMessage.js";
 import {
@@ -32,7 +21,9 @@ import {
 } from "../../../socket/emitters/message.emmitter.js";
 import { fetchLinkPreview } from "../utils/linkPreview.js";
 import { Message } from "../models/message.model.js";
-import * as ChatAPI from "../../chat/api/chat.api.js"
+import * as ChatAPI from "../../chat/api/chat.api.js";
+import { messageService } from "../composition/container.js";
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /** Message controller handlers for authenticated message actions. */
@@ -52,7 +43,7 @@ export const getAllMessages = async (
 
     if (!chatId) throw BadRequest("ChatId is required");
 
-    const data = await getAllMessagesFunction(chatId, userId, page, limit);
+    const data = await messageService.getAllMessagesFunction(chatId, userId, page, limit);
 
     res.status(200).json(data);
   } catch (err) {
@@ -127,7 +118,7 @@ export const sendMessage = async (
       chatMembers,
       unreadCounts,
       mentionedUserIds,
-    } = await sendMessageFunction(
+    } = await messageService.sendMessageFunction(
       chatId,
       content ?? "",
       senderId,
@@ -204,7 +195,7 @@ export const forwardMessage = async (
       throw BadRequest("messageId and targetChatIds are required");
     }
 
-    const results = await forwardMessageFunction(
+    const results = await messageService.forwardMessageFunction(
       messageId,
       targetChatIds,
       senderId,
@@ -240,7 +231,7 @@ export const toggleReaction = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const { populated, chatId } = await toggleReactionFunction(
+    const { populated, chatId } = await messageService.toggleReactionFunction(
       req.params.messageId as string,
       userId,
       req.body.emoji,
@@ -249,24 +240,6 @@ export const toggleReaction = async (
     emitMessageReaction(chatId, toMessageSocketPayload(populated));
 
     res.status(200).json(populated);
-  } catch (err) {
-    next(err);
-  }
-};
-
-/** Returns unread counts keyed by chat ID for the current user. */
-export const getUnreadCounts = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) throw Unauthorized();
-
-    const unread = await getUnreadCountsFunction(userId);
-
-    res.status(200).json({ unread });
   } catch (err) {
     next(err);
   }
@@ -283,7 +256,7 @@ export const markMessagesAsSeen = async (
     if (!userId) throw Unauthorized();
 
     const { success, modifiedCount, emitSeen } =
-      await markMessagesAsSeenFunction(userId, req.params.chatId as string);
+      await messageService.markMessagesAsSeenFunction(userId, req.params.chatId as string);
 
     if (emitSeen) {
       emitMessagesSeen(req.params.chatId as string, userId, modifiedCount);
@@ -313,7 +286,7 @@ export const editMessage = async (
     if (!messageId) throw BadRequest("MessageId is required");
     if (!content) throw BadRequest("Content is required");
 
-    const { populated, chatId } = await editMessageFunction(
+    const { populated, chatId } = await messageService.editMessageFunction(
       messageId,
       content,
       userId,
@@ -340,7 +313,7 @@ export const deleteMessage = async (
     const { messageId } = req.params;
     if (!messageId) throw BadRequest("MessageId is required");
 
-    const { populated, chatId } = await deleteMessageFunction(
+    const { populated, chatId } = await messageService.deleteMessageFunction(
       messageId,
       userId,
     );
@@ -369,7 +342,7 @@ export const searchMessages = async (
 
     if (!chatId) throw BadRequest("ChatId is required");
 
-    const result = await searchMessagesFunction(
+    const result = await messageService.searchMessagesFunction(
       chatId as string,
       userId,
       query as string,
@@ -399,7 +372,7 @@ export const getMessageContext = async (
 
     const limit = Number(req.query.limit) || 20;
 
-    const result = await getMessageContextFunction(messageId, userId, limit);
+    const result = await messageService.getMessageContextFunction(messageId, userId, limit);
 
     res.status(200).json(result);
   } catch (err) {
@@ -423,7 +396,7 @@ export const getNewerMessages = async (
 
     if (!after) throw BadRequest("'after' timestamp is required");
 
-    const result = await getNewerMessagesFunction(chatId, after, userId, limit);
+    const result = await messageService.getNewerMessagesFunction(chatId, after, userId, limit);
 
     res.status(200).json(result);
   } catch (err) {
@@ -443,7 +416,7 @@ export const globalSearchMessages = async (
 
     if (!userId) throw Unauthorized();
 
-    const result = await globalSearchMessagesFunction(
+    const result = await messageService.globalSearchMessagesFunction(
       userId,
       query as string,
       limit ? parseInt(limit as string, 10) : 20,

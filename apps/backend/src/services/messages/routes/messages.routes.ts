@@ -4,7 +4,6 @@ import {
   sendMessage,
   editMessage,
   deleteMessage,
-  getUnreadCounts,
   markMessagesAsSeen,
   toggleReaction,
   searchMessages,
@@ -21,7 +20,7 @@ const router = Router();
 /** Message routes for authenticated users. */
 
 // Message status and search routes.
-router.get("/unread", protect, getUnreadCounts);
+// router.get("/unread", protect, getUnreadCounts);
 router.post("/mark-seen/:chatId", protect, markMessagesAsSeen);
 router.get("/search/global", protect, globalSearchMessages);
 router.get("/search", protect, searchMessages);

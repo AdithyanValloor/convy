@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import * as service from "../services/messageRequest.service.js";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
   emitMessageRequestAccepted,
   emitMessageRequestRejected,
 } from "../../../socket/emitters/messageRequest.emitters.js";
 import { MessageReqParams } from "../types/message.types.js";
+import { messageRequestService } from "../composition/container.js";
 
 /** Message request controller handlers for authenticated request actions. */
 
@@ -18,7 +18,7 @@ export const getMessageRequestsController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const requests = await service.getMessageRequests(userId);
+    const requests = await messageRequestService.getMessageRequests(userId);
 
     res.status(200).json({
       success: true,
@@ -42,7 +42,7 @@ export const acceptMessageRequestController = async (
     const { requestId } = req.params;
     if(!requestId) throw Unauthorized();
 
-    const result = await service.acceptMessageRequest(requestId, userId);
+    const result = await messageRequestService.acceptMessageRequest(requestId, userId);
     
     const [userA, userB] = result.chat?.members as any[];
 
@@ -73,7 +73,7 @@ export const rejectMessageRequestController = async (
     const { requestId } = req.params;
     if(!requestId) throw Unauthorized();
 
-    const result = await service.rejectMessageRequest(requestId, userId);
+    const result = await messageRequestService.rejectMessageRequest(requestId, userId);
 
     emitMessageRequestRejected(
       result.request.from.toString(),

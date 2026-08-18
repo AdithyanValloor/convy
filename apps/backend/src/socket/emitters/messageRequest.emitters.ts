@@ -4,13 +4,13 @@
  */
 
 import { IChat } from "../../services/chat/models/chat.model.js";
-import { IMessageRequest } from "../../services/messages/models/messageRequest.model.js";
+import { MessageRequestDTO } from "../../services/messages/types/message.types.js";
 import { getIO } from "../io.js";
 
 export const emitMessageRequestSent = (
   fromUserId: string,
   toUserId: string,
-  request: IMessageRequest
+  request: MessageRequestDTO
 ) => {
   const io = getIO();
 

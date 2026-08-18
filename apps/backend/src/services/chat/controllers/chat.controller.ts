@@ -34,6 +34,25 @@ export const fetchChats = async (
   }
 };
 
+/** Returns unread counts keyed by chat ID for the current user. */
+export const getUnreadCounts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw Unauthorized();
+
+    const unread = await chatService.getUnreadCounts(userId);
+
+    res.status(200).json({ unread });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
 /** Returns an existing direct chat or creates one when allowed. */
 export const accessChat = async (
   req: Request,

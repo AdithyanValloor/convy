@@ -109,8 +109,7 @@ export const deleteGroupAvatar = async (
     }
 
     if (group.avatar?.key === key) {
-      group.avatar = { key: null };
-      await group.save();
+      await ChatAPI.deleteGroupAvatar(group._id.toString())
     }
 
     res.json({
@@ -154,8 +153,7 @@ export const attachGroupAvatarFromTemp = async (
     await copyFile(tempKey, newKey);
     await deleteFile(tempKey);
 
-    group.avatar = { key: newKey };
-    await group.save();
+    await ChatAPI.updateGroupAvatar(group._id.toString(), newKey)
 
     res.json({ avatar: group.avatar });
   } catch (err) {

@@ -46,4 +46,12 @@ export interface IChatUserStateRepository {
   ): Promise<void>;
 
   unmuteChat(userId: string, chatId: string): Promise<void>;
+
+  incrementUnreadCount(userId: string, chatId: string): Promise<number>;
+
+  resetUnreadCount(userId: string, chatId: string): Promise<void>;
+
+  findUnreadCountsByUser(
+    userId: string,
+  ): Promise<FlattenMaps<IChatUserState>[]>;
 }
