@@ -1,15 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
 import {
-  blockUser,
-  getBlockedByUsers,
-  getBlockedUsers,
-  unblockUser,
-} from "../services/block.service.js";
-import {
   emitUserBlocked,
   emitUserUnblocked,
 } from "../../../socket/emitters/block.emitter.js";
+import { blockService } from "../composition/container.js";
 
 /** Block controller handlers for authenticated block and unblock actions. */
 
@@ -23,7 +18,7 @@ export const getBlockedUsersController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const blockedUsers = await getBlockedUsers(userId);
+    const blockedUsers = await blockService.getBlockedUsers(userId);
 
     res.status(200).json({ blockedUsers });
   } catch (err) {
@@ -41,7 +36,7 @@ export const getBlockedByUsersController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const blockedByUserIds = await getBlockedByUsers(userId);
+    const blockedByUserIds = await blockService.getBlockedByUsers(userId);
 
     res.json({ blockedByUserIds });
   } catch (err) {
@@ -60,7 +55,7 @@ export const blockUserController = async (
     if (!userId) throw Unauthorized();
 
     const { targetUserId } = req.params as Record<string, string>;
-    const result = await blockUser(userId, targetUserId);
+    const result = await blockService.blockUser(userId, targetUserId);
 
     if (!result?.alreadyBlocked) {
       emitUserBlocked(userId, targetUserId);
@@ -87,7 +82,7 @@ export const unblockUserController = async (
     if (!userId) throw Unauthorized();
 
     const { targetUserId } = req.params as Record<string, string>;
-    const result = await unblockUser(userId, targetUserId);
+    const result = await blockService.unblockUser(userId, targetUserId);
 
     if (!result?.notBlocked) {
       emitUserUnblocked(targetUserId, userId);

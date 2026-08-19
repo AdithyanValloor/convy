@@ -1,117 +1,94 @@
-import { BlockModel } from "../models/block.model.js";
-
-import {
-  BadRequest,
-  NotFound,
-  Unauthorized,
-} from "../../../utils/errors/httpErrors.js";
-import { FriendRequestModel } from "../models/request.model.js";
-import { FriendshipModel } from "../models/friends.model.js";
+import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { normalizeFriendship } from "../utils/social.utils.js";
-import mongoose from "mongoose";
+import { IBlockRepository } from "../repository/block.repository.js";
+import { IFriendsRepository } from "../repository/friends.repository.js";
+import { IRequestRepository } from "../repository/request.repository.js";
+
 import * as UserAPI from "../../user/api/user.api.js";
 
 /** Block service helpers for managing user block relationships. */
 
-/** Returns the users blocked by the current user. */
-export const getBlockedUsers = async (userId: string) => {
-  if (!userId) throw Unauthorized();
+export class BlockService {
+  constructor(
+    private readonly blockRepository: IBlockRepository,
+    private readonly friendsRepository: IFriendsRepository,
+    private readonly requestRepository: IRequestRepository,
+  ) {}
 
-  const blocks = await BlockModel.find({ blocker: userId })
-    .populate("blocked", "_id username displayName profilePicture")
-    .lean();
+  /** Returns the users blocked by the current user. */
+  async getBlockedUsers(userId: string) {
+    if (!userId) throw Unauthorized();
 
-  return blocks.map((b) => b.blocked);
-};
+    const blocks = await this.blockRepository.findBlockedByUser(userId);
 
-/** Returns the user IDs of people who have blocked the current user. */
-export const getBlockedByUsers = async (userId: string) => {
-  if (!userId) throw Unauthorized();
+    const userIds = blocks.map((block) => block.blocked.toString());
 
-  const blocks = await BlockModel.find({ blocked: userId }).lean();
-
-  return blocks.map((b) => b.blocker.toString());
-};
-
-/** Blocks a target user and removes any friendship or pending requests. */
-export const blockUser = async (userId: string, targetUserId: string) => {
-  if (!userId) throw Unauthorized();
-
-  if (userId === targetUserId) {
-    throw BadRequest("Cannot block yourself");
+    return UserAPI.fetchUsers(userIds);
   }
 
-  const targetUser = await UserAPI.findUserById(targetUserId);
+  /** Returns the user IDs of people who have blocked the current user. */
+  async getBlockedByUsers(userId: string) {
+    if (!userId) throw Unauthorized();
 
-  const existingBlock = await BlockModel.findOne({
-    blocker: userId,
-    blocked: targetUserId,
-  });
+    const blocks = await this.blockRepository.findBlockedUser(userId);
 
-  if (existingBlock) {
-    return { alreadyBlocked: true };
+    return blocks.map((block) => block.blocker.toString());
   }
 
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-      await BlockModel.create(
-        [
-          {
-            blocker: userId,
-            blocked: targetUserId,
-          },
-        ],
-        { session },
-      );
+  /** Blocks a target user and removes any friendship or pending requests. */
+  async blockUser(userId: string, targetUserId: string) {
+    if (!userId) throw Unauthorized();
 
-      const [user1, user2] = normalizeFriendship(userId, targetUserId);
-      await FriendshipModel.findOneAndDelete(
-        {
-          user1,
-          user2,
-        },
-        { session },
-      );
-      // Cancel friend requests
-      await FriendRequestModel.deleteMany(
-        {
-          $or: [
-            { from: userId, to: targetUserId, status: "pending" },
-            { from: targetUserId, to: userId, status: "pending" },
-          ],
-        },
-        { session },
-      );
-    });
-  } finally {
-    await session.endSession();
-  }
-  return { success: true, blockedUser: targetUser };
-};
+    if (userId === targetUserId) {
+      throw BadRequest("Cannot block yourself");
+    }
 
-/** Removes an existing block created by the current user. */
-export const unblockUser = async (userId: string, targetUserId: string) => {
-  if (!userId) throw Unauthorized();
+    const targetUser = await UserAPI.findUserById(targetUserId);
 
-  const deleted = await BlockModel.findOneAndDelete({
-    blocker: userId,
-    blocked: targetUserId,
-  });
+    const existingBlock = await this.blockRepository.findBlock(
+      userId,
+      targetUserId,
+    );
 
-  if (!deleted) {
-    return { notBlocked: true };
+    if (existingBlock) {
+      return { alreadyBlocked: true };
+    }
+
+    await this.blockRepository.createBlock(userId, targetUserId);
+
+    const [user1, user2] = normalizeFriendship(userId, targetUserId);
+
+    await this.friendsRepository.deleteFriendship(user1, user2);
+
+    await this.requestRepository.deletePendingRequestsBetweenUsers(
+      userId,
+      targetUserId,
+    );
+
+    return {
+      success: true,
+      blockedUser: targetUser,
+    };
   }
 
-  return { success: true };
-};
+  /** Removes an existing block created by the current user. */
+  async unblockUser(userId: string, targetUserId: string) {
+    if (!userId) throw Unauthorized();
 
-/** Checks whether either user has blocked the other. */
-export const isBlockedEitherWay = async (userA: string, userB: string) => {
-  return BlockModel.exists({
-    $or: [
-      { blocker: userA, blocked: userB },
-      { blocker: userB, blocked: userA },
-    ],
-  });
-};
+    const deleted = await this.blockRepository.deleteBlock(
+      userId,
+      targetUserId,
+    );
+
+    if (!deleted) {
+      return { notBlocked: true };
+    }
+
+    return { success: true };
+  }
+
+  /** Checks whether either user has blocked the other. */
+  async isBlockedEitherWay(userA: string, userB: string) {
+    return this.blockRepository.existsEitherWay(userA, userB);
+  }
+}

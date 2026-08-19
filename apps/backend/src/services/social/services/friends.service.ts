@@ -13,291 +13,295 @@ import {
   emitUnreadNotificationCount,
 } from "../../../socket/emitters/notification.emitters.js";
 
-import { FriendshipModel } from "../models/friends.model.js";
-import { FriendRequestModel } from "../models/request.model.js";
-import {
-  areFriendsCheck,
-  getFriendIds,
-  normalizeFriendship,
-} from "../utils/social.utils.js";
+import { IFriendRequest } from "../models/request.model.js";
+import { areFriendsCheck, normalizeFriendship } from "../utils/social.utils.js";
 import mongoose from "mongoose";
 import {
   PopulatedFriendRequest,
   toFriendRequestSocketPayload,
 } from "../utils/normalizeFriendRequest.js";
 import * as ChatAPI from "../../chat/api/chat.api.js";
-import * as SocialAPI from "../api/social.api.js";
 import * as UserAPI from "../../user/api/user.api.js";
 import * as NotificationAPI from "../../notifications/api/notifications.api.js";
+import { IFriendsRepository } from "../repository/friends.repository.js";
+import { IRequestRepository } from "../repository/request.repository.js";
+import { IBlockRepository } from "../repository/block.repository.js";
 
 /** Friend service helpers for friendship and request workflows. */
 
 /** Returns the authenticated user's populated friend list. */
 
 //TODO pagination!!!!!
-export const getFriendList = async (userId: string) => {
-  if (!userId) throw Unauthorized();
-  const friendIds = await getFriendIds(userId);
-  const friends = await UserAPI.fetchUsers(friendIds);
-  return friends;
-};
 
-/** Returns the current user's incoming and outgoing pending requests. */
-export const fetchRequests = async (userId: string) => {
-  if (!userId) throw Unauthorized();
+export class FriendsService {
+  constructor(
+    private readonly friendsRepository: IFriendsRepository,
+    private readonly requestRepository: IRequestRepository,
+    private readonly blockRepository: IBlockRepository,
+  ) {}
 
-  const incoming = await FriendRequestModel.find({
-    to: userId,
-    status: "pending",
-  }).populate("from", "displayName username email profilePicture");
+  private async populateUsersInRequest(request: IFriendRequest) {
+    const userIds = new Set<string>([
+      request.from._id.toString(),
+      request.to._id.toString(),
+    ]);
 
-  const outgoing = await FriendRequestModel.find({
-    from: userId,
-    status: "pending",
-  }).populate("to", "displayName username email profilePicture");
+    const users = await UserAPI.fetchUsers([...userIds]);
 
-  return { incoming, outgoing };
-};
+    const userMap = new Map(users.map((user) => [user.id, user]));
 
-/** Creates a new friend request and the related inbox notification. */
-export const sendFriendRequest = async (
-  fromUserId: string,
-  toUsername: string,
-) => {
-  if (!fromUserId || !toUsername) {
-    throw BadRequest("Invalid request parameters");
+    return {
+      ...request,
+      from: userMap.get(request.from._id.toString()),
+      to: userMap.get(request.to._id.toString()),
+    };
   }
 
-  const fromUser = await UserAPI.findUserById(fromUserId);
-  if (!fromUser) throw Unauthorized();
-
-  const toUser = await UserAPI.findUserByName(toUsername);
-  if (!toUser) throw NotFound("User not found");
-
-  console.log("from.id", fromUser.id, typeof fromUser.id);
-  console.log("to.id", toUser.id, typeof toUser.id);
-
-  console.log("from.id", fromUser.id);
-  console.log("to.id", toUser.id);
-
-  console.log("from === to", fromUser.id === toUser.id);
-
-  // Self-check first, since it is the most obvious validation failure.
-  if (fromUser.id === toUser.id) {
-    throw BadRequest("Cannot send friend request to yourself");
+  async getFriendList(userId: string) {
+    if (!userId) throw Unauthorized();
+    const friendIds = await this.friendsRepository.getFriendIds(userId);
+    const friends = await UserAPI.fetchUsers(friendIds);
+    return friends;
   }
 
-  if (await areFriendsCheck(fromUser.id, toUser.id))
-    throw BadRequest("Already friends");
+  /** Returns the current user's incoming and outgoing pending requests. */
+  async fetchRequests(userId: string) {
+    if (!userId) throw Unauthorized();
 
-  const blockExists = await SocialAPI.blockExists(fromUserId, toUser.id);
+    const incomingRequests =
+      await this.requestRepository.findIncomingFriendRequests(userId);
+    const outgoingRequests =
+      await this.requestRepository.findOutGoingFriendRequests(userId);
 
-  if (blockExists) { 
-    throw BadRequest("Cannot send friend request to this user");
+    const userIds = new Set<string>();
+
+    for (let incoming of incomingRequests) {
+      userIds.add(incoming.from._id.toString());
+    }
+
+    for (let outgoing of outgoingRequests) {
+      userIds.add(outgoing.to._id.toString());
+    }
+
+    const users = await UserAPI.fetchUsers([...userIds]);
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
+    const incoming = incomingRequests.map((req) => {
+      return {
+        ...req,
+        from: userMap.get(req.from._id.toString()),
+      };
+    });
+
+    const outgoing = outgoingRequests.map((req) => {
+      return {
+        ...req,
+        to: userMap.get(req.to._id.toString()),
+      };
+    });
+
+    return { incoming, outgoing };
   }
 
-  if (toUser.privacy?.friendRequests === "nobody") {
-    throw BadRequest("This user is not accepting friend requests");
-  }
+  /** Creates a new friend request and the related inbox notification. */
+  async sendFriendRequest(fromUserId: string, toUsername: string) {
+    if (!fromUserId || !toUsername) {
+      throw BadRequest("Invalid request parameters");
+    }
 
-  if (toUser.privacy?.friendRequests === "friends") {
-    const senderFriendIds = await getFriendIds(fromUser.id);
-    const targetFriendIds = await getFriendIds(toUser.id);
-    const senderFriendSet = new Set(senderFriendIds);
-    const hasMutualFriend = targetFriendIds.some((id) =>
-      senderFriendSet.has(id),
+    const fromUser = await UserAPI.findUserById(fromUserId);
+    if (!fromUser) throw Unauthorized();
+
+    const toUser = await UserAPI.findUserByName(toUsername);
+    if (!toUser) throw NotFound("User not found");
+
+    // Self-check first, since it is the most obvious validation failure.
+    if (fromUser.id === toUser.id) {
+      throw BadRequest("Cannot send friend request to yourself");
+    }
+
+    if (await areFriendsCheck(fromUser.id, toUser.id))
+      throw BadRequest("Already friends");
+
+    const blockExists = await this.blockRepository.findBlockRelationship(
+      fromUserId,
+      toUser.id,
     );
 
-    if (!hasMutualFriend) {
-      throw BadRequest(
-        "This user only accepts requests from friends of friends",
-      );
+    if (blockExists) {
+      throw BadRequest("Cannot send friend request to this user");
     }
-  }
 
-  const existingRequest = await FriendRequestModel.findOne({
-    $or: [
-      {
-        from: fromUserId,
-        to: toUser.id,
-      },
-      {
-        from: toUser.id,
-        to: fromUserId,
-      },
-    ],
-    status: "pending",
-  });
+    if (toUser.privacy?.friendRequests === "nobody") {
+      throw BadRequest("This user is not accepting friend requests");
+    }
 
-  if (existingRequest) {
-    throw BadRequest("Friend request already sent");
-  }
-
-  const request = await FriendRequestModel.create({
-    from: fromUserId,
-    to: toUser.id,
-    status: "pending",
-  });
-
-  await createInboxNotification({
-    userId: toUser.id,
-    actorId: fromUserId,
-    type: "friend_request_received",
-    friendRequestId: request.id,
-  });
-
-  const populated = await request.populate([
-    { path: "from", select: "username displayName profilePicture" },
-    { path: "to", select: "username displayName profilePicture" },
-  ]);
-
-  return {
-    request,
-    payload: toFriendRequestSocketPayload(
-      populated as unknown as PopulatedFriendRequest,
-    ),
-    toUserId: toUser.id.toString(),
-  };
-};
-
-/** Accepts a pending friend request and creates the friendship. */
-export const acceptFriendRequest = async (
-  requestId: string,
-  userId: string,
-) => {
-  const request = await FriendRequestModel.findById(requestId);
-  if (!request) throw NotFound("Request not found");
-
-  if (request.status !== "pending") {
-    throw BadRequest("Request has already been processed");
-  }
-
-  if (request.to.toString() !== userId) {
-    throw Forbidden("Not authorized to accept this request");
-  }
-
-  const fromUserId = request.from.toString();
-  const toUserId = request.to.toString();
-
-  if (await areFriendsCheck(fromUserId, toUserId)) {
-    throw BadRequest("Users are already friends");
-  }
-
-  const [user1, user2] = normalizeFriendship(fromUserId, toUserId);
-
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-      await FriendshipModel.create(
-        [
-          {
-            user1,
-            user2,
-          },
-        ],
-        { session },
+    if (toUser.privacy?.friendRequests === "friends") {
+      const senderFriendIds = await this.friendsRepository.getFriendIds(
+        fromUser.id,
+      );
+      const targetFriendIds = await this.friendsRepository.getFriendIds(
+        toUser.id,
+      );
+      const senderFriendSet = new Set(senderFriendIds);
+      const hasMutualFriend = targetFriendIds.some((id) =>
+        senderFriendSet.has(id),
       );
 
-      request.status = "accepted";
-      await request.save({ session });
+      if (!hasMutualFriend) {
+        throw BadRequest(
+          "This user only accepts requests from friends of friends",
+        );
+      }
+    }
+
+    const [user1, user2] = normalizeFriendship(fromUserId, toUser.id);
+
+    const existingRequest =
+      await this.requestRepository.findFriendRequestExists(user1, user2);
+
+    if (existingRequest) {
+      throw BadRequest("Friend request already sent");
+    }
+
+    const request = await this.requestRepository.createFriendRequest(
+      fromUserId,
+      toUser.id,
+    );
+
+    await createInboxNotification({
+      userId: toUser.id,
+      actorId: fromUserId,
+      type: "friend_request_received",
+      friendRequestId: request._id.toString(),
     });
-  } finally {
-    await session.endSession();
+
+    const populated = await this.populateUsersInRequest(request);
+
+    return {
+      request,
+      payload: toFriendRequestSocketPayload(
+        populated as unknown as PopulatedFriendRequest,
+      ),
+      toUserId: toUser.id.toString(),
+    };
   }
 
-  await ChatAPI.ensureChatExists(fromUserId, toUserId);
+  /** Accepts a pending friend request and creates the friendship. */
+  async acceptFriendRequest(requestId: string, userId: string) {
+    const request = await this.requestRepository.findById(requestId);
+    if (!request) throw NotFound("Request not found");
 
-  await createInboxNotification({
-    userId: fromUserId,
-    actorId: toUserId,
-    type: "friend_request_accepted",
-  });
+    if (request.status !== "pending") {
+      throw BadRequest("Request has already been processed");
+    }
 
-  const populated = await request.populate([
-    { path: "from", select: "username displayName profilePicture" },
-    { path: "to", select: "username displayName profilePicture" },
-  ]);
+    if (request.to.toString() !== userId) {
+      throw Forbidden("Not authorized to accept this request");
+    }
 
-  return {
-    request,
-    payload: toFriendRequestSocketPayload(
-      populated as unknown as PopulatedFriendRequest,
-    ),
-    fromUserId,
-    toUserId,
-  };
-};
+    const fromUserId = request.from.toString();
+    const toUserId = request.to.toString();
 
-/** Rejects a pending friend request owned by the current user. */
-export const rejectFriendRequest = async (
-  requestId: string,
-  userId: string,
-) => {
-  const request = await FriendRequestModel.findById(requestId);
-  if (!request) throw NotFound("Request not found");
+    if (await areFriendsCheck(fromUserId, toUserId)) {
+      throw BadRequest("Users are already friends");
+    }
 
-  if (request.status !== "pending") {
-    throw BadRequest("Request has already been processed");
+    const [user1, user2] = normalizeFriendship(fromUserId, toUserId);
+
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await this.friendsRepository.createFriendShip(user1, user2, session);
+
+        await this.requestRepository.acceptFriendRequest(requestId, session);
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    await ChatAPI.ensureChatExists(fromUserId, toUserId);
+
+    await createInboxNotification({
+      userId: fromUserId,
+      actorId: toUserId,
+      type: "friend_request_accepted",
+    });
+
+    const populated = await this.populateUsersInRequest(request);
+
+    return {
+      request,
+      payload: toFriendRequestSocketPayload(
+        populated as unknown as PopulatedFriendRequest,
+      ),
+      fromUserId,
+      toUserId,
+    };
   }
 
-  if (request.to.toString() !== userId) {
-    throw Forbidden("Not authorized to reject this request");
+  /** Rejects a pending friend request owned by the current user. */
+  async rejectFriendRequest(requestId: string, userId: string) {
+    const request = await this.requestRepository.findById(requestId);
+    if (!request) throw NotFound("Request not found");
+
+    if (request.status !== "pending") {
+      throw BadRequest("Request has already been processed");
+    }
+
+    if (request.to.toString() !== userId) {
+      throw Forbidden("Not authorized to reject this request");
+    }
+
+    await this.requestRepository.rejectFriendRequest(requestId);
+
+    return {
+      request,
+      fromUserId: request.from.toString(),
+      requestId: request._id.toString(),
+    };
   }
 
-  request.status = "rejected";
-  await request.save();
+  /** Removes an existing friendship from both users. */
+  async removeFriend(userId: string, friendId: string) {
+    if (!(await areFriendsCheck(userId, friendId)))
+      throw BadRequest("Users are not friends");
+    const [user1, user2] = normalizeFriendship(userId, friendId);
 
-  return {
-    request,
-    fromUserId: request.from.toString(),
-    requestId: request._id.toString(),
-  };
-};
+    await this.friendsRepository.deleteFriendship(user1, user2);
 
-/** Removes an existing friendship from both users. */
-export const removeFriend = async (userId: string, friendId: string) => {
-  if (!(await areFriendsCheck(userId, friendId)))
-    throw BadRequest("Users are not friends");
-  const [user1, user2] = normalizeFriendship(userId, friendId);
-
-  await FriendshipModel.findOneAndDelete({
-    user1,
-    user2,
-  });
-
-  return true;
-};
-
-/** Cancels a pending friend request sent by the current user. */
-export const cancelFriendRequest = async (
-  requestId: string,
-  userId: string,
-) => {
-  const request = await FriendRequestModel.findById(requestId);
-  if (!request) throw NotFound("Request not found");
-
-  if (request.from.toString() !== userId) {
-    throw Forbidden("Not authorized to cancel this request");
+    return true;
   }
 
-  if (request.status !== "pending") {
-    throw BadRequest("Cannot cancel processed request");
+  /** Cancels a pending friend request sent by the current user. */
+  async cancelFriendRequest(requestId: string, userId: string) {
+    const request = await this.requestRepository.findById(requestId);
+    if (!request) throw NotFound("Request not found");
+
+    if (request.from.toString() !== userId) {
+      throw Forbidden("Not authorized to cancel this request");
+    }
+
+    if (request.status !== "pending") {
+      throw BadRequest("Cannot cancel processed request");
+    }
+
+    const toUserId = request.to.toString();
+    const reqId = request._id.toString();
+
+    const deleted = await deleteNotificationByFriendRequest(reqId);
+
+    if (deleted) {
+      emitNotificationRemoved(toUserId, reqId);
+
+      const freshCount = await NotificationAPI.countUnread(deleted.userId);
+
+      emitUnreadNotificationCount(deleted.userId, freshCount);
+    }
+
+    await this.requestRepository.deleteRequestById(requestId);
+
+    return { toUserId, requestId: reqId };
   }
-
-  const toUserId = request.to.toString();
-  const reqId = request._id.toString();
-
-  const deleted = await deleteNotificationByFriendRequest(reqId);
-
-  if (deleted) {
-    emitNotificationRemoved(toUserId, reqId);
-
-    const freshCount = await NotificationAPI.countUnread(deleted.userId);
-
-    emitUnreadNotificationCount(deleted.userId, freshCount);
-  }
-
-  await request.deleteOne();
-
-  return { toUserId, requestId: reqId };
-};
+}

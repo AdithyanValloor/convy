@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
-export interface IFriendRequest extends Document {
+export interface IFriendRequest {
   _id: Types.ObjectId;
   from: Types.ObjectId;
   to: Types.ObjectId;

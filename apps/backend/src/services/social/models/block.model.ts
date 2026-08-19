@@ -1,6 +1,6 @@
 import { Schema, model, Types } from "mongoose";
 
-interface IBlock {
+export interface IBlock {
   blocker: Types.ObjectId;
   blocked: Types.ObjectId;
   createdAt: Date;

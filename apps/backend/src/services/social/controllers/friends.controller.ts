@@ -1,15 +1,6 @@
 import { Response, Request, NextFunction } from "express";
 
 import {
-  acceptFriendRequest,
-  cancelFriendRequest,
-  fetchRequests,
-  getFriendList,
-  rejectFriendRequest,
-  removeFriend as removeFriendService,
-  sendFriendRequest,
-} from "../services/friends.service.js";
-import {
   BadRequest,
   Unauthorized,
 } from "../../../utils/errors/httpErrors.js";
@@ -21,6 +12,8 @@ import {
   emitFriendRequestRejected,
   emitFriendRequestSent,
 } from "../../../socket/emitters/friend.emitter.js";
+
+import { friendsService } from "../composition/container.js";
 
 /** Friend controller handlers for authenticated friendship actions. */
 
@@ -34,7 +27,7 @@ export const getAllFriends = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const friendList = await getFriendList(userId);
+    const friendList = await friendsService.getFriendList(userId);
 
     res.status(200).json({
       message: "Friend list fetched",
@@ -58,7 +51,7 @@ export const addFriend = async (
     if (!userId) throw Unauthorized();
     if (!username) throw BadRequest("Username is required");
 
-    const { request, payload, toUserId } = await sendFriendRequest(
+    const { request, payload, toUserId } = await friendsService.sendFriendRequest(
       userId,
       username,
     );
@@ -85,7 +78,7 @@ export const getAllRequests = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const { incoming, outgoing } = await fetchRequests(userId);
+    const { incoming, outgoing } = await friendsService.fetchRequests(userId);
 
     res.status(200).json({
       message: "Friend requests fetched",
@@ -111,7 +104,7 @@ export const acceptReq = async (
     if (!id) throw BadRequest("Request ID is required");
 
     const { request, payload, fromUserId, toUserId } =
-      await acceptFriendRequest(id, userId);
+      await friendsService.acceptFriendRequest(id, userId);
 
     emitFriendRequestAccepted(fromUserId, payload);
     emitFriendRequestAccepted(toUserId, payload);
@@ -138,7 +131,7 @@ export const rejectReq = async (
     if (!userId) throw Unauthorized();
     if (!id) throw BadRequest("Request ID is required");
 
-    const { request, fromUserId, requestId } = await rejectFriendRequest(
+    const { request, fromUserId, requestId } = await friendsService.rejectFriendRequest(
       id,
       userId,
     );
@@ -167,7 +160,7 @@ export const removeFriend = async (
     if (!userId) throw Unauthorized();
     if (!id) throw BadRequest("Friend ID is required");
 
-    await removeFriendService(userId, id);
+    await friendsService.removeFriend(userId, id);
 
     emitFriendRemoved(userId, id);
     emitFriendRemoved(id, userId);
@@ -193,7 +186,7 @@ export const cancelReq = async (
     if (!userId) throw Unauthorized();
     if (!id) throw BadRequest("Request ID is required");
 
-    const { toUserId, requestId } = await cancelFriendRequest(id, userId);
+    const { toUserId, requestId } = await friendsService.cancelFriendRequest(id, userId);
 
     emitFriendRequestCancelled(toUserId, requestId);
 
