@@ -1,5 +1,5 @@
-import { InboxNotificationModel } from "../models/inboxNotification.model.js";
-import { createInboxNotification } from "../services/inboxNotification.service.js";
+import { inboxNotificationRepository } from "../composition/container.js";
+import { inboxNotificationService } from "../composition/container.js";
 
 export const notifyMention = async (
   userId: string,
@@ -7,7 +7,7 @@ export const notifyMention = async (
   chatId: string,
   messageId: string,
 ) => {
-  return createInboxNotification({
+  return inboxNotificationService.createInboxNotification({
     userId,
     actorId,
     type: "mention",
@@ -22,7 +22,7 @@ export const notifyReply = async (
   chatId: string,
   messageId: string,
 ) => {
-  return createInboxNotification({
+  return inboxNotificationService.createInboxNotification({
     userId,
     actorId,
     type: "reply",
@@ -36,7 +36,7 @@ export const notifyGroupAdded = async (
   actorId: string,
   groupId: string,
 ) => {
-  return createInboxNotification({
+  return inboxNotificationService.createInboxNotification({
     userId,
     actorId,
     type: "group_added",
@@ -44,11 +44,38 @@ export const notifyGroupAdded = async (
   });
 };
 
-export const countUnread = async (userId: string) => {
-  const count = await InboxNotificationModel.countDocuments({
-    user: userId,
-    read: false,
+export const notifyFriendRequestAccepted = async (
+  userId: string,
+  actorId: string,
+) => {
+  return inboxNotificationService.createInboxNotification({
+    userId,
+    actorId,
+    type: "friend_request_accepted",
   });
+};
 
-  return count;
+export const notifyFriendRequestReceived = async (
+  userId: string,
+  actorId: string,
+  friendRequestId: string,
+) => {
+  return inboxNotificationService.createInboxNotification({
+    userId,
+    actorId,
+    type: "friend_request_received",
+    friendRequestId,
+  });
+};
+
+export const countUnread = async (userId: string) => {
+  return inboxNotificationRepository.countUnread(userId);
+};
+
+export const deleteNotificationByFriendReq = async (
+  friendRequestId: string,
+) => {
+  return inboxNotificationRepository.deleteNotificationByFriendRequest(
+    friendRequestId,
+  );
 };

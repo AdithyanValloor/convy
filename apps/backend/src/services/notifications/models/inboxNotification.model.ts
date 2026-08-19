@@ -7,7 +7,8 @@ export type InboxNotificationType =
   | "friend_request_accepted"
   | "group_added";
 
-export interface IInboxNotification extends Document {
+export interface IInboxNotification {
+  _id: Types.ObjectId;
   user: Types.ObjectId;
   actor?: Types.ObjectId;
 

@@ -1,14 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Unauthorized } from "../../../utils/errors/httpErrors.js";
-import {
-  getInboxNotifications,
-  markNotificationRead,
-  getUnreadNotificationCount,
-  markAllNotificationsRead,
-  deleteNotification,
-  deleteNotificationByFriendRequest,
-  markMentionsReadForChat,
-} from "../services/inboxNotification.service.js";
+import { inboxNotificationService } from "../composition/container.js";
 
 /** Inbox notification controller handlers for authenticated notification actions. */
 
@@ -23,7 +15,10 @@ export const fetchInboxNotificationsController = async (
     if (!userId) throw Unauthorized();
 
     const page = Number(req.query.page) || 1;
-    const result = await getInboxNotifications(userId, page);
+    const result = await inboxNotificationService.getInboxNotifications(
+      userId,
+      page,
+    );
 
     res.json(result);
   } catch (err) {
@@ -41,7 +36,7 @@ export const markNotificationReadController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const notification = await markNotificationRead(
+    const notification = await inboxNotificationService.markNotificationRead(
       req.params.id as string,
       userId,
     );
@@ -62,7 +57,8 @@ export const getUnreadNotificationCountController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const result = await getUnreadNotificationCount(userId);
+    const result =
+      await inboxNotificationService.getUnreadNotificationCount(userId);
 
     res.json(result);
   } catch (err) {
@@ -80,7 +76,8 @@ export const markAllNotificationsReadController = async (
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
-    const result = await markAllNotificationsRead(userId);
+    const result =
+      await inboxNotificationService.markAllNotificationsRead(userId);
 
     res.json(result);
   } catch (err) {
@@ -100,7 +97,10 @@ export const deleteNotificationController = async (
 
     const notificationId = req.params.id as string;
     if (!notificationId) throw new Error("Notification ID is required");
-    const result = await deleteNotification(notificationId, userId);
+    const result = await inboxNotificationService.deleteNotification(
+      notificationId,
+      userId,
+    );
 
     res.json(result);
   } catch (err) {
@@ -116,7 +116,10 @@ export const deleteNotificationByFriendRequestController = async (
 ): Promise<void> => {
   try {
     const { friendRequestId } = req.params as Record<string, string>;
-    const result = await deleteNotificationByFriendRequest(friendRequestId);
+    const result =
+      await inboxNotificationService.deleteNotificationByFriendRequest(
+        friendRequestId,
+      );
 
     if (!result) {
       res.status(404).json({
@@ -147,7 +150,7 @@ export const markMentionsReadController = async (
     const { chatId } = req.params as Record<string, string>;
     if (!chatId) throw new Error("Chat ID is required");
 
-    await markMentionsReadForChat(userId, chatId);
+    await inboxNotificationService.markMentionsReadForChat(userId, chatId);
 
     res.json({ success: true });
   } catch (err) {

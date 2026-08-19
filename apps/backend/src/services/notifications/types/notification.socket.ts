@@ -37,3 +37,13 @@ export interface InboxNotificationSocketPayload {
   type: string;
   notification: InboxNotificationDTO;
 }
+
+export interface InboxNotificationParams {
+  userId: string;
+  actorId?: string;
+  type: string;
+  chatId?: string;
+  messageId?: string;
+  friendRequestId?: string;
+  groupId?: string;
+}

@@ -4,10 +4,7 @@ import {
   NotFound,
   Forbidden,
 } from "../../../utils/errors/httpErrors.js";
-import {
-  createInboxNotification,
-  deleteNotificationByFriendRequest,
-} from "../../notifications/services/inboxNotification.service.js";
+
 import {
   emitNotificationRemoved,
   emitUnreadNotificationCount,
@@ -23,9 +20,9 @@ import {
 import * as ChatAPI from "../../chat/api/chat.api.js";
 import * as UserAPI from "../../user/api/user.api.js";
 import * as NotificationAPI from "../../notifications/api/notifications.api.js";
-import { IFriendsRepository } from "../repository/friends.repository.js";
-import { IRequestRepository } from "../repository/request.repository.js";
-import { IBlockRepository } from "../repository/block.repository.js";
+import { IFriendsRepository } from "../repositories/friends.repository.js";
+import { IRequestRepository } from "../repositories/request.repository.js";
+import { IBlockRepository } from "../repositories/block.repository.js";
 
 /** Friend service helpers for friendship and request workflows. */
 
@@ -170,12 +167,11 @@ export class FriendsService {
       toUser.id,
     );
 
-    await createInboxNotification({
-      userId: toUser.id,
-      actorId: fromUserId,
-      type: "friend_request_received",
-      friendRequestId: request._id.toString(),
-    });
+    await NotificationAPI.notifyFriendRequestReceived(
+      toUser.id,
+      fromUserId,
+      request._id.toString(),
+    );
 
     const populated = await this.populateUsersInRequest(request);
 
@@ -223,11 +219,7 @@ export class FriendsService {
 
     await ChatAPI.ensureChatExists(fromUserId, toUserId);
 
-    await createInboxNotification({
-      userId: fromUserId,
-      actorId: toUserId,
-      type: "friend_request_accepted",
-    });
+    await NotificationAPI.notifyFriendRequestAccepted(fromUserId, toUserId);
 
     const populated = await this.populateUsersInRequest(request);
 
@@ -290,14 +282,16 @@ export class FriendsService {
     const toUserId = request.to.toString();
     const reqId = request._id.toString();
 
-    const deleted = await deleteNotificationByFriendRequest(reqId);
+    const deleted = await NotificationAPI.deleteNotificationByFriendReq(reqId);
 
     if (deleted) {
       emitNotificationRemoved(toUserId, reqId);
 
-      const freshCount = await NotificationAPI.countUnread(deleted.userId);
+      const freshCount = await NotificationAPI.countUnread(
+        deleted.user.toString(),
+      );
 
-      emitUnreadNotificationCount(deleted.userId, freshCount);
+      emitUnreadNotificationCount(deleted.user.toString(), freshCount);
     }
 
     await this.requestRepository.deleteRequestById(requestId);

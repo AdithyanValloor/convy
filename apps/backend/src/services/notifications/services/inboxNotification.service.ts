@@ -1,197 +1,224 @@
 import { emitInboxNotification } from "../../../socket/emitters/notification.emitters.js";
 import { NotFound } from "../../../utils/errors/httpErrors.js";
 import { InboxNotificationModel } from "../models/inboxNotification.model.js";
+import { IInboxNotificationRepository } from "../repositories/inboxNotification.repository.js";
 import {
   InboxNotificationDTO,
+  InboxNotificationParams,
   InboxNotificationSocketPayload,
 } from "../types/notification.socket.js";
+import * as UserAPI from "../../user/api/user.api.js";
+import * as ChatAPI from "../../chat/api/chat.api.js";
+import * as MessageAPI from "../../messages/api/messages.api.js";
 
 /** Inbox notification helpers for creation, read state, and inbox retrieval. */
 
-/** Creates an inbox notification, emits it over sockets, and returns its DTO. */
-export const createInboxNotification = async ({
-  userId,
-  actorId,
-  type,
-  chatId,
-  messageId,
-  friendRequestId,
-  groupId,
-}: {
-  userId: string;
-  actorId?: string;
-  type: string;
-  chatId?: string;
-  messageId?: string;
-  friendRequestId?: string;
-  groupId?: string;
-}) => {
-  const notification = await InboxNotificationModel.create({
-    user: userId,
-    actor: actorId,
+export class InboxNotificationService {
+  constructor(
+    private readonly inboxNotificationRepository: IInboxNotificationRepository,
+  ) {}
+
+  /** Creates an inbox notification, emits it over sockets, and returns its DTO. */
+  async createInboxNotification({
+    userId,
+    actorId,
     type,
-    chat: chatId,
-    message: messageId,
-    friendRequest: friendRequestId,
-    group: groupId,
-  });
+    chatId,
+    messageId,
+    friendRequestId,
+    groupId,
+  }: InboxNotificationParams) {
+    const notification =
+      await this.inboxNotificationRepository.createInboxNotification({
+        userId,
+        actorId,
+        type,
+        chatId,
+        messageId,
+        friendRequestId,
+        groupId,
+      });
 
-  const populated = await notification.populate([
-    { path: "actor", select: "username displayName profilePicture" },
-    { path: "chat", select: "chatName isGroup" },
-    { path: "message", select: "content chat" },
-    { path: "group", select: "chatName isGroup" },
-  ]);
+    const [actor, chat, message, group] = await Promise.all([
+      actorId ? UserAPI.findUserById(actorId) : null,
 
-  const obj = populated.toObject() as unknown as InboxNotificationDTO;
+      chatId ? ChatAPI.findChatById(chatId) : null,
 
-  const dto: InboxNotificationDTO = {
-    ...obj,
-    _id: obj._id.toString(),
-    actor: obj.actor
-      ? { ...obj.actor, _id: obj.actor._id.toString() }
-      : undefined,
-    chat: obj.chat ? { ...obj.chat, _id: obj.chat._id.toString() } : undefined,
-    message: obj.message
-      ? { ...obj.message, _id: obj.message._id.toString() }
-      : undefined,
-    group: obj.group
-      ? { ...obj.group, _id: obj.group._id.toString() }
-      : undefined,
-  };
+      messageId ? MessageAPI.findMessageById(messageId) : null,
 
-  const payload: InboxNotificationSocketPayload = {
-    type: dto.type,
-    notification: dto,
-  };
+      groupId ? ChatAPI.findChatById(groupId) : null,
+    ]);
 
-  emitInboxNotification(userId, payload);
+    const dto: InboxNotificationDTO = {
+      _id: notification._id.toString(),
+      type: notification.type,
 
-  return dto;
-};
+      actor: actor
+        ? {
+            _id: actor.id.toString(),
+            username: actor.username,
+            displayName: actor.displayName,
+            profilePicture: actor.profilePicture,
+          }
+        : undefined,
 
-/** Returns the unread inbox notification count for a user. */
-export const getUnreadNotificationCount = async (userId: string) => {
-  const count = await InboxNotificationModel.countDocuments({
-    user: userId,
-    read: false,
-  });
+      chat: chat
+        ? {
+            _id: chat._id.toString(),
+            chatName: chat.chatName,
+            isGroup: chat.isGroup,
+          }
+        : undefined,
 
-  return { unreadCount: count };
-};
+      message: message
+        ? {
+            _id: message._id.toString(),
+            content: message.content ?? "",
+            chat: message.chat?.toString(),
+          }
+        : undefined,
 
-/** Marks every unread inbox notification as read for a user. */
-export const markAllNotificationsRead = async (userId: string) => {
-  await InboxNotificationModel.updateMany(
-    { user: userId, read: false },
-    { $set: { read: true } },
-  );
+      group: group
+        ? {
+            _id: group._id.toString(),
+            chatName: group.chatName,
+            isGroup: group.isGroup,
+          }
+        : undefined,
 
-  return { success: true };
-};
+      read: notification.read,
+      createdAt: notification.createdAt,
+    };
 
-/** Returns paginated inbox notifications along with unread counts. */
-export const getInboxNotifications = async (
-  userId: string,
-  page: number = 1,
-  limit: number = 20,
-) => {
-  const skip = (page - 1) * limit;
+    const payload: InboxNotificationSocketPayload = {
+      type: dto.type,
+      notification: dto,
+    };
 
-  const notifications = await InboxNotificationModel.find({
-    user: userId,
-  })
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .populate("actor", "username displayName profilePicture")
-    .populate("chat", "chatName isGroup")
-    .populate("group", "chatName isGroup")
-    .populate("message", "content chat");
+    emitInboxNotification(userId, payload);
 
-  const total = await InboxNotificationModel.countDocuments({
-    user: userId,
-  });
+    return dto;
+  }
 
-  const unreadCount = await InboxNotificationModel.countDocuments({
-    user: userId,
-    read: false,
-  });
+  /** Returns the unread inbox notification count for a user. */
+  async getUnreadNotificationCount(userId: string) {
+    const count = await this.inboxNotificationRepository.countUnread(userId);
 
-  return {
-    notifications,
-    unreadCount,
-    totalPages: Math.ceil(total / limit),
-    currentPage: page,
-  };
-};
+    return { unreadCount: count };
+  }
 
-/** Marks a single notification as read for its owner. */
-export const markNotificationRead = async (
-  notificationId: string,
-  userId: string,
-) => {
-  const notification = await InboxNotificationModel.findOneAndUpdate(
-    { _id: notificationId, user: userId },
-    { read: true },
-    { new: true },
-  );
+  /** Marks every unread inbox notification as read for a user. */
+  async markAllNotificationsRead(userId: string) {
+    await this.inboxNotificationRepository.markAllNotificationsAsRead(userId);
 
-  if (!notification) throw NotFound("Notification not found");
+    return { success: true };
+  }
 
-  return notification;
-};
+  /** Returns paginated inbox notifications along with unread counts. */
+  async getInboxNotifications(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const skip = (page - 1) * limit;
 
-/** Deletes the notification associated with a friend request, if present. */
-export const deleteNotificationByFriendRequest = async (
-  friendRequestId: string,
-) => {
-  const notification = await InboxNotificationModel.findOneAndDelete({
-    friendRequest: friendRequestId,
-  });
+    const notifications =
+      await this.inboxNotificationRepository.findInboxNotification(
+        userId,
+        skip,
+        limit,
+      );
 
-  if (!notification) return null;
+    const populated = await Promise.all(
+      notifications.map(async (notification) => {
+        const [actor, chat, message, group] = await Promise.all([
+          notification.actor
+            ? UserAPI.findUserById(notification.actor.toString())
+            : null,
+          notification.chat
+            ? ChatAPI.findChatById(notification.chat.toString())
+            : null,
+          notification.message
+            ? MessageAPI.findMessageById(notification.message.toString())
+            : null,
+          notification.group
+            ? ChatAPI.findChatById(notification.group.toString())
+            : null,
+        ]);
 
-  return {
-    notificationId: String(notification._id),
-    userId: String(notification.user),
-  };
-};
+        return {
+          ...notification,
+          actor,
+          chat,
+          message,
+          group,
+        };
+      }),
+    );
 
-/** Deletes a single notification belonging to a user. */
-export const deleteNotification = async (
-  notificationId: string,
-  userId: string,
-) => {
-  const notification = await InboxNotificationModel.findOneAndDelete({
-    _id: notificationId,
-    user: userId,
-  });
+    const [total, unreadCount] = await Promise.all([
+      this.inboxNotificationRepository.totalCount(userId),
+      this.inboxNotificationRepository.countUnread(userId),
+    ]);
 
-  if (!notification) throw NotFound("Notification not found");
+    return {
+      notifications: populated,
+      unreadCount,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    };
+  }
 
-  return {
-    success: true,
-    notificationId: String(notification._id),
-  };
-};
+  /** Marks a single notification as read for its owner. */
+  async markNotificationRead(notificationId: string, userId: string) {
+    const notification =
+      await this.inboxNotificationRepository.markNotificationAsRead(
+        notificationId,
+        userId,
+      );
 
-/** Marks unread mention notifications as read for a specific chat. */
-export const markMentionsReadForChat = async (
-  userId: string,
-  chatId: string,
-) => {
-  await InboxNotificationModel.updateMany(
-    {
-      user: userId,
-      chat: chatId,
-      type: "mention",
-      read: false,
-    },
-    {
-      $set: { read: true },
-    },
-  );
+    if (!notification) throw NotFound("Notification not found");
 
-  return { success: true };
-};
+    return notification;
+  }
+
+  /** Deletes the notification associated with a friend request, if present. */
+  async deleteNotificationByFriendRequest(friendRequestId: string) {
+    const notification =
+      await this.inboxNotificationRepository.deleteNotificationByFriendRequest(
+        friendRequestId,
+      );
+    if (!notification) return null;
+
+    return {
+      notificationId: String(notification._id),
+      userId: String(notification.user),
+    };
+  }
+
+  /** Deletes a single notification belonging to a user. */
+  async deleteNotification(notificationId: string, userId: string) {
+    const notification =
+      await this.inboxNotificationRepository.deleteNotificationOfUser(
+        notificationId,
+        userId,
+      );
+
+    if (!notification) throw NotFound("Notification not found");
+
+    return {
+      success: true,
+      notificationId: String(notification._id),
+    };
+  }
+
+  /** Marks unread mention notifications as read for a specific chat. */
+  async markMentionsReadForChat(userId: string, chatId: string) {
+    await this.inboxNotificationRepository.markMentionsReadForChat(
+      userId,
+      chatId,
+    );
+
+    return { success: true };
+  }
+}

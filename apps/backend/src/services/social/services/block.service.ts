@@ -1,8 +1,8 @@
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { normalizeFriendship } from "../utils/social.utils.js";
-import { IBlockRepository } from "../repository/block.repository.js";
-import { IFriendsRepository } from "../repository/friends.repository.js";
-import { IRequestRepository } from "../repository/request.repository.js";
+import { IBlockRepository } from "../repositories/block.repository.js";
+import { IFriendsRepository } from "../repositories/friends.repository.js";
+import { IRequestRepository } from "../repositories/request.repository.js";
 
 import * as UserAPI from "../../user/api/user.api.js";
 
