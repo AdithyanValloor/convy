@@ -26,6 +26,7 @@ export default function FilePreviewCard({ file }: FilePreviewCardProps) {
   const [loading, setLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     if (!url && !loading) {
@@ -34,13 +35,13 @@ export default function FilePreviewCard({ file }: FilePreviewCardProps) {
     }
   }, [url, file.key, loading, dispatch]);
 
-  if (!url) {
-    return (
-      <div className="h-[200px] bg-base-content/20 rounded-xl w-[360px] flex items-center justify-center text-xs opacity-50">
-        <span className="loading loading-spinner loading-xl text-base-content" />
-      </div>
-    );
-  }
+  useEffect(() => {
+  console.log("🟢 FilePreviewCard MOUNTED", file.key);
+
+  return () => {
+    console.log("🔴 FilePreviewCard UNMOUNTED", file.key);
+  };
+}, []);
 
   const isImage = file.mimeType.startsWith("image/");
   const isPdf = file.mimeType === "application/pdf";
@@ -55,46 +56,67 @@ export default function FilePreviewCard({ file }: FilePreviewCardProps) {
       >
         {isImage && (
           <div
-            className="relative w-full max-w-[360px] rounded-xl overflow-hidden cursor-pointer group"
-            onClick={() => setModalOpen(true)}
+            className="relative w-[360px] h-[300px] rounded-xl overflow-hidden cursor-pointer group"
+            onClick={() => {
+              if (url) setModalOpen(true);
+            }}
           >
-            <Image
-              src={url}
-              alt="uploaded"
-              width={360}
-              height={300}
-              className="object-cover rounded-xl transition-transform duration-200 group-hover:scale-[1.02]"
-              onError={() => {
-                if (retryCount < 2) {
-                  setRetryCount((prev) => prev + 1);
-                  dispatch(getDownloadUrl(file.key));
-                }
-              }}
-            />
-            {/* Hover overlay */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 rounded-xl flex items-center justify-center">
-              <ZoomIn
-                size={28}
-                className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg"
+            {(!url || !imageLoaded) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-base-content/20">
+                <span className="loading loading-spinner loading-xl text-base-content" />
+              </div>
+            )}
+
+            {url && (
+              <Image
+                src={url}
+                alt="uploaded"
+                width={360}
+                height={300}
+                unoptimized
+                className={`w-full h-full object-cover rounded-xl transition-opacity duration-200 ${
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => {
+                  if (retryCount < 2) {
+                    setRetryCount((prev) => prev + 1);
+                    dispatch(getDownloadUrl(file.key));
+                  }
+                }}
               />
-            </div>
+            )}
+
+            {url && imageLoaded && (
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl flex items-center justify-center">
+                <ZoomIn
+                  size={28}
+                  className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg"
+                />
+              </div>
+            )}
           </div>
         )}
-
         {isPdf && (
           <a
-            href={url}
+            href={url ?? "#"}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-3 px-5 bg-base-content/5 rounded-xl hover:bg-base-content/10 transition"
           >
-            <FileText size={18} />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">PDF File</span>
-              <span className="text-xs opacity-60">
-                {(file.size / 1024).toFixed(0)} KB
-              </span>
-            </div>
+            {!url ? (
+              <span className="loading loading-spinner loading-md" />
+            ) : (
+              <>
+                <FileText size={18} />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">PDF File</span>
+                  <span className="text-xs opacity-60">
+                    {(file.size / 1024).toFixed(0)} KB
+                  </span>
+                </div>
+              </>
+            )}
           </a>
         )}
       </motion.div>

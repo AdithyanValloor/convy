@@ -107,7 +107,8 @@ export default function ChatLayout({
     if (!user || !bootstrapDone) return;
     socketRef.current = getSocket(user._id, allChatIdsRef.current);
     return () => disconnectSocket();
-  }, [user, bootstrapDone]);
+  }, [user?._id, bootstrapDone]);
+
 
   if (!user || !bootstrapDone) {
     return (

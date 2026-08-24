@@ -38,6 +38,12 @@ export interface MessageSocketPayload {
     };
   } | null;
 
+  file?: {
+    key: string;
+    mimeType: string;
+    size: number;
+  } | null;
+
   linkPreview?: {
     url?: string;
     title?: string;

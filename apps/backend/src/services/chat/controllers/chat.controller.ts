@@ -63,6 +63,9 @@ export const accessChat = async (
     const { userId, message }: { userId?: string; message?: string } = req.body;
     const currentUserId = req.user?.id;
 
+    console.log("us - ", userId, "  |  ", "cur - ", currentUserId);
+    
+
     if (!userId) {
       throw BadRequest("UserId parameter is required");
     }

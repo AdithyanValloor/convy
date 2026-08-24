@@ -39,6 +39,7 @@ export default function NotificationContainer({
                 <Image
                   //   src={toast.profilePicture ?? defaultPFP}
                   src={defaultPFP}
+                  unoptimized
                   alt="avatar"
                   width={40}
                   height={40}

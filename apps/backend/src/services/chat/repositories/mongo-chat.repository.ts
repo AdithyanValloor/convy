@@ -120,7 +120,6 @@ export class ChatRepository implements IChatRepository {
     return Chat.find({
       members: userId,
       isDeleted: { $ne: true },
-      $or: [{ requestPending: { $ne: true } }, { requestInitiator: userId }],
     }).lean();
   }
 

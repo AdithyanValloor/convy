@@ -11,7 +11,7 @@ export function normalizeSocketMessage(msg: NewMessagePayload): MessageType {
       _id: msg.sender._id,
       username: msg.sender.username,
       displayName: msg.sender.displayName,
-      profilePicture: {key: msg.sender.profilePicture?.key ?? null} ,
+      profilePicture: { key: msg.sender.profilePicture?.key ?? null },
     },
     content: msg.content,
     createdAt: msg.createdAt,
@@ -21,6 +21,11 @@ export function normalizeSocketMessage(msg: NewMessagePayload): MessageType {
     deliveredTo: msg.deliveredTo,
     seenBy: msg.seenBy,
     linkPreview: msg.linkPreview,
+    file: msg.file ? {
+      key: msg.file?.key,
+      mimeType: msg.file?.mimeType,
+      size: msg.file?.size,
+    } : undefined,
     replyTo: msg.replyTo
       ? {
           _id: msg.replyTo._id,
@@ -53,7 +58,7 @@ export function toChatLastMessage(msg: ChatMessage): ChatLastMessage {
     deliveredTo: msg.deliveredTo,
     seenBy: msg.seenBy,
     replyTo: msg.replyTo?._id ?? null,
-    reactions: msg.reactions.map(r => ({
+    reactions: msg.reactions.map((r) => ({
       _id: `${msg._id}-${r.user._id}`,
       emoji: r.emoji,
       user: r.user._id,

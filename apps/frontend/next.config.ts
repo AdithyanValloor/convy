@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
         hostname: "**", // optional (allow all https domains)
       },
     ],
+    // unoptimized: true,
   },
 };
 

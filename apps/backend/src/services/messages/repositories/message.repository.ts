@@ -38,6 +38,9 @@ export interface IMessageRepository {
     chat: string;
     sender: string;
     content?: string;
+    file?: {
+      key: string;
+    };
     deliveredTo: string[];
     forwardedFrom: string;
     linkPreview: unknown;
@@ -59,12 +62,11 @@ export interface IMessageRepository {
 
   deleteMessageByChatId(chatId: string): Promise<void>;
 
- searchMessages(
+  searchMessages(
     filter: FilterQuery<IMessage>,
     projection: ProjectionType<IMessage>,
     sort: Record<string, SortOrder | { $meta: "textScore" }>,
     skip: number,
     limit: number,
   ): Promise<IMessage[]>;
-
 }

@@ -6,7 +6,7 @@ export interface FriendUserPayload {
   username: string;
   displayName?: string;
   profilePicture?: {
-    url?: string | null;
+    key?: string | null;
   };
 }
 

@@ -722,6 +722,7 @@ function BlockedUsersSection() {
             src={url}
             alt={user.displayName ?? user.username}
             fill
+            unoptimized
             className="object-cover"
           />
         ) : (

@@ -161,6 +161,7 @@ export default function NotificationCard({
         <Image
           src={url}
           alt="avatar"
+          unoptimized
           width={40}
           height={40}
           className="rounded-full object-cover border border-base-content/10"

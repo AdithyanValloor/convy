@@ -374,6 +374,7 @@ export class MessageService {
     }
 
     const chats = await ChatAPI.findChats(targetChatIds, senderId);
+    const sender = await UserAPI.findUserById(senderId);
 
     const results = (
       await Promise.all(
@@ -406,6 +407,7 @@ export class MessageService {
               chat: chat._id.toString(),
               sender: senderId,
               content: original.content,
+              file: original.file,
               deliveredTo,
               forwardedFrom: original._id.toString(),
               linkPreview: original.linkPreview || null,
@@ -437,7 +439,10 @@ export class MessageService {
 
           return {
             chatId: chat._id,
-            message: forwardedMessage,
+            message: {
+              ...forwardedMessage,
+              sender: sender,
+            },
             chatMembers: memberIds,
             unreadCounts,
           };

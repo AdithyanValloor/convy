@@ -42,6 +42,14 @@ export const toMessageSocketPayload = (doc: any): MessageSocketPayload => {
 
     linkPreview: doc.linkPreview ?? null,
 
+    file: doc.file
+      ? {
+          key: doc.file.key,
+          mimeType: doc.file.mimeType,
+          size: doc.file.size,
+        }
+      : null,
+
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
   };

@@ -9,7 +9,7 @@ type FriendReqUser = {
   _id: Types.ObjectId;
   username: string;
   displayName: string;
-  profilePicture?: { url?: string | null };
+  profilePicture?: { key?: string | null };
 };
 
 export type PopulatedFriendRequest = {

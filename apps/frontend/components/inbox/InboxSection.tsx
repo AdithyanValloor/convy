@@ -98,10 +98,12 @@ export default function InboxSection() {
       }),
     ).unwrap();
 
-    await api.post("/file/temp-avatar", {
-      groupId: res._id,
-      tempKey: groupAvatar,
-    });
+    if (groupAvatar) {
+      await api.post("/file/temp-avatar", {
+        groupId: res._id,
+        tempKey: groupAvatar,
+      });
+    }
 
     setShowCreateModal(false);
     setGroupName("");

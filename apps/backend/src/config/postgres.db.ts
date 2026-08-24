@@ -19,12 +19,36 @@ if (!POSTGRES_URL) {
 
 export const postgresPool = new Pool({
   connectionString: POSTGRES_URL,
-  max: 20,
+  max: 1,
 });
+
+// export const postgresPool = new Pool({
+//   connectionString: POSTGRES_URL,
+//   max: 1,
+//   ssl: {
+//     rejectUnauthorized: false,
+//   },
+// });
 
 export const postgresDb = drizzle({
   client: postgresPool,
 });
+
+// export const checkPostgresConnection = async (): Promise<void> => {
+//   try {
+//     await postgresPool.query("SELECT 1");
+
+//     console.log("PostgreSQL connected");
+//   } catch (error) {
+//     console.error(
+//       "PostgreSQL connection failed:",
+//       error instanceof Error ? error.message : error,
+//     );
+
+//     process.exit(1);
+//   }
+// };
+
 
 export const checkPostgresConnection = async (): Promise<void> => {
   try {
@@ -32,10 +56,8 @@ export const checkPostgresConnection = async (): Promise<void> => {
 
     console.log("PostgreSQL connected");
   } catch (error) {
-    console.error(
-      "PostgreSQL connection failed:",
-      error instanceof Error ? error.message : error,
-    );
+    console.error("PostgreSQL connection failed:");
+    console.dir(error, { depth: null });
 
     process.exit(1);
   }

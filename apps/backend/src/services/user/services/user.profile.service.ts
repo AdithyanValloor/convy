@@ -8,7 +8,6 @@ import {
 import { deleteFile, generateDownloadUrl } from "../../media/s3.service.js";
 import { PROFILE_KEY_REGEX } from "../constants/regex.js";
 import { invalidateUserCache } from "../cache/user.cache.js";
-import { findUserById } from "../api/user.api.js";
 import { IUserRepository } from "../repositories/user.repository.js";
 import { FlattenMaps } from "mongoose";
 

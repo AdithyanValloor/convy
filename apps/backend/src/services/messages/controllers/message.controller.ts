@@ -6,8 +6,6 @@ import {
   SendMessageBody,
 } from "../types/message.types.js";
 
-
-
 import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { toMessageSocketPayload } from "../utils/normalizeMessage.js";
 import {
@@ -22,6 +20,7 @@ import {
 import { fetchLinkPreview } from "../utils/linkPreview.js";
 import { Message } from "../models/message.model.js";
 import * as ChatAPI from "../../chat/api/chat.api.js";
+import * as UserAPI from "../../user/api/user.api.js"
 import { messageService } from "../composition/container.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -35,15 +34,20 @@ export const getAllMessages = async (
 ) => {
   try {
     const userId = req.user?.id;
-    if(!userId) throw Unauthorized();
-    
+    if (!userId) throw Unauthorized();
+
     const { chatId } = req.params as Record<string, string>;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
 
     if (!chatId) throw BadRequest("ChatId is required");
 
-    const data = await messageService.getAllMessagesFunction(chatId, userId, page, limit);
+    const data = await messageService.getAllMessagesFunction(
+      chatId,
+      userId,
+      page,
+      limit,
+    );
 
     res.status(200).json(data);
   } catch (err) {
@@ -129,6 +133,10 @@ export const sendMessage = async (
 
     emitNewMessage(chatId, toMessageSocketPayload(populated));
 
+    console.log("POPULATED : ", populated);
+    console.log("NORM : ", toMessageSocketPayload(populated));
+    
+
     mentionedUserIds.forEach((mentionedId) => {
       emitMentionNotification(
         mentionedId,
@@ -157,16 +165,35 @@ export const sendMessage = async (
           message.linkPreview = preview;
           await message.save();
 
-          const updated = await message.populate([
-            { path: "sender", select: "displayName username profilePicture" },
-            {
-              path: "replyTo",
-              select: "content sender",
-              populate: { path: "sender", select: "username displayName" },
-            },
-          ]);
+          const updated = await message.populate({
+            path: "replyTo",
+            select: "content sender",
+          });
 
-          emitEditMessage(chatId, toMessageSocketPayload(updated));
+          const sender = await UserAPI.findUserById(updated.sender.toString());
+
+          let populatedReplyTo = null;
+
+          if (updated.replyTo) {
+            const replyMessage = updated.replyTo as any;
+
+            const replySender = await UserAPI.findUserById(
+              replyMessage.sender.toString(),
+            );
+
+            populatedReplyTo = {
+              ...replyMessage.toObject(),
+              sender: replySender,
+            };
+          }
+
+          const populatedUpdated = {
+            ...updated.toObject(),
+            sender,
+            replyTo: populatedReplyTo,
+          };
+
+          emitEditMessage(chatId, toMessageSocketPayload(populatedUpdated));
         })
         .catch(() => {});
     }
@@ -256,7 +283,10 @@ export const markMessagesAsSeen = async (
     if (!userId) throw Unauthorized();
 
     const { success, modifiedCount, emitSeen } =
-      await messageService.markMessagesAsSeenFunction(userId, req.params.chatId as string);
+      await messageService.markMessagesAsSeenFunction(
+        userId,
+        req.params.chatId as string,
+      );
 
     if (emitSeen) {
       emitMessagesSeen(req.params.chatId as string, userId, modifiedCount);
@@ -372,7 +402,11 @@ export const getMessageContext = async (
 
     const limit = Number(req.query.limit) || 20;
 
-    const result = await messageService.getMessageContextFunction(messageId, userId, limit);
+    const result = await messageService.getMessageContextFunction(
+      messageId,
+      userId,
+      limit,
+    );
 
     res.status(200).json(result);
   } catch (err) {
@@ -396,7 +430,12 @@ export const getNewerMessages = async (
 
     if (!after) throw BadRequest("'after' timestamp is required");
 
-    const result = await messageService.getNewerMessagesFunction(chatId, after, userId, limit);
+    const result = await messageService.getNewerMessagesFunction(
+      chatId,
+      after,
+      userId,
+      limit,
+    );
 
     res.status(200).json(result);
   } catch (err) {

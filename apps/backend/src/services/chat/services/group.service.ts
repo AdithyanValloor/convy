@@ -11,11 +11,23 @@ import * as UserAPI from "../../user/api/user.api.js";
 import * as NotificationAPI from "../../notifications/api/notifications.api.js";
 
 import { IChatRepository } from "../repositories/chat.repository.js";
+import { UserDTO } from "../../user/types/user.dto.js";
+import { IChat } from "../models/chat.model.js";
 
 // TODO populate lastMessage with Message API...
 
 export class GroupService {
   constructor(private readonly chatRepository: IChatRepository) {}
+
+  private populateAdmin(group: IChat, memberUsers: UserDTO[]) {
+    const adminSet = new Set<string>();
+
+    for (let admin of group.admin) {
+      adminSet.add(admin.toString());
+    }
+
+    return memberUsers.filter((user) => adminSet.has(user.id));
+  }
 
   /** Creates a group chat after filtering blocked users. */
   async createGroupChatFunction(
@@ -56,11 +68,13 @@ export class GroupService {
     );
 
     const memberUsers = await UserAPI.fetchUsers(members.map(String));
+    const admin = this.populateAdmin(group, memberUsers);
 
     return {
       group: {
         ...group,
         members: memberUsers,
+        admin,
       },
       memberIds: members,
     };
@@ -84,10 +98,12 @@ export class GroupService {
     }
 
     const members = await UserAPI.fetchUsers(group.members.map(String));
+    const admin = this.populateAdmin(group, members);
 
     return {
       ...group,
       members,
+      admin,
     };
   }
 
@@ -141,10 +157,13 @@ export class GroupService {
       updatedGroup.members.map(String),
     );
 
+    const admin = this.populateAdmin(updatedGroup, memberUsers);
+
     return {
       group: {
         ...updatedGroup,
         members: memberUsers,
+        admin,
       },
       newMemberIds,
     };
@@ -187,10 +206,13 @@ export class GroupService {
       updatedGroup.members.map(String),
     );
 
+    const admin = this.populateAdmin(updatedGroup, memberUsers);
+
     return {
       group: {
         ...updatedGroup,
         members: memberUsers,
+        admin,
       },
       removedMemberId: memberId,
     };
@@ -227,10 +249,13 @@ export class GroupService {
       updatedGroup.members.map(String),
     );
 
+    const admin = this.populateAdmin(updatedGroup, memberUsers);
+
     return {
       group: {
         ...updatedGroup,
         members: memberUsers,
+        admin,
       },
       memberId,
       isAdmin: makeAdmin,
@@ -356,10 +381,13 @@ export class GroupService {
       updatedGroup.members.map(String),
     );
 
+    const admin = this.populateAdmin(updatedGroup, memberUsers);
+
     return {
       group: {
         ...updatedGroup,
         members: memberUsers,
+        admin,
       },
       newOwnerId,
     };

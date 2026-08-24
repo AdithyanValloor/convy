@@ -83,9 +83,14 @@ export class AuthService {
 
     if (accessToken) {
       try {
-        const user = verifyAccessToken(accessToken);
+        const authUser = verifyAccessToken(accessToken);
+        const user = await UserAPI.findUserByAuthUserId(authUser.id);
+
         return {
-          user,
+          user: {
+            ...authUser,
+            id: user.id
+          },
           newAccessToken: undefined,
         };
       } catch (err) {
@@ -101,8 +106,10 @@ export class AuthService {
 
     const decoded = verifyRefreshToken(refreshToken);
 
-    const user = await this.authRepository.findById(decoded.id);
-    if (!user) {
+    const authUser = await this.authRepository.findById(decoded.id);
+    const user = await UserAPI.findUserByAuthUserId(decoded.id);
+
+    if (!authUser || !user) {
       throw Unauthorized("Session invalid");
     }
 
@@ -112,7 +119,10 @@ export class AuthService {
     });
 
     return {
-      user: decoded,
+      user: {
+        ...decoded,
+        id: user.id,
+      },
       newAccessToken,
     };
   }

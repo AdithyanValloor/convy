@@ -110,6 +110,7 @@ export default function ChatBubble({
           <div className="w-10 h-10 -mx-1 rounded-full overflow-hidden">
             <Image
               src={profilePic}
+              unoptimized
               alt="profile"
               width={40}
               height={40}
@@ -251,8 +252,8 @@ export default function ChatBubble({
                 }}
               />
             </div>
-            {msg.linkPreview && <LinkPreviewCard preview={msg.linkPreview} />}
-            {msg.file && <FilePreviewCard file={msg.file} />}
+            {!msg.deleted && msg.linkPreview && <LinkPreviewCard preview={msg.linkPreview} />}
+            {!msg.deleted && msg.file && <FilePreviewCard file={msg.file} />}
             {msg.edited && !msg.deleted && (
               <div className={`flex py-1 ${isMe ? "justify-end" : ""}`}>
                 <span

@@ -1,9 +1,4 @@
-import mongoose, {
-  FilterQuery,
-  FlattenMaps,
-  ProjectionType,
-  SortOrder,
-} from "mongoose";
+import mongoose, { FilterQuery, ProjectionType, SortOrder } from "mongoose";
 import { Message, IMessage } from "../models/message.model.js";
 import { IMessageRepository } from "./message.repository.js";
 import { MessageFile } from "../types/message.types.js";
@@ -39,7 +34,7 @@ export class MessageRepository implements IMessageRepository {
     skip: number,
     limit: number,
   ): Promise<IMessage[]> {
-    return Message.find(filter).sort(sort).skip(skip).limit(limit);
+    return Message.find(filter).sort(sort).skip(skip).limit(limit).lean();
   }
 
   async countMessages(filter: FilterQuery<IMessage>): Promise<number> {
@@ -74,14 +69,19 @@ export class MessageRepository implements IMessageRepository {
     chat: string;
     sender: string;
     content?: string;
+    file?: {
+      key: string;
+    };
     deliveredTo: string[];
     forwardedFrom: string;
     linkPreview: unknown;
   }): Promise<IMessage> {
-    return Message.create({
+    const message = await Message.create({
       ...data,
       forwarded: true,
     });
+
+    return message.toObject();
   }
 
   async toggleReaction(
@@ -131,7 +131,7 @@ export class MessageRepository implements IMessageRepository {
           seenBy: userId,
         },
       },
-    );
+    ).lean();
 
     await Message.updateMany(
       {
@@ -144,7 +144,7 @@ export class MessageRepository implements IMessageRepository {
           deliveredTo: userId,
         },
       },
-    );
+    ).lean();
   }
 
   async countUnseenMessages(chatId: string, userId: string): Promise<number> {
@@ -168,7 +168,7 @@ export class MessageRepository implements IMessageRepository {
       {
         new: true,
       },
-    );
+    ).lean();
   }
 
   async deleteMessage(messageId: string): Promise<IMessage | null> {
@@ -183,11 +183,12 @@ export class MessageRepository implements IMessageRepository {
         forwardedFrom: null,
         reactions: [],
         linkPreview: undefined,
+        file: undefined,
       },
       {
         new: true,
       },
-    );
+    ).lean();
   }
 
   async deleteMessageByChatId(chatId: string): Promise<void> {

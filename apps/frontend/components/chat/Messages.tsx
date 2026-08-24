@@ -30,7 +30,11 @@ import { useSignedUrl } from "@/hooks/useSignedUrl";
 
 interface MessagesProps {
   chatId: string;
-  currentUser: { _id: string; username: string; profilePicture?: { key: string } };
+  currentUser: {
+    _id: string;
+    username: string;
+    profilePicture?: { key: string };
+  };
   onEdit: (msg: MessageType | null) => void;
   onDelete: (msg: MessageType) => void;
   setReplyingTo: (msg: MessageType | null) => void;
@@ -46,11 +50,26 @@ interface MessagesProps {
 }
 
 type MessageItemProps = Omit<ChatBubbleProps, "profilePic"> & {
-  currentUser: { _id: string; username: string; profilePicture?: { key: string } };
+  currentUser: {
+    _id: string;
+    username: string;
+    profilePicture?: { key: string };
+  };
 };
 
 export interface MessagesHandle {
   scrollToBottom: () => void;
+}
+
+function MessageItem({ msg, isMe, currentUser, ...rest }: MessageItemProps) {
+  const key = isMe
+    ? currentUser.profilePicture?.key
+    : msg.sender.profilePicture?.key;
+  const url = useSignedUrl(key);
+
+  const profilePic = url || "/default-pfp.png";
+
+  return <ChatBubble {...rest} msg={msg} isMe={isMe} profilePic={profilePic} />;
 }
 
 export default function Messages({
@@ -848,17 +867,6 @@ export default function Messages({
 
   let groupStart: MessageType | null = null;
   const GROUP_INTERVAL = 300;
-
-  function MessageItem({ msg, isMe, currentUser, ...rest }: MessageItemProps) {
-    const key = isMe ? currentUser.profilePicture?.key : msg.sender.profilePicture?.key;
-    const url = useSignedUrl(key);
-
-    const profilePic = url || "/default-pfp.png";
-
-    return (
-      <ChatBubble {...rest} msg={msg} isMe={isMe} profilePic={profilePic} />
-    );
-  }
 
   return (
     <div className="relative flex-1 scroll-smooth flex flex-col h-full">

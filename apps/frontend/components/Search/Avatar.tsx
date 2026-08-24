@@ -19,6 +19,7 @@ export default function Avatar({
   return (
     <Image
       src={url || defaultPFP}
+      unoptimized
       alt={alt}
       width={size}
       height={size}

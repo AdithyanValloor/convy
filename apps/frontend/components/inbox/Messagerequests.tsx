@@ -44,6 +44,7 @@ function RequestCard({
           <Image
             src={url || "/default-pfp.png"}
             alt={person.displayName || person.username}
+            unoptimized
             width={44}
             height={44}
             className="w-full h-full object-cover"

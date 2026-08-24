@@ -142,6 +142,9 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
 
       const normalized = normalizeSocketMessage(msg);
 
+      console.log("Message :", normalized);
+      
+
       store.dispatch(
         insertMessage({ chatId: normalized.chat, message: normalized }),
       );

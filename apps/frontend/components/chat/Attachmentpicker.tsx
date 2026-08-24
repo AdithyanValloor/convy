@@ -58,6 +58,7 @@ export function StagedFilePreview({
             <div className="w-10 h-10 rounded-lg overflow-hidden border border-base-content/10">
               <Image
                 src={stagedFile.previewUrl}
+                unoptimized
                 alt="preview"
                 width={40}
                 height={40}

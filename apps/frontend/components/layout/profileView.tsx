@@ -60,7 +60,7 @@ export default function ProfileView({
   onMessage,
 }: ProfileViewProps) {
   const dispatch = useAppDispatch();
-  const router = useRouter()
+  const router = useRouter();
 
   const currentUser = useAppSelector((state) => state.auth.user);
   const friends = useAppSelector((state) => state.friends.friends);
@@ -109,7 +109,7 @@ export default function ProfileView({
   // In ProfileView — handle the message button click
   const handleMessage = async () => {
     try {
-      const chat = await dispatch(accessChat({userId:user._id})).unwrap();
+      const chat = await dispatch(accessChat({ userId: user._id })).unwrap();
       router.push(`/chat/${chat.data._id}`);
     } catch (err) {
       console.error("Failed to access chat", err);
@@ -139,19 +139,8 @@ export default function ProfileView({
   ): Promise<void> => {
     try {
       setPendingAction(type);
-      const result = await action();
 
-      // Optimistic update - don't wait for socket
-      if (type === "accept" && result && typeof result !== "string") {
-        const friend =
-          result.from._id === currentUser?._id ? result.to : result.from;
-        dispatch(
-          addFriendFromSocket({
-            requestId: result._id,
-            friend,
-          }),
-        );
-      }
+      await action();
 
       after?.();
     } catch (err) {
@@ -303,10 +292,7 @@ export default function ProfileView({
       {currentUser?._id !== user._id && (
         <div className="absolute top-3 right-3 flex items-center gap-1">
           {!isBlocked && onMessage && (
-            <IconButton
-              ariaLabel="Send message"
-              onClick={handleMessage}
-            >
+            <IconButton ariaLabel="Send message" onClick={handleMessage}>
               <MessageCircle size={20} />
             </IconButton>
           )}
@@ -347,11 +333,7 @@ export default function ProfileView({
       {/* Profile Card */}
       <motion.div variants={itemVariants} className="relative mt-22 z-10">
         <div className="flex items-center gap-4 bg-base-100 border border-base-content/10 rounded-xl p-4 shadow">
-          <ProfilePicture
-            src={url}
-            size="lg"
-            status={status ?? "offline"}
-          />
+          <ProfilePicture src={url} size="lg" status={status ?? "offline"} />
           <div className="flex-1">
             <h2 className="text-lg font-semibold leading-tight">
               {user.displayName || user.username}

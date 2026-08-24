@@ -115,6 +115,7 @@ export default function UserSettings({
           <div className="bg-base-content/10 hover:bg-base-content/80 transition-colors rounded-full">
             <Image
               src={url}
+              unoptimized
               alt="profile"
               width={40}
               height={40}

@@ -22,6 +22,7 @@ function ProfilePicture({ src, status, size, showStatus = true }: ProfilePicture
     <div className="relative ">
       <Image 
         src={src || defaultPFP} 
+        unoptimized
         alt="profile" 
         width={size === "sm" ? 45 : size === "md" ? 50 : 80}
         height={size === "sm" ? 45 : size === "md" ? 50 : 80}

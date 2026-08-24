@@ -12,7 +12,7 @@ import {
 
 import { IFriendRequest } from "../models/request.model.js";
 import { areFriendsCheck, normalizeFriendship } from "../utils/social.utils.js";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import {
   PopulatedFriendRequest,
   toFriendRequestSocketPayload,
@@ -37,20 +37,43 @@ export class FriendsService {
     private readonly blockRepository: IBlockRepository,
   ) {}
 
-  private async populateUsersInRequest(request: IFriendRequest) {
-    const userIds = new Set<string>([
-      request.from._id.toString(),
-      request.to._id.toString(),
-    ]);
+  private async populateUsersInRequest(
+    request: IFriendRequest,
+  ): Promise<PopulatedFriendRequest> {
+    const fromId = request.from._id.toString();
+    const toId = request.to._id.toString();
 
-    const users = await UserAPI.fetchUsers([...userIds]);
+    const users = await UserAPI.fetchUsers([fromId, toId]);
 
-    const userMap = new Map(users.map((user) => [user.id, user]));
+    const userMap = new Map(users.map((user) => [user.id.toString(), user]));
+
+    const fromUser = userMap.get(fromId);
+    const toUser = userMap.get(toId);
+
+    if (!fromUser || !toUser) {
+      throw new Error(
+        `Could not populate friend request users: from=${fromId}, to=${toId}`,
+      );
+    }
 
     return {
-      ...request,
-      from: userMap.get(request.from._id.toString()),
-      to: userMap.get(request.to._id.toString()),
+      _id: request._id,
+      status: request.status,
+      createdAt: request.createdAt,
+
+      from: {
+        _id: new Types.ObjectId(fromUser.id),
+        username: fromUser.username,
+        displayName: fromUser.displayName,
+        profilePicture: fromUser.profilePicture,
+      },
+
+      to: {
+        _id: new Types.ObjectId(toUser.id),
+        username: toUser.username,
+        displayName: toUser.displayName,
+        profilePicture: toUser.profilePicture,
+      },
     };
   }
 

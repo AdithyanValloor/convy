@@ -22,7 +22,7 @@ export const currentUser = async (
       });
     }
 
-    const user = await userRepository.findById(userId);
+    const user = await userRepository.findByAuthUserId(userId);
     if (!user) throw Unauthorized("User no longer exists");
     await setCachedUser(userId, user);
 

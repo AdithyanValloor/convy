@@ -93,6 +93,7 @@ export default function SideBar({ activeTab, setActiveTab }: SideBarProps) {
       icon: (
         <Image
           src={url ?? defaultPFP}
+          unoptimized
           alt="profile"
           width={35}
           height={35}
@@ -124,6 +125,7 @@ export default function SideBar({ activeTab, setActiveTab }: SideBarProps) {
       icon: (
         <Image
           src={url ?? defaultPFP}
+          unoptimized
           alt="profile"
           width={35}
           height={35}

@@ -9,6 +9,8 @@ import * as MessagesAPI from "../../messages/api/messages.api.js";
 import * as UserAPI from "../../user/api/user.api.js";
 import { IChatRepository } from "../repositories/chat.repository.js";
 import { IChatUserStateRepository } from "../repositories/chatUserState.repository.js";
+import { IChat } from "../models/chat.model.js";
+import { UserDTO } from "../../user/types/user.dto.js";
 
 /** Chat service helpers for chat access, user state, and mute/archive actions. */
 
@@ -30,6 +32,16 @@ export class ChatService {
     private readonly chatUserStateRepository: IChatUserStateRepository,
   ) {}
 
+  private populateAdmin(group: IChat, memberUsers: UserDTO[]) {
+    const adminSet = new Set<string>();
+
+    for (let admin of group.admin) {
+      adminSet.add(admin.toString());
+    }
+
+    return memberUsers.filter((user) => adminSet.has(user.id));
+  }
+
   /** Returns chats for a user with their per-chat UI state merged in. */
   async fetchChatsFunction(userId: string) {
     if (!userId) {
@@ -47,11 +59,33 @@ export class ChatService {
 
     const stateMap = new Map(states.map((s) => [s.chatId.toString(), s]));
 
+    const userIds = new Set<string>();
+
+    for (let chat of chats) {
+      chat.members.map((user) => userIds.add(user._id.toString()));
+    }
+
+    const users = await UserAPI.fetchUsers([...userIds]);
+
+    const userMap = new Map(users.map((user) => [user.id, user]));
+
     const enriched = chats.map((chat) => {
       const state = stateMap.get(chat._id.toString());
 
+      const members = chat.members
+        .map((memberId) => userMap.get(memberId.toString()))
+        .filter((user) => user !== undefined);
+      
+        let admin:UserDTO[] = [];
+
+        if(chat.isGroup){
+          admin = this.populateAdmin(chat, members)
+        }
+
       return {
         ...chat,
+        members,
+        admin,
         isPinned: state?.isPinned ?? false,
         isArchived: state?.isArchived ?? false,
         clearedAt: state?.clearedAt ?? null,
@@ -70,6 +104,18 @@ export class ChatService {
 
     return enriched;
   }
+  /** Populates chat member ObjectIds with user objects. */
+  private async populateChatMembers(chat: IChat) {
+    const members = await UserAPI.fetchUsers(
+      chat.members.map((memberId) => memberId.toString()),
+    );
+
+    return {
+      ...chat,
+      members,
+    };
+  }
+
   /** Returns an existing direct chat or creates a new direct or pending chat. */
   async accessChatFunction(userId: string, currentUserId: string) {
     if (!userId || !currentUserId) {
@@ -86,23 +132,17 @@ export class ChatService {
       throw Forbidden("Cannot access chat with this user");
     }
 
-    // Reuse the existing direct chat, including pending request chats.
     const existingChat = await this.chatRepository.findDirectChat(
       userId,
       currentUserId,
     );
-    // TODO populate data with API.
-
-    // .populate("members", "-password")
-    // .populate({
-    //   path: "lastMessage",
-    //   populate: { path: "sender", select: "username profilePicture email" },
-    // });
 
     if (existingChat) {
+      const populatedChat = await this.populateChatMembers(existingChat);
+
       return {
         type: existingChat.requestPending ? "pending_chat" : "chat",
-        data: existingChat,
+        data: populatedChat,
       };
     }
 
@@ -114,14 +154,11 @@ export class ChatService {
         currentUserId,
       );
 
-      const members = await UserAPI.fetchUsers(chat.members.map(String));
+      const populatedChat = await this.populateChatMembers(chat);
 
       return {
         type: "pending_chat",
-        data: {
-          ...chat,
-          members,
-        },
+        data: populatedChat,
       };
     }
 
@@ -130,17 +167,13 @@ export class ChatService {
       currentUserId,
     );
 
-    const members = await UserAPI.fetchUsers(newChat.members.map(String));
+    const populatedChat = await this.populateChatMembers(newChat);
 
     return {
       type: "chat",
-      data: {
-        ...newChat,
-        members,
-      },
+      data: populatedChat,
     };
   }
-
   /** Toggles the pinned state for a user's chat. */
   async togglePinChatFunction(userId: string, chatId: string) {
     if (!userId) throw Unauthorized();
@@ -347,6 +380,4 @@ export class ChatService {
 
     return unreadCounts;
   }
-
-  
 }

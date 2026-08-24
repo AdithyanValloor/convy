@@ -84,6 +84,7 @@ export default function LinkPreviewCard({ preview }: LinkPreviewCardProps) {
             <Image
               src={preview.image}
               alt={preview.title || "preview"}
+              unoptimized
               fill
               sizes="(max-width: 768px) 100vw, 600px"
               onLoad={() => setLoaded(true)}
@@ -134,6 +135,7 @@ export default function LinkPreviewCard({ preview }: LinkPreviewCardProps) {
 
               <Image
                 src={preview.image}
+                unoptimized
                 alt="icon"
                 fill
                 onLoad={() => setLoaded(true)}

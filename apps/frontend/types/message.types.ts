@@ -61,6 +61,12 @@ export interface ChatMessage {
   reactions: MessageReaction[];
   linkPreview?: LinkPreview;
 
+  file?: {
+    key: string;
+    mimeType: string;
+    size: number;
+  };
+
   createdAt: string;
   updatedAt: string;
 }

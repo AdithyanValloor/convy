@@ -180,6 +180,7 @@ export default function ImageModal({
           >
             <Image
               src={src}
+              unoptimized
               alt="preview"
               fill
               className="object-contain pointer-events-none"
