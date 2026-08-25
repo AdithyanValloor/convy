@@ -3,21 +3,35 @@ import { IChatRepository } from "./chat.repository.js";
 
 export class ChatRepository implements IChatRepository {
   async ensureChatExists(user1: string, user2: string): Promise<IChat> {
-    const existing = await Chat.findOne({
-      isGroup: false,
-      members: { $all: [user1, user2], $size: 2 },
-    }).lean();
+    const chat = await Chat.findOneAndUpdate(
+      {
+        isGroup: false,
+        members: { $all: [user1, user2], $size: 2 },
+      },
+      {
+        $set: {
+          requestPending: false,
+          requestInitiator: null,
+        },
+      },
+      {
+        new: true,
+        upsert: false,
+      },
+    );
 
-    if (existing) {
-      return existing;
+    if (chat) {
+      return chat.toObject();
     }
 
-    const chat = await Chat.create({
+    const newChat = await Chat.create({
       isGroup: false,
       members: [user1, user2],
+      requestPending: false,
+      requestInitiator: null,
     });
 
-    return chat.toObject();
+    return newChat.toObject();
   }
 
   async findById(id: string): Promise<IChat | null> {
@@ -120,6 +134,7 @@ export class ChatRepository implements IChatRepository {
     return Chat.find({
       members: userId,
       isDeleted: { $ne: true },
+      $or: [{ requestPending: { $ne: true } }, { requestInitiator: userId }],
     }).lean();
   }
 

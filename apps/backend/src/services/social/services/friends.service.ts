@@ -243,6 +243,7 @@ export class FriendsService {
     await ChatAPI.ensureChatExists(fromUserId, toUserId);
 
     await NotificationAPI.notifyFriendRequestAccepted(fromUserId, toUserId);
+    await NotificationAPI.deleteNotificationByFriendReq(requestId)
 
     const populated = await this.populateUsersInRequest(request);
 

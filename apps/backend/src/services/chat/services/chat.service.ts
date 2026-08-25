@@ -48,12 +48,7 @@ export class ChatService {
       throw BadRequest("User ID is required");
     }
 
-    // TODO - Use API to populate
     const chats = await this.chatRepository.findChatsForUser(userId);
-    // .populate("members", "-password")
-    // .populate("admin", "-password")
-    // .populate("createdBy", "-password")
-    // .populate("lastMessage");
 
     const states = await this.chatUserStateRepository.findByUser(userId);
 
@@ -75,12 +70,12 @@ export class ChatService {
       const members = chat.members
         .map((memberId) => userMap.get(memberId.toString()))
         .filter((user) => user !== undefined);
-      
-        let admin:UserDTO[] = [];
 
-        if(chat.isGroup){
-          admin = this.populateAdmin(chat, members)
-        }
+      let admin: UserDTO[] = [];
+
+      if (chat.isGroup) {
+        admin = this.populateAdmin(chat, members);
+      }
 
       return {
         ...chat,
