@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { protect } from "../auth/middleware/auth.middleware.js";
 import {
   deleteChatFile,
   getChatDownloadUrl,
@@ -22,6 +21,7 @@ import {
   getAvatarDownloadUrl,
   updateGroupAvatar,
 } from "../chat/controllers/group.controller.js";
+import { protect } from "../../utils/middleware/protect.js";
 
 const router = Router();
 

@@ -18,7 +18,7 @@ export const socketAuth = async (
     }
 
     const payload = verifyAccessToken(accessToken);
-    const user = await UserAPI.findUserByAuthUserId(payload.id);
+    const user = await UserAPI.findUserByAuthUserId(payload.authUserId);
 
     if (!user) {
       socket.disconnect();

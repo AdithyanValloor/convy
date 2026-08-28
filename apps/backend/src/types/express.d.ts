@@ -1,6 +1,8 @@
-import { JwtPayload } from "../services/auth/types/user.types.js";
+
 
 /** Express type augmentation for authenticated request handling. */
+
+import { JwtPayload } from "./auth.types.ts";
 
 declare global {
   namespace Express {

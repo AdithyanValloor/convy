@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import {
   generateAccessToken,
   generateRefreshToken,
-  verifyAccessToken,
   verifyRefreshToken,
 } from "../utils/jwt.js";
 import {
@@ -17,8 +16,10 @@ import { sendOtpToEmail, verifyEmailOtp } from "./otp.service.js";
 import * as UserAPI from "../../user/api/user.api.js";
 
 import { CreateAccountData, IAuthRepository } from "../repositories/index.js";
-import jwt from "jsonwebtoken";
-import { JwtPayload } from "../types/user.types.js";
+import {
+  AccessTokenPayload,
+  RefreshTokenPayload,
+} from "../types/user.types.js";
 import { IAuthUser } from "../models/auth.model.js";
 import { randomUUID } from "crypto";
 import { UserDTO } from "../../user/types/user.dto.js";
@@ -27,8 +28,8 @@ import { UserDTO } from "../../user/types/user.dto.js";
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
 
 interface AuthSession {
-  user: JwtPayload;
-  newAccessToken?: string;
+  user: AccessTokenPayload;
+  accessToken?: string;
 }
 
 export class AuthService {
@@ -73,60 +74,6 @@ export class AuthService {
     }
   }
 
-  async authenticateSession(
-    accessToken?: string,
-    refreshToken?: string,
-  ): Promise<AuthSession> {
-    if (!accessToken && !refreshToken) {
-      throw Unauthorized("Unauthenticated");
-    }
-
-    if (accessToken) {
-      try {
-        const authUser = verifyAccessToken(accessToken);
-        const user = await UserAPI.findUserByAuthUserId(authUser.id);
-
-        return {
-          user: {
-            ...authUser,
-            id: user.id
-          },
-          newAccessToken: undefined,
-        };
-      } catch (err) {
-        if (!(err instanceof jwt.TokenExpiredError)) {
-          throw Unauthorized("Invalid access token");
-        }
-      }
-    }
-
-    if (!refreshToken) {
-      throw Unauthorized("Session expired");
-    }
-
-    const decoded = verifyRefreshToken(refreshToken);
-
-    const authUser = await this.authRepository.findById(decoded.id);
-    const user = await UserAPI.findUserByAuthUserId(decoded.id);
-
-    if (!authUser || !user) {
-      throw Unauthorized("Session invalid");
-    }
-
-    const newAccessToken = generateAccessToken({
-      id: decoded.id,
-      email: decoded.email,
-    });
-
-    return {
-      user: {
-        ...decoded,
-        id: user.id,
-      },
-      newAccessToken,
-    };
-  }
-
   private async validateNewEmail(userId: string, email: string) {
     const normalized = validateEmail(email);
 
@@ -147,13 +94,6 @@ export class AuthService {
     return normalized;
   }
 
-  private buildJwtPayload(user: { id: any; email: string }) {
-    return {
-      id: user.id,
-      email: user.email,
-    };
-  }
-
   async sendRegistrationOtp(email: string): Promise<void> {
     if (!email) throw BadRequest("Email is required");
 
@@ -170,6 +110,27 @@ export class AuthService {
     verifyEmailOtp(email, otp);
     // Verified emails are temporarily marked in the OTP store before registration completes.
     markVerified(email);
+  }
+
+  private buildJwtAccessPayload(
+    authUser: { id: string; email: string },
+    profileUser: { id: string },
+  ): AccessTokenPayload {
+    return {
+      authUserId: authUser.id,
+      userId: profileUser.id,
+      email: authUser.email,
+    };
+  }
+
+  private buildJwtRefreshPayload(authUser: {
+    id: string;
+    email: string;
+  }): RefreshTokenPayload {
+    return {
+      authUserId: authUser.id,
+      email: authUser.email,
+    };
   }
 
   async registerUser(
@@ -207,9 +168,10 @@ export class AuthService {
     clearEmail(email);
 
     return {
-      accessToken: generateAccessToken(this.buildJwtPayload(authUser)),
-      refreshToken: generateRefreshToken(this.buildJwtPayload(authUser)),
-      safeUser: profileUser,
+      accessToken: generateAccessToken(
+        this.buildJwtAccessPayload(authUser, profileUser),
+      ),
+      refreshToken: generateRefreshToken(this.buildJwtRefreshPayload(authUser)),
     };
   }
 
@@ -222,12 +184,13 @@ export class AuthService {
     const match = await bcrypt.compare(password, authUser.hashedPassword);
     if (!match) throw Unauthorized("Invalid email or password");
 
-    const profileUser = await UserAPI.findUserByAuthUserId(authUser.id);
+    const user = await UserAPI.findUserByAuthUserId(authUser.id);
 
     return {
-      accessToken: generateAccessToken(this.buildJwtPayload(authUser)),
-      refreshToken: generateRefreshToken(this.buildJwtPayload(authUser)),
-      safeUser: profileUser,
+      accessToken: generateAccessToken(
+        this.buildJwtAccessPayload(authUser, user),
+      ),
+      refreshToken: generateRefreshToken(this.buildJwtRefreshPayload(authUser)),
     };
   }
 
@@ -236,11 +199,19 @@ export class AuthService {
 
     const decoded = verifyRefreshToken(token);
 
-    const user = await this.authRepository.findById(decoded.id);
-    if (!user) throw NotFound("User not found");
+    const authUser = await this.authRepository.findById(decoded.authUserId);
+    if (!authUser) throw NotFound("User not found");
+
+    const user = await UserAPI.findUserByAuthUserId(authUser.id);
+
+    const accessTokenPayload: AccessTokenPayload = {
+      authUserId: authUser.id,
+      userId: user.id,
+      email: authUser.email,
+    };
 
     return {
-      accessToken: generateAccessToken(this.buildJwtPayload(user)),
+      accessToken: generateAccessToken(accessTokenPayload),
       user,
     };
   }

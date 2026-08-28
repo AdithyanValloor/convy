@@ -11,7 +11,7 @@ import {
   updateEmailController,
   verifyOtp,
 } from "../controllers/auth.controller.js";
-import { protect } from "../middleware/auth.middleware.js";
+import { protect } from "../../../utils/middleware/protect.js";
 
 const router = Router();
 

@@ -4,7 +4,7 @@ import {
   acceptMessageRequestController,
   rejectMessageRequestController,
 } from "../controllers/messageRequest.controller.js";
-import { protect } from "../../auth/middleware/auth.middleware.js";
+import { protect } from "../../../utils/middleware/protect.js";
 
 const router = Router();
 

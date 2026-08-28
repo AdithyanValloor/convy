@@ -12,7 +12,7 @@ import {
   muteChat,
   getUnreadCounts,
 } from "../controllers/chat.controller.js";
-import { protect } from "../../auth/middleware/auth.middleware.js";
+import { protect } from "../../../utils/middleware/protect.js";
 
 const router = Router();
 

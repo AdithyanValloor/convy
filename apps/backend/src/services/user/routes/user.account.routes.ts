@@ -4,8 +4,8 @@ import {
   scheduleAccountDeletionController,
   cancelScheduledDeletionController,
 } from "../controllers/user.account.controller.js";
-import { protect } from "../../auth/middleware/auth.middleware.js";
 import { updateUsernameController } from "../controllers/profile.controller.js";
+import { protect } from "../../../utils/middleware/protect.js";
 
 const router = Router();
 

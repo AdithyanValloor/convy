@@ -62,20 +62,19 @@ interface AuthSuccessPayload {
  * On success, stores the authenticated user.
  */
 export const loginUser = createAsyncThunk<
-  AuthSuccessPayload,
+  void,
   { email: string; password: string },
   { rejectValue: string }
 >("auth/loginUser", async ({ email, password }, { rejectWithValue }) => {
   try {
-    const response = await api.post("/auth/login", { email, password });
-
-    return {
-      user: mapAuthUser(response.data.user),
-    };
+    await api.post("/auth/login", { email, password });
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
-      return rejectWithValue(err.response?.data?.message ?? "Login failed");
+      return rejectWithValue(
+        err.response?.data?.message ?? "Login failed",
+      );
     }
+
     return rejectWithValue("Login failed");
   }
 });
@@ -306,7 +305,6 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.sessionLoading = false;
         state.error = null;
-        state.user = action.payload.user;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.error = action.payload ?? "Login failed";

@@ -3,20 +3,6 @@ import { BadRequest, Unauthorized } from "../../../utils/errors/httpErrors.js";
 import { authCookieOptions } from "../../../config/cookies.js";
 import { authService } from "../composition/auth.container.js";
 
-
-// import {
-//   loginUser,
-//   registerUser,
-//   sendRegistrationOtp,
-//   verifyRegistrationOtp,
-//   refreshTokenFunction,
-//   checkPassword,
-//   changePassword,
-//   sendEmailChangeOtp,
-//   verifyAndUpdateEmail,
-// } from "../services/auth.service.js";
-
-
 /** Auth and account bootstrap controller handlers for user onboarding and sessions. */
 
 interface RegisterBody {
@@ -78,7 +64,7 @@ export const register = async (
       throw BadRequest("Invalid request body");
     }
 
-    const { accessToken, refreshToken, safeUser } = await authService.registerUser(
+    const { accessToken, refreshToken } = await authService.registerUser(
       displayName,
       username,
       email,
@@ -94,7 +80,7 @@ export const register = async (
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(201).json({ user: safeUser });
+    res.status(201).json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -113,7 +99,7 @@ export const login = async (
       throw BadRequest("Email and password required");
     }
 
-    const { accessToken, refreshToken, safeUser } = await authService.loginUser(
+    const { accessToken, refreshToken } = await authService.loginUser(
       email,
       password,
     );
@@ -127,7 +113,7 @@ export const login = async (
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({ user: safeUser });
+    res.status(200).json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -160,7 +146,6 @@ export const refreshToken = async (
     next(err);
   }
 };
-
 
 /** Checks whether the provided password matches the current user's password. */
 export const checkPasswordController = async (
@@ -215,7 +200,11 @@ export const updateEmailController = async (
     if (!userId) throw Unauthorized();
 
     const { email, otp } = req.body;
-    const updatedUser = await authService.verifyAndUpdateEmail(userId, email, otp);
+    const updatedUser = await authService.verifyAndUpdateEmail(
+      userId,
+      email,
+      otp,
+    );
 
     res.status(200).json({
       success: true,
