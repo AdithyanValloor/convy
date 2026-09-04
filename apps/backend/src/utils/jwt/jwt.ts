@@ -9,7 +9,7 @@ import { Unauthorized } from "../errors/httpErrors.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 const REFRESH_SECRET = process.env.REFRESH_SECRET;
 
-interface AccessTokenPayload {
+export interface AccessTokenPayload {
   authUserId: string;
   userId: string;
   email: string;

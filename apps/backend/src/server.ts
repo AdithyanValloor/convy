@@ -11,6 +11,7 @@ import { initSocket } from "./socket/index.js";
 import { createApp } from "./app.js";
 import { connectRedis } from "./config/redis.js";
 import { checkPostgresConnection } from "./config/postgres.db.js";
+import { startUserGrpcServer } from "./services/user/grpc/user.grpc.server.js";
 
 // Load environment variables before reading config values.
 dotenv.config();
@@ -22,11 +23,14 @@ export const startServer = async (): Promise<void> => {
     await connectDb();
     await checkPostgresConnection();
     await connectRedis();
+    
 
     const app = createApp();
     const server = http.createServer(app);
 
     initSocket(server);
+
+    startUserGrpcServer();
 
     app.get("/", (_, res) => {
       res.status(200).json({

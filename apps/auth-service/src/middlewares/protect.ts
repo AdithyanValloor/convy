@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "../jwt/jwt.js";
-import { Unauthorized } from "../errors/httpErrors.js";
+import { verifyAccessToken } from "../utils/jwt.js";
 
 export const protect = (
   req: Request,
@@ -9,10 +8,6 @@ export const protect = (
 ): void => {
   try {
     const accessToken = req.cookies?.accessToken;
-
-    if (!accessToken) {
-      throw Unauthorized("Authentication required");
-    }
 
     const decoded = verifyAccessToken(accessToken);
 

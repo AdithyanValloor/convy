@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package user;
+
+import "google/protobuf/timestamp.proto";
+
+message FindUserByAuthUserIdRequest {
+  string authUserId = 1;
+}
+
+message ProfilePicture {
+  optional string key = 1;
+}
+
+enum BanType {
+  BAN_TYPE_UNSPECIFIED = 0;
+  BAN_TYPE_TEMPORARY = 1;
+  BAN_TYPE_PERMANENT = 2;
+}
+
+enum FriendRequestPrivacy {
+  FRIEND_REQUEST_PRIVACY_UNSPECIFIED = 0;
+  FRIEND_REQUEST_PRIVACY_EVERYONE = 1;
+  FRIEND_REQUEST_PRIVACY_FRIENDS = 2;
+  FRIEND_REQUEST_PRIVACY_NOBODY = 3;
+}
+
+message Privacy {
+  FriendRequestPrivacy friendRequests = 1;
+  bool readReceipts = 2;
+  bool typingIndicators = 3;
+}
+
+message NotificationSettings {
+  bool allNotifications = 1;
+  bool newMessages = 2;
+  bool mentions = 3;
+  bool replies = 4;
+  bool friendRequests = 5;
+  bool friendRequestAccepted = 6;
+  bool groupAdded = 7;
+}
+
+message UserDTOResponse {
+  string id = 1;
+  string username = 2;
+  string displayName = 3;
+
+  optional string pronouns = 4;
+  optional string status = 5;
+  optional string bio = 6;
+
+  optional google.protobuf.Timestamp dateOfBirth = 7;
+
+  ProfilePicture profilePicture = 8;
+
+  bool isBanned = 9;
+  bool isActive = 10;
+
+  optional google.protobuf.Timestamp banExpiry = 11;
+
+  optional BanType banType = 12;
+
+  bool isDeleted = 13;
+
+  optional google.protobuf.Timestamp deletedAt = 14;
+  optional google.protobuf.Timestamp scheduledDeletionAt = 15;
+  optional google.protobuf.Timestamp deletionWarningEmailSentAt = 16;
+  optional google.protobuf.Timestamp deactivatedAt = 17;
+
+  Privacy privacy = 18;
+
+  NotificationSettings notificationSettings = 19;
+
+  google.protobuf.Timestamp createdAt = 20;
+  google.protobuf.Timestamp updatedAt = 21;
+}
+
+message UserNameExistsRequest {
+  string username = 1;
+}
+
+message UserNameExistsResponse {
+  bool exists = 1;
+}
+
+message CreateProfileRequest {
+  string authUserId = 1;
+  string username = 2; 
+  string displayName = 3;
+}
+
+service UserService {
+  rpc FindUserByAuthUserId(
+    FindUserByAuthUserIdRequest
+  ) returns (
+    UserDTOResponse
+  );
+
+  rpc UserNameExists(
+    UserNameExistsRequest
+  ) returns (
+    UserNameExistsResponse
+  );
+
+  rpc CreateProfile(
+    CreateProfileRequest
+  ) returns (
+    UserDTOResponse
+  );
+}

@@ -3,6 +3,7 @@ import api from "@/utils/axiosInstance";
 import axios from "axios";
 import { mapAuthUser } from "@/utils/mapAuthUser";
 import { updateProfile } from "./profileSlice";
+import authApi from "@/utils/authAxios.temp";
 
 /**
  * Authenticated user model stored in Redux.
@@ -67,7 +68,7 @@ export const loginUser = createAsyncThunk<
   { rejectValue: string }
 >("auth/loginUser", async ({ email, password }, { rejectWithValue }) => {
   try {
-    await api.post("/auth/login", { email, password });
+    await authApi.post("/auth/login", { email, password });
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
       return rejectWithValue(
@@ -109,7 +110,7 @@ export const logoutUser = createAsyncThunk<void, void, { rejectValue: string }>(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      await api.post("/auth/logout");
+      await authApi.post("/auth/logout");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         return rejectWithValue(err.response?.data?.message ?? "Logout failed");
@@ -151,7 +152,7 @@ export const updateEmail = createAsyncThunk<
   { rejectValue: string }
 >("auth/updateEmail", async ({ email, otp }, { rejectWithValue }) => {
   try {
-    const res = await api.patch("/auth/email", { email, otp });
+    const res = await authApi.patch("/auth/email", { email, otp });
     return mapAuthUser(res.data.data);
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
@@ -175,7 +176,7 @@ export const changePassword = createAsyncThunk<
   "auth/changePassword",
   async ({ currentPassword, newPassword }, { rejectWithValue }) => {
     try {
-      await api.patch("/auth/password", {
+      await authApi.patch("/auth/password", {
         currentPassword,
         newPassword,
       });
@@ -265,7 +266,7 @@ export const checkPassword = createAsyncThunk<
   { rejectValue: string }
 >("auth/checkPassword", async ({ password }, { rejectWithValue }) => {
   try {
-    const res = await api.post("/auth/check-password", { password });
+    const res = await authApi.post("/auth/check-password", { password });
 
     if (!res.data.isMatch) {
       return rejectWithValue("Incorrect password");
