@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
-import { checkPostgresConnection } from "./src/config/postgres.db.js";
-import { connectRedis } from "./src/config/redis.config.js";
+import { checkPostgresConnection } from "./config/postgres.db.js";
+import { connectRedis } from "./config/redis.config.js";
 import { createApp } from "./app.js";
 
 dotenv.config();

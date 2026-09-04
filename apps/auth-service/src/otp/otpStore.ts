@@ -3,7 +3,7 @@
  * Replace with Redis or another shared store for multi-instance deployments.
  */
 
-import { redis } from "../config/redis.config";
+import { redis } from "../config/redis.config.js";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 

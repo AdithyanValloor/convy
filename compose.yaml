@@ -8,8 +8,8 @@ services:
 
   backend:
     build:
-      context: ./apps/backend
-
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
     image: whisp-backend:v1
     container_name: whisp-backend
     restart: unless-stopped
@@ -18,6 +18,21 @@ services:
       - "9000:9000"
     env_file:
       - ./apps/backend/.env
+    depends_on:
+      - redis
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./apps/auth-service/Dockerfile
+    image: whisp-auth-service:v1
+    container_name: whisp-auth
+    restart: unless-stopped
+
+    ports:
+      - "9001:9001"
+    env_file:
+      - ./apps/auth-service/.env
     depends_on:
       - redis
 

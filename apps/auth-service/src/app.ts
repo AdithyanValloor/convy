@@ -1,8 +1,8 @@
 import express, { Application } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { errorHandler } from "./src/errors/error.middleware";
-import { authRouter } from "./src/routes/auth.routes";
+import { errorHandler } from "./errors/error.middleware.js";
+import { authRouter } from "./routes/auth.routes.js";
 
 export const createApp = (): Application => {
   const app = express();

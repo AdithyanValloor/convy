@@ -7,7 +7,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
-    "dev": "NODE_OPTIONS=--no-network-family-autoselection tsx watch index.ts",
+    "dev": "NODE_OPTIONS=--no-network-family-autoselection tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },

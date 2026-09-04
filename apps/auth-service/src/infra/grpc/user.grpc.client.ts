@@ -1,18 +1,11 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { userDTOResponseToUserDTO } from "./user.grpc.mapper.js";
 import { UserDTO } from "../../types/user.types.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const protoPath = path.resolve(
-  __dirname,
-  "../../../../../packages/proto/user.proto",
-);
+const protoPath = path.resolve(process.cwd(), "../../packages/proto/user.proto");
 
 const packageDefinition = protoLoader.loadSync(protoPath, {
   keepCase: true,
