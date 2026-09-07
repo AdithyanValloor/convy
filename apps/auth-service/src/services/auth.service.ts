@@ -27,12 +27,6 @@ import { createProfile, findUserByAuthUserId, userNameExists } from "../infra/gr
 //TODO fix register accessing UserModel when implementing message queue.
 
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
-
-interface AuthSession {
-  user: AccessTokenPayload;
-  accessToken?: string;
-}
-
 export class AuthService {
   constructor(private readonly authRepository: IAuthRepository) {}
 

@@ -11,7 +11,7 @@ import { initSocket } from "./socket/index.js";
 import { createApp } from "./app.js";
 import { connectRedis } from "./config/redis.js";
 import { checkPostgresConnection } from "./config/postgres.db.js";
-import { startUserGrpcServer } from "./services/user/grpc/user.grpc.server.js";
+import { startUserGrpcServer } from "./grpc/grpc.server.js";
 
 // Load environment variables before reading config values.
 dotenv.config();

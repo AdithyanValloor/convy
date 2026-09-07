@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package social;
+
+import "google/protobuf/timestamp.proto";
+
+message SocialRequest {
+  string userId = 1;
+  string currentUserId = 2;
+}
+
+message Block {
+  string blocker = 1;
+  string blocked = 2;
+  google.protobuf.Timestamp createdAt = 3;
+}
+
+message BlockExistsResponse {
+  optional Block block = 1;
+}
+
+message AreFriendsResponse {
+    bool areFriends = 1;
+}
+
+message GetBlockedRelationshipUserIdsRequest {
+    string currentUserId = 1;
+    repeated string userIds = 2;
+}
+
+message GetBlockedRelationshipUserIdsResponse {
+  repeated string userIds = 1;
+}
+
+service SocialService {
+  rpc BlockExists(
+    SocialRequest
+  ) returns (
+    BlockExistsResponse
+  );
+
+  rpc AreFriends(
+    SocialRequest
+  ) returns (
+    AreFriendsResponse
+  );
+
+  rpc GetBlockedRelationshipUserIds(
+    GetBlockedRelationshipUserIdsRequest
+  ) returns (
+    GetBlockedRelationshipUserIdsResponse
+  );
+}  

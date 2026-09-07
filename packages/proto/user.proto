@@ -90,6 +90,22 @@ message CreateProfileRequest {
   string displayName = 3;
 }
 
+message FetchUsersRequest {
+  repeated string userIds = 1;
+}
+
+message FetchUsersResponse {
+  repeated UserDTOResponse users = 1;
+}
+
+message UserTargetRequest {
+  string userId = 1;
+}
+
+message GetUserPrivacyResponse {
+  Privacy privacy = 1;
+}
+
 service UserService {
   rpc FindUserByAuthUserId(
     FindUserByAuthUserIdRequest
@@ -107,5 +123,23 @@ service UserService {
     CreateProfileRequest
   ) returns (
     UserDTOResponse
+  );
+
+  rpc FetchUsers(
+    FetchUsersRequest
+  ) returns (
+    FetchUsersResponse
+  );
+
+  rpc FindUserById(
+    UserTargetRequest
+  ) returns (
+    UserDTOResponse
+  );
+
+  rpc GetUserPrivacy(
+    UserTargetRequest
+  ) returns (
+    GetUserPrivacyResponse
   );
 }

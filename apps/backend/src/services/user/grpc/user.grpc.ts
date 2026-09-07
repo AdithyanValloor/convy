@@ -5,11 +5,17 @@ import * as protoLoader from "@grpc/proto-loader";
 
 import {
   createProfile,
+  fetchUsers,
   findUserByAuthUserId,
+  findUserById,
+  getUserPrivacy,
   userNameExists,
 } from "../api/user.api.js";
 
-const protoPath = path.resolve(process.cwd(), "../../packages/proto/user.proto");
+const protoPath = path.resolve(
+  process.cwd(),
+  "../../packages/proto/user.proto",
+);
 
 const packageDefinition = protoLoader.loadSync(protoPath, {
   keepCase: true,
@@ -56,6 +62,30 @@ interface CreateProfileCall {
 }
 
 interface CreateProfileCallback {
+  (error: grpc.ServiceError | null, response?: unknown): void;
+}
+
+interface FetchUsersCall {
+  request: {
+    userIds: string[];
+  };
+}
+
+interface FetchUsersCallback {
+  (error: grpc.ServiceError | null, response?: unknown): void;
+}
+
+interface UserTargetRequestCall {
+  request: {
+    userId: string;
+  };
+}
+
+interface UserTargetRequestCallback {
+  (error: grpc.ServiceError | null, response?: unknown): void;
+}
+
+interface GetUserPrivacyCallback {
   (error: grpc.ServiceError | null, response?: unknown): void;
 }
 
@@ -202,6 +232,103 @@ export const userGrpcService = {
         createdAt: dateToTimestamp(user.createdAt),
         updatedAt: dateToTimestamp(user.updatedAt),
       });
+    } catch (error) {
+      callback(error as grpc.ServiceError);
+    }
+  },
+
+  fetchUsers: async (call: FetchUsersCall, callback: FetchUsersCallback) => {
+    try {
+      const { userIds } = call.request;
+
+      const users = await fetchUsers(userIds);
+
+      callback(null, {
+        users: users.map((user) => {
+          return {
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            pronouns: user.pronouns,
+            status: user.status,
+            bio: user.bio,
+            dateOfBirth: dateToTimestamp(user.dateOfBirth),
+            profilePicture: user.profilePicture,
+            isBanned: user.isBanned,
+            isActive: user.isActive,
+            banExpiry: dateToTimestamp(user.banExpiry),
+            banType: banTypeToProto(user.banType),
+            isDeleted: user.isDeleted,
+            deletedAt: dateToTimestamp(user.deletedAt),
+            scheduledDeletionAt: dateToTimestamp(user.scheduledDeletionAt),
+            deletionWarningEmailSentAt: dateToTimestamp(
+              user.deletionWarningEmailSentAt,
+            ),
+            deactivatedAt: dateToTimestamp(user.deactivatedAt),
+            privacy: privacyToProto(user.privacy),
+            notificationSettings: user.notificationSettings,
+            createdAt: dateToTimestamp(user.createdAt),
+            updatedAt: dateToTimestamp(user.updatedAt),
+          };
+        }),
+      });
+    } catch (error) {
+      callback(error as grpc.ServiceError);
+    }
+  },
+
+  findUserById: async (
+    call: UserTargetRequestCall,
+    callback: UserTargetRequestCallback,
+  ) => {
+    try {
+      const { userId } = call.request;
+
+      const user = await findUserById(userId);
+
+      callback(null, {
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        pronouns: user.pronouns,
+        status: user.status,
+        bio: user.bio,
+        dateOfBirth: dateToTimestamp(user.dateOfBirth),
+        profilePicture: user.profilePicture,
+        isBanned: user.isBanned,
+        isActive: user.isActive,
+        banExpiry: dateToTimestamp(user.banExpiry),
+        banType: banTypeToProto(user.banType),
+        isDeleted: user.isDeleted,
+        deletedAt: dateToTimestamp(user.deletedAt),
+        scheduledDeletionAt: dateToTimestamp(user.scheduledDeletionAt),
+        deletionWarningEmailSentAt: dateToTimestamp(
+          user.deletionWarningEmailSentAt,
+        ),
+        deactivatedAt: dateToTimestamp(user.deactivatedAt),
+        privacy: privacyToProto(user.privacy),
+        notificationSettings: user.notificationSettings,
+        createdAt: dateToTimestamp(user.createdAt),
+        updatedAt: dateToTimestamp(user.updatedAt),
+      });
+    } catch (error) {
+      callback(error as grpc.ServiceError);
+    }
+  },
+
+  getUserPrivacy: async (
+    call: UserTargetRequestCall,
+    callback: GetUserPrivacyCallback,
+  ) => {
+    try {
+      const { userId } = call.request;
+
+      const privacy = await getUserPrivacy(userId);
+
+      callback(null, {
+        privacy: privacyToProto(privacy),
+      });
+      
     } catch (error) {
       callback(error as grpc.ServiceError);
     }

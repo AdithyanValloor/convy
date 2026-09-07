@@ -1,0 +1,283 @@
+import { Response, NextFunction, Request } from "express";
+import {
+  MuteDuration,
+} from "../services/chat.service.js";
+
+import { Chat } from "../models/chat.model.js";
+
+import { emitUnreadUpdate } from "../../../socket/emitters/message.emmitter.js";
+
+import { chatService } from "../composition/container.js";
+import { BadRequest, Forbidden, Unauthorized } from "../../../errors/httpErrors.js";
+
+/** Chat controller handlers for authenticated chat actions. */
+
+/** Returns chats visible to the current user. */
+export const fetchChats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw Unauthorized();
+    }
+
+    const chats = await chatService.fetchChatsFunction(userId);
+
+    res.status(200).json(chats);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Returns unread counts keyed by chat ID for the current user. */
+export const getUnreadCounts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw Unauthorized();
+
+    const unread = await chatService.getUnreadCounts(userId);
+
+    res.status(200).json({ unread });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+/** Returns an existing direct chat or creates one when allowed. */
+export const accessChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { userId, message }: { userId?: string; message?: string } = req.body;
+    const currentUserId = req.user?.id;
+
+    console.log("us - ", userId, "  |  ", "cur - ", currentUserId);
+    
+
+    if (!userId) {
+      throw BadRequest("UserId parameter is required");
+    }
+
+    if (!currentUserId) {
+      throw Unauthorized();
+    }
+
+    // TODO UPDATE NEW MESSAGE IN REQUEST...
+    // const chat = await chatService.accessChatFunction(userId, currentUserId, message);
+    const chat = await chatService.accessChatFunction(userId, currentUserId);
+
+    res.status(200).json(chat);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Toggles the pinned state for a chat owned by the current user. */
+export const togglePinChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+
+    if (!userId) {
+      throw Unauthorized();
+    }
+
+    const chat = await Chat.findOne({
+      _id: chatId,
+      members: userId,
+    });
+
+    if (!chat) throw Forbidden("Not allowed");
+
+    const result = await chatService.togglePinChatFunction(userId, chatId);
+
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Toggles the archived state for a chat owned by the current user. */
+export const toggleArchiveChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+
+    if (!userId) {
+      throw Unauthorized();
+    }
+
+    const chat = await Chat.findOne({
+      _id: chatId,
+      members: userId,
+    });
+
+    if (!chat) throw Forbidden("Not allowed");
+
+    const result = await chatService.toggleArchiveChatFunction(userId, chatId);
+
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Marks a chat as unread for the current user. */
+export const markChatAsUnread = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+
+    if (!userId) throw Unauthorized();
+    if (!chatId) throw BadRequest("ChatId is required");
+
+    const result = await chatService.markChatAsUnreadFunction(userId, chatId);
+
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Marks a chat as read for the current user. */
+export const markChatAsRead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    
+    console.log("READ HIT -----------");
+    
+
+    const userId = req.user?.id;
+    if (!userId) throw Unauthorized();
+
+    const { unreadCount } = await chatService.markChatAsReadFunction(
+      userId,
+      req.params.chatId as string,
+    );
+
+    emitUnreadUpdate(userId, req.params.chatId as string, unreadCount);
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Clears chat history from the current user's perspective. */
+export const clearChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+
+    if (!userId) throw Unauthorized();
+    if (!chatId) throw BadRequest("ChatId is required");
+
+    await chatService.clearChatForUser(userId, chatId);
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Removes a chat from the current user's chat list. */
+export const deleteChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+
+    if (!userId) throw Unauthorized();
+    if (!chatId) throw BadRequest("ChatId is required");
+
+    await chatService.deleteChatForUser(userId, chatId);
+
+    res.status(200).json({ success: true, chatId });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const VALID_DURATIONS: MuteDuration[] = ["1h", "8h", "24h", "1w", "forever"];
+
+/** Mutes a chat for a supported duration. */
+export const muteChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+    const { duration } = req.body as { duration?: MuteDuration };
+
+    if (!userId) throw Unauthorized();
+    if (!chatId) throw BadRequest("ChatId is required");
+
+    if (!duration || !VALID_DURATIONS.includes(duration)) {
+      throw BadRequest(
+        `duration must be one of: ${VALID_DURATIONS.join(", ")}`,
+      );
+    }
+
+    const result = await chatService.muteChatFunction(userId, chatId, duration);
+
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Removes any active mute for a chat. */
+export const unmuteChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { chatId } = req.params as { chatId: string };
+
+    if (!userId) throw Unauthorized();
+    if (!chatId) throw BadRequest("ChatId is required");
+
+    const result = await chatService.unmuteChatFunction(userId, chatId);
+
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+};

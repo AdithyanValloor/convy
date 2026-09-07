@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package media;
+
+message GenerateDownloadUrlRequest {
+    string key = 1;
+}
+
+message GenerateDownloadUrlResponse {
+    string url = 1;
+}
+
+service MediaService {
+    rpc generateDownloadUrl(
+        GenerateDownloadUrlRequest
+    ) returns (
+        GenerateDownloadUrlResponse
+    );
+}

@@ -1,5 +1,4 @@
 import path from "node:path";
-
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { userDTOResponseToUserDTO } from "./user.grpc.mapper.js";
@@ -113,10 +112,10 @@ export interface Timestamp {
   nanos: number;
 }
 
-const USER_GRPC_ADDRESS = process.env.USER_GRPC_ADDRESS ?? "localhost:50051";
+const GRPC_ADDRESS = process.env.GRPC_ADDRESS ?? "localhost:50051";
 
 const userClient = new userProto.user.UserService(
-  USER_GRPC_ADDRESS,
+  GRPC_ADDRESS,
   grpc.credentials.createInsecure(),
 );
 

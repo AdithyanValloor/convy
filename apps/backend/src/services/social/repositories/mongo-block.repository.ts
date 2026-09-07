@@ -6,7 +6,7 @@ export class BlockRepository implements IBlockRepository {
   async findBlockRelationship(
     userA: string,
     userB: string,
-  ): Promise<FlattenMaps<IBlock> | null> {
+  ): Promise<IBlock | null> {
     return BlockModel.findOne({
       $or: [
         { blocker: userA, blocked: userB },
