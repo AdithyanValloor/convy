@@ -12,8 +12,10 @@ import { IChat } from "../models/chat.model.js";
 import { UserDTO } from "../../../types/user.dto.js";
 import { fetchUsers } from "../../../grpc/user/user.grpc.client.js";
 
-import { areFriends, blockExists } from "../../../grpc/social/social.grpc.client.js";
-
+import {
+  areFriends,
+  blockExists,
+} from "../../../grpc/social/social.grpc.client.js";
 
 /** Chat service helpers for chat access, user state, and mute/archive actions. */
 

@@ -18,7 +18,6 @@ export class MongoUserRepository implements IUserRepository {
     return UserModel.find({
       _id: { $in: userIds },
     })
-      .select("displayName username profilePicture createdAt bio pronouns")
       .lean();
   }
 

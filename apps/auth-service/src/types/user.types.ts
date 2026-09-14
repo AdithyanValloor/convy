@@ -17,6 +17,7 @@ export interface RefreshTokenPayload {
 
 export interface UserDTO {
   id: string;
+  _id: string;
 
   username: string;
   displayName: string;

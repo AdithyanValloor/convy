@@ -1,6 +1,9 @@
-
 import { UserDTO } from "../../types/user.dto.js";
-import { ProtoPrivacy, Timestamp, UserDTOResponse } from "../types/user.grpc.types.js";
+import {
+  ProtoPrivacy,
+  Timestamp,
+  UserDTOResponse,
+} from "../types/user.grpc.types.js";
 
 const timestampToDate = (timestamp?: Timestamp): Date | undefined => {
   if (!timestamp) {
@@ -64,11 +67,11 @@ const timestampToDateRequired = (timestamp?: Timestamp): Date => {
   );
 };
 
-
 export const userDTOResponseToUserDTO = (
   response: UserDTOResponse,
 ): UserDTO => {
   return {
+    _id: response.id,
     id: response.id,
     username: response.username,
     displayName: response.displayName,
@@ -91,14 +94,12 @@ export const userDTOResponseToUserDTO = (
 
     isDeleted: response.isDeleted,
     deletedAt: timestampToDate(response.deletedAt) ?? null,
-    scheduledDeletionAt:
-      timestampToDate(response.scheduledDeletionAt) ?? null,
+    scheduledDeletionAt: timestampToDate(response.scheduledDeletionAt) ?? null,
 
     deletionWarningEmailSentAt:
       timestampToDate(response.deletionWarningEmailSentAt) ?? null,
 
-    deactivatedAt:
-      timestampToDate(response.deactivatedAt) ?? null,
+    deactivatedAt: timestampToDate(response.deactivatedAt) ?? null,
 
     privacy: protoToPrivacy(response.privacy),
 

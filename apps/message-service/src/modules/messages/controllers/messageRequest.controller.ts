@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { Unauthorized } from "../../../errors/httpErrors.js";
 
-import {
-  emitMessageRequestAccepted,
-  emitMessageRequestRejected,
-} from "../../../socket/emitters/messageRequest.emitters.js";
-
 import { MessageReqParams } from "../types/message.types.js";
 import { messageRequestService } from "../composition/container.js";
+import {
+  publishMessagerequestAccepted,
+  publishMessagerequestRejected,
+} from "../../../rabbitmq/publisher/message.publisher.js";
+import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
 
 /** Message request controller handlers for authenticated request actions. */
 
@@ -42,16 +42,25 @@ export const acceptMessageRequestController = async (
     if (!userId) throw Unauthorized();
 
     const { requestId } = req.params;
-    if(!requestId) throw Unauthorized();
+    if (!requestId) throw Unauthorized();
 
-    const result = await messageRequestService.acceptMessageRequest(requestId, userId);
-    
+    const result = await messageRequestService.acceptMessageRequest(
+      requestId,
+      userId,
+    );
+
     const [userA, userB] = result.chat?.members as any[];
 
-    emitMessageRequestAccepted(userA._id.toString(), userB._id.toString(), {
-      requestId,
-      chat: result.chat as any,
-    });
+    await publishMessagerequestAccepted(
+      createEvent("message-request.accepted", {
+        userA: userA._id.toString(),
+        userB: userB._id.toString(),
+        requestPayload: {
+          requestId,
+          chat: result.chat as any,
+        },
+      }),
+    );
 
     res.status(200).json({
       success: true,
@@ -73,14 +82,19 @@ export const rejectMessageRequestController = async (
     if (!userId) throw Unauthorized();
 
     const { requestId } = req.params;
-    if(!requestId) throw Unauthorized();
+    if (!requestId) throw Unauthorized();
 
-    const result = await messageRequestService.rejectMessageRequest(requestId, userId);
-
-    emitMessageRequestRejected(
-      result.request.from.toString(),
+    const result = await messageRequestService.rejectMessageRequest(
       requestId,
-      result.chatId,
+      userId,
+    );
+
+    await publishMessagerequestRejected(
+      createEvent("message-request.rejected", {
+        fromUserId: result.request.from.toString(),
+        chatId: result.chatId,
+        requestId,
+      }),
     );
 
     res.status(200).json({

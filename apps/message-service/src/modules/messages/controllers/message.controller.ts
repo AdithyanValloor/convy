@@ -9,21 +9,22 @@ import {
 import { BadRequest, Unauthorized } from "../../../errors/httpErrors.js";
 import { toMessageSocketPayload } from "../utils/normalizeMessage.js";
 
-import {
-  emitDeleteMessage,
-  emitEditMessage,
-  emitMentionNotification,
-  emitMessageReaction,
-  emitMessagesSeen,
-  emitNewMessage,
-  emitUnreadUpdate,
-} from "../../../socket/emitters/message.emmitter.js";
-
 import { fetchLinkPreview } from "../utils/linkPreview.js";
 import { Message } from "../models/message.model.js";
 import * as ChatAPI from "../../chat/api/chat.api.js";
 import { messageService } from "../composition/container.js";
 import { findUserById } from "../../../grpc/user/user.grpc.client.js";
+
+import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
+import {
+  publishMessageCreated,
+  publishMessageDelete,
+  publishMessageEdited,
+  publishMessageMentioned,
+  publishMessageReaction,
+  publishMessagesSeen,
+  publishUnreadUpdate,
+} from "../../../rabbitmq/publisher/message.publisher.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -133,23 +134,37 @@ export const sendMessage = async (
       file,
     );
 
-    emitNewMessage(chatId, toMessageSocketPayload(populated));
+    // emitNewMessage(chatId, toMessageSocketPayload(populated));
+
+    await publishMessageCreated(
+      createEvent("message.created", {
+        chatId,
+        message: toMessageSocketPayload(populated),
+      }),
+    );
 
     console.log("POPULATED : ", populated);
     console.log("NORM : ", toMessageSocketPayload(populated));
-    
 
-    mentionedUserIds.forEach((mentionedId) => {
-      emitMentionNotification(
-        mentionedId,
-        chatId,
-        toMessageSocketPayload(populated),
+    mentionedUserIds.forEach(async (mentionedId) => {
+      await publishMessageMentioned(
+        createEvent("message.mentioned", {
+          userId: mentionedId,
+          chatId,
+          message: toMessageSocketPayload(populated),
+        }),
       );
     });
 
-    chatMembers.forEach((memberId) => {
+    chatMembers.forEach(async (memberId) => {
       if (memberId !== senderId) {
-        emitUnreadUpdate(memberId, chatId, unreadCounts[memberId]);
+        await publishUnreadUpdate(
+          createEvent("message.unread-update", {
+            memberId,
+            chatId,
+            unreadCounts: unreadCounts[memberId],
+          }),
+        );
       }
     });
 
@@ -195,7 +210,12 @@ export const sendMessage = async (
             replyTo: populatedReplyTo,
           };
 
-          emitEditMessage(chatId, toMessageSocketPayload(populatedUpdated));
+          await publishMessageEdited(
+            createEvent("message.edited", {
+              chatId,
+              message: toMessageSocketPayload(populated),
+            }),
+          );
         })
         .catch(() => {});
     }
@@ -231,15 +251,24 @@ export const forwardMessage = async (
     );
 
     for (const { chatId, message, chatMembers, unreadCounts } of results) {
-      emitNewMessage(chatId.toString(), toMessageSocketPayload(message));
+      // emitNewMessage(chatId.toString(), toMessageSocketPayload(message));
+
+      await publishMessageCreated(
+        createEvent("message.created", {
+          chatId: chatId.toString(),
+          message: toMessageSocketPayload(message),
+        }),
+      );
 
       for (const memberId of chatMembers) {
         if (memberId === senderId) continue;
 
-        emitUnreadUpdate(
-          memberId,
-          chatId.toString(),
-          unreadCounts[memberId] ?? 0,
+        await publishUnreadUpdate(
+          createEvent("message.unread-update", {
+            memberId,
+            chatId: chatId.toString(),
+            unreadCounts: unreadCounts[memberId],
+          }),
         );
       }
     }
@@ -266,7 +295,12 @@ export const toggleReaction = async (
       req.body.emoji,
     );
 
-    emitMessageReaction(chatId, toMessageSocketPayload(populated));
+    await publishMessageReaction(
+      createEvent("message.reaction", {
+        chatId,
+        message: toMessageSocketPayload(populated),
+      }),
+    );
 
     res.status(200).json(populated);
   } catch (err) {
@@ -291,10 +325,22 @@ export const markMessagesAsSeen = async (
       );
 
     if (emitSeen) {
-      emitMessagesSeen(req.params.chatId as string, userId, modifiedCount);
+      await publishMessagesSeen(
+        createEvent("message.seen", {
+          chatId: req.params.chatId as string,
+          memberId: userId,
+          unreadCounts: modifiedCount,
+        }),
+      );
     }
 
-    emitUnreadUpdate(userId, req.params.chatId as string, 0);
+    await publishUnreadUpdate(
+      createEvent("message.unread-update", {
+        memberId: userId,
+        chatId: req.params.chatId as string,
+        unreadCounts: 0,
+      }),
+    );
 
     res.status(200).json({ success });
   } catch (err) {
@@ -324,7 +370,12 @@ export const editMessage = async (
       userId,
     );
 
-    emitEditMessage(chatId, toMessageSocketPayload(populated));
+    await publishMessageEdited(
+      createEvent("message.edited", {
+        chatId,
+        message: toMessageSocketPayload(populated),
+      }),
+    );
 
     res.status(200).json(populated);
   } catch (err) {
@@ -350,7 +401,12 @@ export const deleteMessage = async (
       userId,
     );
 
-    emitDeleteMessage(chatId, toMessageSocketPayload(populated));
+    await publishMessageDelete(
+      createEvent("message.delete", {
+        chatId,
+        message: toMessageSocketPayload(populated),
+      }),
+    );
 
     res.status(200).json(populated);
   } catch (err) {

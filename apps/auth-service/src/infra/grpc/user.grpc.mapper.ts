@@ -72,6 +72,7 @@ export const userDTOResponseToUserDTO = (
   response: UserDTOResponse,
 ): UserDTO => {
   return {
+    _id: response.id,
     id: response.id,
     username: response.username,
     displayName: response.displayName,

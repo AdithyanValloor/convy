@@ -99,6 +99,7 @@ export class ChatService {
 
     return enriched;
   }
+
   /** Populates chat member ObjectIds with user objects. */
   private async populateChatMembers(chat: IChat) {
     const members = await UserAPI.fetchUsers(

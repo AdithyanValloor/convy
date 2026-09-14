@@ -7,7 +7,6 @@ import { Unauthorized } from "../errors/httpErrors.js";
  */
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.REFRESH_SECRET;
 
 export interface AccessTokenPayload {
   authUserId: string;
@@ -15,7 +14,7 @@ export interface AccessTokenPayload {
   email: string;
 }
 
-if (!JWT_SECRET || !REFRESH_SECRET) {
+if (!JWT_SECRET) {
   throw new Error("JWT secrets are not defined");
 }
 

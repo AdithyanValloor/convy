@@ -5,9 +5,7 @@ import {
   NotFound,
 } from "../../../errors/httpErrors.js";
 
-import { deleteFile } from "../../media/s3.service.js";
-
-import * as NotificationAPI from "../../notifications/api/notifications.api.js";
+// import * as NotificationAPI from "../../notifications/api/notifications.api.js";
 
 import { IChatRepository } from "../repositories/chat.repository.js";
 
@@ -16,6 +14,9 @@ import { UserDTO } from "../../../types/user.dto.js";
 import { fetchUsers } from "../../../grpc/user/user.grpc.client.js";
 import { getBlockedRelationshipUserIds } from "../../../grpc/social/social.grpc.client.js";
 import { generateDownloadUrl } from "../../../grpc/media/media.grpc.client.js";
+import { publishMediaDeleteFile } from "../../../rabbitmq/publisher/media.publisher.js";
+import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
+import { publishNotificationNotifyGroupAdded } from "../../../rabbitmq/publisher/notification.publisher.js";
 
 // TODO populate lastMessage with Message API...
 
@@ -64,11 +65,18 @@ export class GroupService {
         .filter((userId) => userId !== currentUserId)
         .map(
           async (userId) =>
-            await NotificationAPI.notifyGroupAdded(
-              userId,
-              currentUserId,
-              group._id.toString(),
+            await publishNotificationNotifyGroupAdded(
+              createEvent("notification.notify-group-added", {
+                userId,
+                currentUserId,
+                chatId: group._id.toString(),
+              }),
             ),
+          // await NotificationAPI.notifyGroupAdded(
+          //   userId,
+          //   currentUserId,
+          //   group._id.toString(),
+          // ),
         ),
     );
 
@@ -147,7 +155,14 @@ export class GroupService {
     await Promise.all(
       newMemberIds.map(
         async (memberId) =>
-          await NotificationAPI.notifyGroupAdded(memberId, userId, chatId),
+          await publishNotificationNotifyGroupAdded(
+            createEvent("notification.notify-group-added", {
+              userId: memberId,
+              currentUserId: userId,
+              chatId,
+            }),
+          ),
+        // await NotificationAPI.notifyGroupAdded(memberId, userId, chatId),
       ),
     );
 
@@ -410,7 +425,11 @@ export class GroupService {
     }
 
     if (group.avatar?.key) {
-      await deleteFile(group.avatar.key);
+      await publishMediaDeleteFile(
+        createEvent("media.delete-file", {
+          key: group.avatar.key,
+        }),
+      );
     }
 
     await generateDownloadUrl(key);

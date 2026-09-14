@@ -12,8 +12,8 @@ import { createApp } from "./app.js";
 import { connectRedis } from "./config/redis.js";
 import { checkPostgresConnection } from "./config/postgres.db.js";
 import { startUserGrpcServer } from "./grpc/grpc.server.js";
+import { startRabbitMQConsumers } from "./rabbitmq/index.js";
 
-// Load environment variables before reading config values.
 dotenv.config();
 
 const PORT = Number(process.env.PORT) || 9000;
@@ -23,12 +23,13 @@ export const startServer = async (): Promise<void> => {
     await connectDb();
     await checkPostgresConnection();
     await connectRedis();
-    
 
     const app = createApp();
     const server = http.createServer(app);
 
     initSocket(server);
+    
+    await startRabbitMQConsumers();
 
     startUserGrpcServer();
 

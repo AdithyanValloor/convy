@@ -1,9 +1,9 @@
-import dotenv from "dotenv";
+import "./config/env.js";
+
 import { createApp } from "./app.js";
 import { connectRedis } from "./config/redis.js";
 import { connectDb } from "./config/db.js";
-
-dotenv.config();
+import { getRabbitMQChannel } from "./rabbitmq/connection.js";
 
 const PORT = Number(process.env.PORT) || 9001;
 
@@ -11,6 +11,8 @@ export const startServer = async (): Promise<void> => {
   try {
     await connectRedis();
     await connectDb();
+
+    await getRabbitMQChannel()
 
     const app = createApp();
 

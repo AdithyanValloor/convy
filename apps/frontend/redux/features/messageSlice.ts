@@ -4,6 +4,7 @@ import { resetUnread } from "./unreadSlice";
 import { RootState } from "../store";
 import { clearChat, deleteChat } from "./chatSlice";
 import axios from "axios";
+import messageServiceApi from "@/utils/message-serviceAxios.temp";
 
 /* -------------------- TYPES -------------------- */
 
@@ -153,7 +154,7 @@ export const fetchMessages = createAsyncThunk<
         ? { chatId: arg, page: 1, limit: 20 }
         : { chatId: arg.chatId, page: arg.page ?? 1, limit: arg.limit ?? 20 };
 
-    const res = await api.get(`/message/${chatId}?page=${page}&limit=${limit}`);
+    const res = await api.get(`/message-service/message/${chatId}?page=${page}&limit=${limit}`);
 
     const payload = res.data;
 
@@ -187,7 +188,7 @@ export const sendMessage = createAsyncThunk<
   { rejectValue: string }
 >("messages/send", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.post("/message", data, {
+    const res = await api.post("/message-service/message", data, {
       withCredentials: true,
     });
     return res.data;
@@ -208,7 +209,7 @@ export const forwardMessageApi = createAsyncThunk<
   async ({ messageId, targetChatIds }, { rejectWithValue }) => {
     try {
       const res = await api.post(
-        "/message/forward",
+        "/message-service/message/forward",
         { messageId, targetChatIds },
         { withCredentials: true },
       );
@@ -232,7 +233,7 @@ export const toggleReaction = createAsyncThunk<
   async ({ messageId, emoji }, { rejectWithValue }) => {
     try {
       const res = await api.post(
-        `/message/react/${messageId}`,
+        `/message-service/message/react/${messageId}`,
         { emoji },
         { withCredentials: true },
       );
@@ -255,7 +256,7 @@ export const markMessagesAsSeen = createAsyncThunk<
   async (chatId, { dispatch, getState, rejectWithValue }) => {
     try {
       await api.post(
-        `/message/mark-seen/${chatId}`,
+        `/message-service/message/mark-seen/${chatId}`,
         {},
         { withCredentials: true },
       );
@@ -292,7 +293,7 @@ export const editMessageApi = createAsyncThunk<
   async ({ messageId, content }, { rejectWithValue }) => {
     try {
       const res = await api.put(
-        `/message/${messageId}`,
+        `/message-service/message/${messageId}`,
         { content },
         { withCredentials: true },
       );
@@ -312,7 +313,7 @@ export const deleteMessageApi = createAsyncThunk<
   { rejectValue: string }
 >("messages/deleteMessage", async ({ messageId }, { rejectWithValue }) => {
   try {
-    const res = await api.delete(`/message/${messageId}`, {
+    const res = await api.delete(`/message-service/message/${messageId}`, {
       withCredentials: true,
     });
     return res.data;
@@ -343,7 +344,7 @@ export const searchMessagesApi = createAsyncThunk<
   try {
     const { chatId, query, date, page = 1, limit = 20 } = params;
 
-    const res = await api.get("/message/search", {
+    const res = await api.get("/message-service/message/search", {
       params: {
         chatId,
         query,
@@ -380,7 +381,7 @@ export const fetchMessageContext = createAsyncThunk<
   "messages/fetchContext",
   async ({ messageId, chatId }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/message/context/${messageId}`);
+      const res = await api.get(`/message-service/message/context/${messageId}`);
       return {
         chatId,
         target: res.data.target,
@@ -405,7 +406,7 @@ export const fetchNewerMessages = createAsyncThunk<
   async ({ chatId, after, limit = 20 }, { rejectWithValue }) => {
     try {
       const res = await api.get(
-        `/message/${chatId}/newer?after=${encodeURIComponent(after)}&limit=${limit}`,
+        `/message-service/message/${chatId}/newer?after=${encodeURIComponent(after)}&limit=${limit}`,
       );
       return {
         chatId,

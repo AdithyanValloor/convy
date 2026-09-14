@@ -243,6 +243,14 @@ export const userGrpcService = {
 
       const users = await fetchUsers(userIds);
 
+      console.log(
+        users.map((user) => ({
+          id: user.id,
+          username: user.username,
+          privacy: user.privacy,
+        })),
+      );
+
       callback(null, {
         users: users.map((user) => {
           return {
@@ -328,7 +336,6 @@ export const userGrpcService = {
       callback(null, {
         privacy: privacyToProto(privacy),
       });
-      
     } catch (error) {
       callback(error as grpc.ServiceError);
     }

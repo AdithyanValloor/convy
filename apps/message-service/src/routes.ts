@@ -4,7 +4,7 @@ import { messageRouter } from "./modules/messages/routes/messages.routes.js";
 import { Application } from "express";
 
 export const registerRoutes = (app: Application): void => {
-  app.use("/api/messages", messageRouter);
-  app.use("/api/chat", chatRouter);
-  app.use("/api/group", groupChatRouter);
+  app.use("/api/message-service/message", messageRouter);
+  app.use("/api/message-service/chat", chatRouter);
+  app.use("/api/message-service/group", groupChatRouter);
 };

@@ -1,22 +1,23 @@
 import { NextFunction, Response, Request } from "express";
 import { BadRequest, Unauthorized } from "../../../errors/httpErrors.js";
 
-import {
-  emitAdminToggled,
-  emitGroupCreated,
-  emitGroupDeleted,
-  emitGroupUpdated,
-  emitMemberLeft,
-  emitMemberRemoved,
-  emitMembersAdded,
-  emitOwnershipTransferred,
-} from "../../../socket/emitters/group.emitter.js";
-
 import { GROUP_KEY_REGEX } from "../../../utils/constants/regex.js";
 import { groupService } from "../composition/container.js";
 
-/** Group chat controller handlers for authenticated group actions. */
+import { normalizeGroup } from "../../messages/utils/normalizeGroup.js";
+import {
+  publishOwnershipTransferred,
+  publishAdminToggle,
+  publishGroupCreated,
+  publishGroupDeleted,
+  publishGroupUpdated,
+  publishMemberLeft,
+  publishMemberRemoved,
+  publishMembersAdded,
+} from "../../../rabbitmq/publisher/group.publisher.js";
+import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
 
+/** Group chat controller handlers for authenticated group actions. */
 
 /** Creates a new group chat and emits it to all initial members. */
 export const createGroupChat = async (
@@ -29,7 +30,6 @@ export const createGroupChat = async (
     const currentUserId = req.user?.id;
 
     console.log("CREATE GROUP HIT. ");
-    
 
     if (!currentUserId) throw Unauthorized();
 
@@ -43,7 +43,12 @@ export const createGroupChat = async (
       currentUserId,
     );
 
-    emitGroupCreated(group, memberIds);
+    await publishGroupCreated(
+      createEvent("group.created", {
+        group: normalizeGroup(group),
+        memberIds,
+      }),
+    );
 
     res.status(201).json({
       message: "Group chat created",
@@ -98,7 +103,13 @@ export const addMembers = async (
       userId,
     );
 
-    emitMembersAdded(chatId, group, newMemberIds);
+    await publishMembersAdded(
+      createEvent("group.members-added", {
+        chatId,
+        group: normalizeGroup(group),
+        newMemberIds,
+      }),
+    );
 
     res.status(200).json({
       message: "Members added successfully",
@@ -131,10 +142,21 @@ export const removeMembers = async (
       member,
     );
 
-    emitMemberRemoved(chatId, removedMemberId);
+    await publishMemberRemoved(
+      createEvent("group.member-removed", {
+        chatId,
+        removedMemberId,
+      }),
+    );
 
     // Remaining members still need the updated group payload.
-    emitGroupUpdated(chatId, group);
+
+    await publishGroupUpdated(
+      createEvent("group.updated", {
+        chatId,
+        group: normalizeGroup(group),
+      }),
+    );
 
     res.status(200).json({
       message: "Member removed successfully",
@@ -173,7 +195,13 @@ export const toggleAdmin = async (
       makeAdmin,
     );
 
-    emitAdminToggled(chatId, memberId, isAdmin);
+    await publishAdminToggle(
+      createEvent("group.admin-toggle", {
+        chatId,
+        memberId,
+        isAdmin,
+      }),
+    );
 
     res.status(200).json({
       message: makeAdmin ? "User promoted to admin" : "User demoted",
@@ -200,9 +228,19 @@ export const leaveGroup = async (
     const result = await groupService.leaveGroupFunction(userId, chatId);
 
     if (result.deleted) {
-      emitGroupDeleted(result.chatId, result.memberIds!);
+      await publishGroupDeleted(
+        createEvent("group.deleted", {
+          chatId: result.chatId,
+          memberIds: result.memberIds,
+        }),
+      );
     } else {
-      emitMemberLeft(result.chatId, userId);
+      await publishMemberLeft(
+        createEvent("group.member-left", {
+          chatId: result.chatId,
+          userId,
+        }),
+      );
     }
 
     res.status(200).json({
@@ -227,12 +265,15 @@ export const deleteGroup = async (
     if (!userId) throw Unauthorized();
     if (!chatId) throw BadRequest("Chat ID is required");
 
-    const { chatId: deletedChatId, memberIds } = await groupService.deleteGroupFunction(
-      userId,
-      chatId,
-    );
+    const { chatId: deletedChatId, memberIds } =
+      await groupService.deleteGroupFunction(userId, chatId);
 
-    emitGroupDeleted(deletedChatId, memberIds);
+    await publishGroupDeleted(
+      createEvent("group.deleted", {
+        chatId: deletedChatId,
+        memberIds: memberIds,
+      }),
+    );
 
     res.status(200).json({
       message: "Group deleted successfully",
@@ -262,7 +303,12 @@ export const transferOwnership = async (
     const { group, newOwnerId: resolvedNewOwnerId } =
       await groupService.transferOwnershipFunction(userId, chatId, newOwnerId);
 
-    emitOwnershipTransferred(chatId, resolvedNewOwnerId);
+    await publishOwnershipTransferred(
+      createEvent("group.transfer-owner", {
+        chatId,
+        userId: resolvedNewOwnerId,
+      }),
+    );
 
     res.status(200).json({
       message: "Ownership transferred successfully",
@@ -294,7 +340,11 @@ export const updateGroupAvatar = async (
       throw Unauthorized();
     }
 
-    const result = await groupService.updateGroupAvatarById(userId, chatId, key);
+    const result = await groupService.updateGroupAvatarById(
+      userId,
+      chatId,
+      key,
+    );
 
     res.json(result);
   } catch (error) {
@@ -335,7 +385,11 @@ export const editName = async (
 
     const { chatId, newName } = req.body;
 
-    const updatedChat = await groupService.editGroupNameService(userId, chatId, newName);
+    const updatedChat = await groupService.editGroupNameService(
+      userId,
+      chatId,
+      newName,
+    );
 
     res.status(200).json({
       success: true,

@@ -1,14 +1,17 @@
 import { Response, NextFunction, Request } from "express";
-import {
-  MuteDuration,
-} from "../services/chat.service.js";
+import { MuteDuration } from "../services/chat.service.js";
 
 import { Chat } from "../models/chat.model.js";
 
-import { emitUnreadUpdate } from "../../../socket/emitters/message.emmitter.js";
-
 import { chatService } from "../composition/container.js";
-import { BadRequest, Forbidden, Unauthorized } from "../../../errors/httpErrors.js";
+
+import {
+  BadRequest,
+  Forbidden,
+  Unauthorized,
+} from "../../../errors/httpErrors.js";
+import { publishUnreadUpdate } from "../../../rabbitmq/publisher/message.publisher.js";
+import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
 
 /** Chat controller handlers for authenticated chat actions. */
 
@@ -26,6 +29,7 @@ export const fetchChats = async (
     }
 
     const chats = await chatService.fetchChatsFunction(userId);
+    
 
     res.status(200).json(chats);
   } catch (err) {
@@ -51,7 +55,6 @@ export const getUnreadCounts = async (
   }
 };
 
-
 /** Returns an existing direct chat or creates one when allowed. */
 export const accessChat = async (
   req: Request,
@@ -63,7 +66,6 @@ export const accessChat = async (
     const currentUserId = req.user?.id;
 
     console.log("us - ", userId, "  |  ", "cur - ", currentUserId);
-    
 
     if (!userId) {
       throw BadRequest("UserId parameter is required");
@@ -169,10 +171,6 @@ export const markChatAsRead = async (
   next: NextFunction,
 ) => {
   try {
-    
-    console.log("READ HIT -----------");
-    
-
     const userId = req.user?.id;
     if (!userId) throw Unauthorized();
 
@@ -181,7 +179,13 @@ export const markChatAsRead = async (
       req.params.chatId as string,
     );
 
-    emitUnreadUpdate(userId, req.params.chatId as string, unreadCount);
+    await publishUnreadUpdate(
+      createEvent("message.unread-update", {
+        memberId: userId,
+        chatId: req.params.chatId as string,
+        unreadCounts: unreadCount,
+      }),
+    );
 
     res.status(200).json({ success: true });
   } catch (err) {

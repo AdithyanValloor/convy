@@ -7,7 +7,13 @@ import {
   userDTOResponseToUserDTO,
 } from "./user.grpc.mapper.js";
 import { UserDTO } from "../../types/user.dto.js";
-import { FetchUsersRequest, ProtoGetUserPrivacyResponse, UserDTOResponse, UserPrivacy, UserTargetRequest } from "../types/user.grpc.types.js";
+import {
+  FetchUsersRequest,
+  ProtoGetUserPrivacyResponse,
+  UserDTOResponse,
+  UserPrivacy,
+  UserTargetRequest,
+} from "../types/user.grpc.types.js";
 
 const protoPath = path.resolve(
   process.cwd(),
@@ -36,7 +42,9 @@ interface UserServiceClient {
     request: FetchUsersRequest,
     callback: (
       error: grpc.ServiceError | null,
-      response?: UserDTOResponse[],
+      response?: {
+        users: UserDTOResponse[];
+      },
     ) => void,
   ): void;
 
@@ -77,7 +85,7 @@ export const fetchUsers = (userIds: string[]): Promise<UserDTO[]> => {
         return;
       }
 
-      resolve(response.map((user) => userDTOResponseToUserDTO(user)));
+      resolve(response.users.map((user) => userDTOResponseToUserDTO(user)));
     });
   });
 };
@@ -100,9 +108,7 @@ export const findUserById = (userId: string): Promise<UserDTO> => {
   });
 };
 
-export const getUserPrivacy = (
-  userId: string,
-): Promise<UserPrivacy> => {
+export const getUserPrivacy = (userId: string): Promise<UserPrivacy> => {
   return new Promise((resolve, reject) => {
     userClient.getUserPrivacy({ userId }, (error, response) => {
       if (error) {

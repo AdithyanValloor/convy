@@ -4,6 +4,7 @@ import { sendMessage } from "./messageSlice";
 import { acceptMessageRequestThunk } from "./requestSlice";
 import { Chat, ChatMessage } from "@/types/chat.types";
 import axios from "axios";
+import messageServiceApi from "@/utils/message-serviceAxios.temp";
 
 /* -------------------- TYPES -------------------- */
 
@@ -36,7 +37,9 @@ export const fetchChats = createAsyncThunk<
   { rejectValue: string }
 >("chat/fetchChats", async (_, { rejectWithValue }) => {
   try {
-    const res = await api.get("/chat");
+    const res = await api.get("/message-service/chat");
+    console.log("Chats : ", res.data);
+    
     return res.data;
   } catch (err) {
     console.log("FETCH CHATS ERROR:", err);
@@ -50,7 +53,7 @@ export const accessChat = createAsyncThunk<
   { rejectValue: string }
 >("chat/accessChat", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.post("/chat/access", data);
+    const res = await api.post("/message-service/chat/access", data);
     return res.data;
   } catch {
     return rejectWithValue("Failed to access chat");
@@ -61,7 +64,7 @@ export const togglePin = createAsyncThunk<
   { chatId: string; isPinned: boolean },
   string
 >("chat/togglePin", async (chatId) => {
-  const res = await api.patch(`/chat/pin/${chatId}`);
+  const res = await api.patch(`/message-service/chat/pin/${chatId}`);
   return { chatId, isPinned: res.data.isPinned };
 });
 
@@ -69,7 +72,7 @@ export const toggleArchive = createAsyncThunk<
   { chatId: string; isArchived: boolean },
   string
 >("chat/toggleArchive", async (chatId) => {
-  const res = await api.patch(`/chat/archive/${chatId}`);
+  const res = await api.patch(`/message-service/chat/archive/${chatId}`);
   return { chatId, isArchived: res.data.isArchived };
 });
 
@@ -77,7 +80,7 @@ export const markAsUnread = createAsyncThunk<
   { chatId: string; count: number },
   string
 >("chat/markUnread", async (chatId) => {
-  const res = await api.patch(`/chat/unread/${chatId}`);
+  const res = await api.patch(`/message-service/chat/unread/${chatId}`);
   return res.data;
 });
 
@@ -85,14 +88,14 @@ export const muteChat = createAsyncThunk<
   { chatId: string; mutedUntil: string },
   { chatId: string; duration: "1h" | "8h" | "24h" | "1w" | "forever" }
 >("chat/muteChat", async ({ chatId, duration }) => {
-  const res = await api.post(`/chat/${chatId}/mute`, { duration });
+  const res = await api.post(`/message-service/chat/${chatId}/mute`, { duration });
   return { chatId, mutedUntil: res.data.mutedUntil };
 });
 
 export const unmuteChat = createAsyncThunk<{ chatId: string }, string>(
   "chat/unmuteChat",
   async (chatId) => {
-    await api.post(`/chat/${chatId}/unmute`);
+    await api.post(`/message-service/chat/${chatId}/unmute`);
     return { chatId };
   },
 );
@@ -100,7 +103,7 @@ export const unmuteChat = createAsyncThunk<{ chatId: string }, string>(
 export const markAsRead = createAsyncThunk<{ chatId: string }, string>(
   "chat/markRead",
   async (chatId) => {
-    const res = await api.patch(`/chat/read/${chatId}`);
+    const res = await api.patch(`/message-service/chat/read/${chatId}`);
     return res.data;
   },
 );
@@ -108,7 +111,7 @@ export const markAsRead = createAsyncThunk<{ chatId: string }, string>(
 export const clearChat = createAsyncThunk<{ chatId: string }, string>(
   "chat/clearChat",
   async (chatId) => {
-    await api.delete(`/chat/${chatId}/clear`);
+    await api.delete(`/message-service/chat/${chatId}/clear`);
     return { chatId };
   },
 );
@@ -116,7 +119,7 @@ export const clearChat = createAsyncThunk<{ chatId: string }, string>(
 export const deleteChat = createAsyncThunk<{ chatId: string }, string>(
   "chat/deleteChat",
   async (chatId) => {
-    await api.delete(`/chat/${chatId}`);
+    await api.delete(`/message-service/chat/${chatId}`);
     return { chatId };
   },
 );
@@ -129,7 +132,7 @@ export const createGroupChat = createAsyncThunk<
   { rejectValue: string }
 >("group/createGroupChat", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.post<CreateGroupResponse>("/group", data);
+    const res = await api.post<CreateGroupResponse>("/message-service/group", data);
     return res.data.groupChat;
   } catch {
     return rejectWithValue("Failed to create group");
@@ -142,7 +145,7 @@ export const addMembers = createAsyncThunk<
   { rejectValue: string }
 >("group/addMembers", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.post<ChatResponse>("/group/members", data);
+    const res = await api.post<ChatResponse>("/message-service/group/members", data);
     return res.data.chat;
   } catch {
     return rejectWithValue("Failed to add members");
@@ -155,7 +158,7 @@ export const removeMembers = createAsyncThunk<
   { rejectValue: string }
 >("group/removeMembers", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.delete<ChatResponse>("/group/members", { data });
+    const res = await api.delete<ChatResponse>("/message-service/group/members", { data });
     return res.data.chat;
   } catch {
     return rejectWithValue("Failed to remove member");
@@ -168,7 +171,7 @@ export const toggleAdmin = createAsyncThunk<
   { rejectValue: string }
 >("group/toggleAdmin", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.patch<ChatResponse>("/group/admin", data);
+    const res = await api.patch<ChatResponse>("/message-service/group/admin", data);
     return res.data.chat;
   } catch {
     return rejectWithValue("Failed to toggle admin");
@@ -181,7 +184,7 @@ export const leaveGroup = createAsyncThunk<
   { rejectValue: string }
 >("group/leaveGroup", async (data, { rejectWithValue }) => {
   try {
-    await api.post("/group/leave", data);
+    await api.post("/message-service/group/leave", data);
     return data.chatId;
   } catch {
     return rejectWithValue("Failed to leave group");
@@ -194,7 +197,7 @@ export const deleteGroup = createAsyncThunk<
   { rejectValue: string }
 >("group/deleteGroup", async (data, { rejectWithValue }) => {
   try {
-    await api.delete("/group/delete", { data });
+    await api.delete("/message-service/group/delete", { data });
     return data.chatId;
   } catch {
     return rejectWithValue("Failed to delete group");
@@ -207,7 +210,7 @@ export const transferOwnership = createAsyncThunk<
   { rejectValue: string }
 >("group/transferOwnership", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.patch("/group/transfer-ownership", data);
+    const res = await api.patch("/message-service/group/transfer-ownership", data);
     return res.data.chat;
   } catch {
     return rejectWithValue("Failed to transfer ownership");
@@ -220,7 +223,7 @@ export const editGroupName = createAsyncThunk<
   { rejectValue: string }
 >("group/editGroupName", async (data, { rejectWithValue }) => {
   try {
-    const res = await api.patch<ChatResponse>("/group/edit-name", data);
+    const res = await api.patch<ChatResponse>("/message-service/group/edit-name", data);
     return res.data.chat;
   } catch {
     return rejectWithValue("Failed to update group name");

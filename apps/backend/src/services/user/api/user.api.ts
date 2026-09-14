@@ -14,6 +14,7 @@ const userRepository = new MongoUserRepository();
 export const normalizeUser = (user: FlattenMaps<IUser> | IUser): UserDTO => ({
   ...user,
   id: String(user._id),
+  _id: String(user._id),
 });
 
 export const createProfile = async (data: {

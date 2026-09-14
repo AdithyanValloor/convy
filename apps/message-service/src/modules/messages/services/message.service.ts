@@ -10,20 +10,25 @@ import {
 
 import { extractFirstUrl } from "../utils/linkPreview.js";
 
-import { emitMessageRequestSent } from "../../../socket/emitters/messageRequest.emitters.js";
-
 import { MessageFile, MessageRequestDTO } from "../types/message.types.js";
 
-import { deleteFile } from "../../media/s3.service.js";
-
-import * as NotificationAPI from "../../notifications/api/notifications.api.js";
+// import * as NotificationAPI from "../../notifications/api/notifications.api.js";
 
 import * as ChatAPI from "../../chat/api/chat.api.js";
 import { incrementUnreadCount } from "../cache/messages.cache.js";
 import { IMessageRepository } from "../repositories/message.repository.js";
 import { IMessageRequestRepository } from "../repositories/messageRequest.repository.js";
-import { fetchUsers, findUserById, getUserPrivacy } from "../../../grpc/user/user.grpc.client.js";
+import {
+  fetchUsers,
+  findUserById,
+  getUserPrivacy,
+} from "../../../grpc/user/user.grpc.client.js";
 import { blockExists } from "../../../grpc/social/social.grpc.client.js";
+
+import { publishMediaDeleteFile } from "../../../rabbitmq/publisher/media.publisher.js";
+import { publishMessagerequestCreated } from "../../../rabbitmq/publisher/message.publisher.js";
+import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
+import { publishNotificationNotifyMention, publishNotificationNotifyReply } from "../../../rabbitmq/publisher/notification.publisher.js";
 
 /** Message service helpers for message delivery, search, reactions, and read state. */
 
@@ -240,12 +245,20 @@ export class MessageService {
         const replyUserId = repliedMessage.sender.toString();
 
         if (replyUserId !== senderId) {
-          await NotificationAPI.notifyReply(
-            replyUserId,
-            senderId,
-            chatId,
-            message._id.toString(),
+          await publishNotificationNotifyReply(
+            createEvent("notification.notify-reply", {
+              replyUserId,
+              senderId,
+              chatId,
+              messageId: message._id.toString(),
+            }),
           );
+          // await NotificationAPI.notifyReply(
+          //   replyUserId,
+          //   senderId,
+          //   chatId,
+          //   message._id.toString(),
+          // );
         }
       }
     }
@@ -297,7 +310,13 @@ export class MessageService {
             to: toUser,
           };
 
-          emitMessageRequestSent(senderId, toUserId, populatedRequest);
+          await publishMessagerequestCreated(
+            createEvent("message-request.created", {
+              senderId,
+              toUserId,
+              request: populatedRequest,
+            }),
+          );
         }
       }
     }
@@ -309,12 +328,21 @@ export class MessageService {
       [...uniqueMentions]
         .filter((id) => id !== senderId && memberIds.includes(id))
         .map((userId) =>
-          NotificationAPI.notifyMention(
-            userId,
-            senderId,
-            chatId,
-            message._id.toString(),
-          ),
+          publishNotificationNotifyMention(
+            createEvent("notification.notify-mention",{
+              userId,
+              senderId,
+              chatId,
+              messageId: message._id.toString(),
+            })
+          )
+          
+          // NotificationAPI.notifyMention(
+          //   userId,
+          //   senderId,
+          //   chatId,
+          //   message._id.toString(),
+          // ),
         ),
     );
 
@@ -391,10 +419,7 @@ export class MessageService {
               .find((id) => id !== senderId);
 
             if (otherMember) {
-              const exists = await blockExists(
-                senderId,
-                otherMember,
-              );
+              const exists = await blockExists(senderId, otherMember);
 
               if (exists) {
                 return null;
@@ -645,7 +670,11 @@ export class MessageService {
 
     // Delete associated file before removing its reference from the message.
     if (message.file?.key) {
-      await deleteFile(message.file.key);
+      await publishMediaDeleteFile(
+        createEvent("media.delete-file", {
+          key: message.file.key,
+        }),
+      );
     }
 
     const deletedMessage =
