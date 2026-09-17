@@ -232,4 +232,10 @@ export class MongoUserRepository implements IUserRepository {
       { new: true },
     ).lean();
   }
+  
+  async findAuthUserIdByUserId(userId: string): Promise<string | null> {
+      const user = await UserModel.findById(userId);
+      return user?.authUserId ?? null
+  }
+
 }

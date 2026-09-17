@@ -211,6 +211,9 @@ export class MessageService {
 
     const firstUrl = content ? extractFirstUrl(content) : null;
 
+    console.log("🔎 CONTENT:", content);
+    console.log("🔎 FIRST URL:", firstUrl);
+
     // Create message
 
     const message = await this.messageRepository.createMessage({
@@ -906,6 +909,10 @@ export class MessageService {
 
     const chatIds = userChats.map((chat) => chat._id.toString());
 
+    const chatMap = new Map(
+      userChats.map((chat) => [chat._id.toString(), chat]),
+    );
+
     if (chatIds.length === 0) {
       return { messages: [] };
     }
@@ -970,8 +977,13 @@ export class MessageService {
       messages.map((message) => this.buildMessageResponse(message)),
     );
 
+    const searchMessages = populatedMessages.map((message) => ({
+      ...message,
+      chat: chatMap.get(message.chat.toString()),
+    }));
+
     return {
-      messages: populatedMessages,
+      messages: searchMessages,
     };
   }
 }

@@ -22,7 +22,12 @@ import {
 } from "../types/user.types.js";
 import { IAuthUser } from "../models/auth.model.js";
 import { randomUUID } from "crypto";
-import { createProfile, findUserByAuthUserId, userNameExists } from "../infra/grpc/user.grpc.client.js";
+import {
+  createProfile,
+  findAuthUserIdByUserId,
+  findUserByAuthUserId,
+  userNameExists,
+} from "../infra/grpc/user.grpc.client.js";
 
 //TODO fix register accessing UserModel when implementing message queue.
 
@@ -231,10 +236,17 @@ export class AuthService {
       throw BadRequest("New password must be at least 8 characters");
     }
 
-    const user = await this.authRepository.findAuthUserForPasswordCheck(userId);
-    if (!user) throw NotFound("User not found");
+    const authUserId = await findAuthUserIdByUserId(userId);
+    if (!authUserId) throw NotFound("User not found");
 
-    const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
+    const authUser =
+      await this.authRepository.findAuthUserForPasswordCheck(authUserId);
+    if (!authUser) throw NotFound("User not found");
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      authUser.hashedPassword,
+    );
 
     if (!isMatch) {
       throw Unauthorized("Current password is incorrect");

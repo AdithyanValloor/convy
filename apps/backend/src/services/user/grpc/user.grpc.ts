@@ -6,6 +6,7 @@ import * as protoLoader from "@grpc/proto-loader";
 import {
   createProfile,
   fetchUsers,
+  findAuthUserIdByUserId,
   findUserByAuthUserId,
   findUserById,
   getUserPrivacy,
@@ -87,6 +88,10 @@ interface UserTargetRequestCallback {
 
 interface GetUserPrivacyCallback {
   (error: grpc.ServiceError | null, response?: unknown): void;
+}
+
+interface FindAuthUserIdByUserIdCallback {
+  (error: grpc.ServiceError | null, response?: { authUserId: string }): void;
 }
 
 const dateToTimestamp = (date: Date | null | undefined) => {
@@ -336,6 +341,21 @@ export const userGrpcService = {
       callback(null, {
         privacy: privacyToProto(privacy),
       });
+    } catch (error) {
+      callback(error as grpc.ServiceError);
+    }
+  },
+
+  findAuthUserIdByUserId: async (
+    call: UserTargetRequestCall,
+    callback: FindAuthUserIdByUserIdCallback,
+  ) => {
+    try {
+      const { userId } = call.request;
+
+      const authUserId = await findAuthUserIdByUserId(userId);
+
+      callback(null, { authUserId });
     } catch (error) {
       callback(error as grpc.ServiceError);
     }

@@ -12,21 +12,37 @@ export function extractFirstUrl(text: string): string | null {
   return match ? match[0] : null;
 }
 
-/** Rejects local or private network targets before fetching preview metadata. */
+function isPrivateIPv4(address: string): boolean {
+  const parts = address.split(".").map(Number);
+
+  if (parts.length !== 4 || parts.some(Number.isNaN)) {
+    return false;
+  }
+
+  const [a, b] = parts;
+
+  return (
+    a === 10 ||
+    a === 127 ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 169 && b === 254)
+  );
+}
+
 async function isSafeUrl(targetUrl: string) {
   const parsed = new URL(targetUrl);
 
-  if (!["http:", "https:"].includes(parsed.protocol)) return false;
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    return false;
+  }
 
   const { address } = await dns.lookup(parsed.hostname);
 
-  // Block common private and loopback ranges to reduce SSRF risk.
-  if (
-    address.startsWith("10.") ||
-    address.startsWith("192.168.") ||
-    address.startsWith("172.") ||
-    address === "127.0.0.1"
-  ) {
+  console.log("🌐 RESOLVED:", parsed.hostname, "→", address);
+
+  if (isPrivateIPv4(address)) {
+    console.log("🚫 BLOCKED PRIVATE IP:", address);
     return false;
   }
 
@@ -43,6 +59,9 @@ export async function fetchLinkPreview(originalUrl: string) {
       url: originalUrl,
       timeout: 5000,
     });
+
+    console.log("🔗 OGS RESULT");
+    console.dir(result, { depth: null });
 
     if (!result.success) return null;
 
@@ -69,7 +88,12 @@ export async function fetchLinkPreview(originalUrl: string) {
       siteName: result.ogSiteName || hostname,
       isLargeImage,
     };
-  } catch {
+  } catch (error) {
+    console.error("❌ Link preview fetch failed:", {
+      url: originalUrl,
+      error,
+    });
+
     return null;
   }
 }

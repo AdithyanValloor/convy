@@ -22,7 +22,6 @@ export default function Personal({
   onOpenChat,
   selectedChatId,
 }: PersonalProps) {
-
   const { chats, listLoading } = useAppSelector((state) => state.chat);
 
   const { user, sessionLoading } = useAppSelector((state) => state.auth);
@@ -59,7 +58,6 @@ export default function Personal({
         const otherUser = chat.members.find((m) => m._id !== user?._id);
 
         console.log("OTHER USER :", otherUser);
-        
 
         const unreadCount = perChatUnread[chat._id] || 0;
 

@@ -138,26 +138,65 @@ export default function ArchivedChats() {
   const selectedChatId = params?.chatId;
 
   return (
-    <div className="h-full w-full p-3 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-base-content p-1">
+    <div className="flex h-full w-full flex-col gap-4 p-4">
+      {/* Header */}
+      <div className="flex items-center px-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-base-content py-1">
           Archived Chats
         </h1>
       </div>
 
+      {/* Search */}
       <SearchInput
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search archived chats"
       />
 
-      <div className="flex-1 overflow-y-auto">
+      {/* Content */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {sessionLoading || (listLoading && chats.length === 0) ? (
-          <p className="p-3">Loading...</p>
+          <div className="flex flex-col gap-2 p-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-xl px-3 py-3"
+              >
+                <div className="skeleton h-11 w-11 shrink-0 rounded-full" />
+
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="skeleton h-3.5 w-32 rounded" />
+                  <div className="skeleton h-3 w-48 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : archivedChats.length === 0 ? (
-          <p className="p-3 text-center opacity-70">No archived chats</p>
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-base-content/30">
+            <div
+              className="
+              flex h-14 w-14 items-center justify-center
+              rounded-2xl
+              bg-base-content/[0.04]
+            "
+            >
+              <span className="text-xl">📦</span>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm font-medium text-base-content/50">
+                No archived chats
+              </p>
+
+              <p className="mt-1 text-xs text-base-content/30">
+                Archived conversations will appear here
+              </p>
+            </div>
+          </div>
         ) : filteredChats.length === 0 ? (
-          <p className="p-3 text-center opacity-70">No chats found</p>
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-base-content/35">No chats found</p>
+          </div>
         ) : (
           <div className="flex flex-col gap-1">
             {filteredChats.map((chat) => {

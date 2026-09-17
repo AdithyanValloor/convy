@@ -40,6 +40,15 @@ export const findUserByAuthUserId = async (
   return normalized;
 };
 
+export const findAuthUserIdByUserId = async (
+  userId: string,
+): Promise<string> => {
+  const authUserId = await userRepository.findAuthUserIdByUserId(userId);
+  if (!authUserId) throw NotFound("User not found");
+  
+  return authUserId;
+};
+
 export const findUserById = async (userId: string): Promise<UserDTO> => {
   const cached = await getCachedUser(userId);
   if (cached) return cached;

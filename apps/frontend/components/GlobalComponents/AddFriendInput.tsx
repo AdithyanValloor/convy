@@ -60,8 +60,8 @@ export default function AddFriendInput() {
             setUsername(e.target.value.toLowerCase());
             if (statusMsg) setStatusMsg("");
           }}
-          placeholder="Enter friend's Whisp username"
-          className={`w-full h-12 pl-5 text-sm rounded-full bg-base-300 transition-colors
+          placeholder="Enter friend's melo username"
+          className={`w-full h-10 pl-5 text-sm rounded-full bg-base-300 transition-colors
           ${
             statusMsg
               ? statusType === "error"
@@ -72,13 +72,13 @@ export default function AddFriendInput() {
           focus:outline`}
                   />
 
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 px-0.5 flex items-center">
           <button
             type="button"
             aria-label="Send friend request"
             onClick={handleAddFriend}
             disabled={!username.trim() || actionLoading}
-            className="bg-cyan-950 text-white p-2 rounded-full cursor-pointer disabled:opacity-50 disabled:cursor-auto"
+            className="bg-violet-700 text-white p-2 rounded-full cursor-pointer disabled:opacity-50 disabled:cursor-auto"
           >
             <UserRoundPlus size={20} />
           </button>

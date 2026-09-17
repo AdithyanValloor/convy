@@ -50,6 +50,7 @@ import { SelectedFile } from "./Attachmentpicker";
 import { uploadFileToS3 } from "@/utils/uploadToS3";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import { Chat } from "@/types/chat.types";
+import ChatBackground from "./ChatBackground";
 
 interface ChatViewProps {
   chat: {
@@ -464,90 +465,107 @@ export default function ChatView({ chat, currentUser, socket }: ChatViewProps) {
   return (
     <div className="flex h-full w-full overflow-hidden relative">
       {/* Main Chat Area */}
-      <div
-        className={`flex flex-col h-full transition-all duration-300 ease-in-out ${
-          isMobile || !sidebarMode ? "w-full" : "w-2/3"
-        }`}
-      >
-        <ChatHeader
-          isMobile={isMobile}
-          displayName={displayName || name}
-          displayStatus={displayStatus}
-          displayPic={displayPic}
-          onBack={handleBackClick}
-          onProfileClick={() =>
-            setSidebarMode((prev) => (prev === "profile" ? null : "profile"))
-          }
-          setSidebarMode={setSidebarMode}
-        />
+<div
+  className={`
+    relative
+    flex flex-col
+    h-full
+    overflow-hidden
+    transition-all duration-300 ease-in-out
+    ${isMobile || !sidebarMode ? "w-full" : "w-2/3"}
+  `}
+>
+  {/* Chat background */}
+  <ChatBackground />
 
-        {/* ref gives us chatBodyRef.current.scrollToBottom() */}
-        <ChatBody
-          ref={chatBodyRef}
-          chatId={chat._id}
-          currentUser={currentUser}
-          typingUsers={typingUsers}
-          replyingTo={replyingTo}
-          editingMessage={editingMessage}
-          onEdit={(msg) => {
-            setReplyingTo(null);
-            setEditingMessage(msg);
-          }}
-          onDelete={(msg) => setShowDeleteModal({ open: true, msg })}
-          setReplyingTo={setReplyingTo}
-          setForward={setForward}
-          forwardMessage={forward}
-          scrollToMessage={scrollToMessage}
-          isBlockedByMe={isBlockedByMe}
-        />
+  {/* Chat content */}
+  <div className="relative z-10 flex h-full flex-col min-h-0">
+    <ChatHeader
+      isMobile={isMobile}
+      displayName={displayName || name}
+      displayStatus={displayStatus}
+      displayPic={displayPic}
+      onBack={handleBackClick}
+      onProfileClick={() =>
+        setSidebarMode((prev) =>
+          prev === "profile" ? null : "profile",
+        )
+      }
+      setSidebarMode={setSidebarMode}
+    />
 
-        <ConfirmModal
-          open={showDeleteModal.open}
-          title="Delete Message"
-          description="Are you sure you want to delete this message?"
-          cancelText="Cancel"
-          confirmText="Delete"
-          onCancel={() => setShowDeleteModal({ open: false, msg: null })}
-          onConfirm={() => {
-            if (showDeleteModal.msg) {
-              dispatch(
-                deleteMessageApi({
-                  chatId: chat._id,
-                  messageId: showDeleteModal.msg._id,
-                }),
-              );
-            }
-            setShowDeleteModal({ open: false, msg: null });
-          }}
-        />
+    <ChatBody
+      ref={chatBodyRef}
+      chatId={chat._id}
+      currentUser={currentUser}
+      typingUsers={typingUsers}
+      replyingTo={replyingTo}
+      editingMessage={editingMessage}
+      onEdit={(msg) => {
+        setReplyingTo(null);
+        setEditingMessage(msg);
+      }}
+      onDelete={(msg) =>
+        setShowDeleteModal({ open: true, msg })
+      }
+      setReplyingTo={setReplyingTo}
+      setForward={setForward}
+      forwardMessage={forward}
+      scrollToMessage={scrollToMessage}
+      isBlockedByMe={isBlockedByMe}
+    />
 
-        <div className="flex-shrink-0 safe-area-bottom">
-          <MessageInput
-            isMobile={isMobile}
-            message={message}
-            setMessage={setMessage}
-            handleSend={handleSend}
-            handleTyping={handleTyping}
-            editingMessage={editingMessage}
-            setEditingMessage={setEditingMessage}
-            showPicker={showPicker}
-            setShowPicker={setShowPicker}
-            replyingTo={replyingTo}
-            setReplyingTo={setReplyingTo}
-            isBlocked={isBlocked && !chat.isGroup}
-            isBlockedByMe={isBlockedByMe}
-            isBlockingMe={isBlockingMe}
-            isGroup={chat.isGroup}
-            groupMembers={chat.isGroup ? chat.members : []}
-            currentUserId={currentUser._id}
-            onMentionsChange={setPendingMentionIds}
-            onUnblock={handleUnblock}
-            stagedFile={stagedFile}
-            setStagedFile={setStagedFile}
-            isUploading={uploading}
-          />
-        </div>
-      </div>
+    <ConfirmModal
+      open={showDeleteModal.open}
+      title="Delete Message"
+      description="Are you sure you want to delete this message?"
+      cancelText="Cancel"
+      confirmText="Delete"
+      onCancel={() =>
+        setShowDeleteModal({ open: false, msg: null })
+      }
+      onConfirm={() => {
+        if (showDeleteModal.msg) {
+          dispatch(
+            deleteMessageApi({
+              chatId: chat._id,
+              messageId: showDeleteModal.msg._id,
+            }),
+          );
+        }
+
+        setShowDeleteModal({ open: false, msg: null });
+      }}
+    />
+
+    <div className="flex-shrink-0 safe-area-bottom">
+      <MessageInput
+        isMobile={isMobile}
+        message={message}
+        setMessage={setMessage}
+        handleSend={handleSend}
+        handleTyping={handleTyping}
+        editingMessage={editingMessage}
+        setEditingMessage={setEditingMessage}
+        showPicker={showPicker}
+        setShowPicker={setShowPicker}
+        replyingTo={replyingTo}
+        setReplyingTo={setReplyingTo}
+        isBlocked={isBlocked && !chat.isGroup}
+        isBlockedByMe={isBlockedByMe}
+        isBlockingMe={isBlockingMe}
+        isGroup={chat.isGroup}
+        groupMembers={chat.isGroup ? chat.members : []}
+        currentUserId={currentUser._id}
+        onMentionsChange={setPendingMentionIds}
+        onUnblock={handleUnblock}
+        stagedFile={stagedFile}
+        setStagedFile={setStagedFile}
+        isUploading={uploading}
+      />
+    </div>
+  </div>
+</div>
 
       {/* Desktop Sidebar */}
       {!isMobile && sidebarMode && (

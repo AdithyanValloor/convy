@@ -66,7 +66,6 @@ export class ChatRepository implements IChatRepository {
     return Chat.find({
       members: userId,
     })
-      .select("_id")
       .lean();
   }
 

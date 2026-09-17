@@ -43,34 +43,21 @@ function timeAgo(isoDate: string): string {
 
 /* ───────────────── icon config ───────────────── */
 
-const iconConfig: Record<
-  NotificationType,
-  { Icon: React.ElementType; bg: string; color: string }
-> = {
+const iconConfig: Record<NotificationType, { Icon: React.ElementType }> = {
   friend_request_received: {
     Icon: UserRoundPlus,
-    bg: "bg-yellow-950",
-    color: "text-yellow-400",
   },
   friend_request_accepted: {
     Icon: UserRoundCheck,
-    bg: "bg-green-950",
-    color: "text-green-400",
   },
   mention: {
     Icon: AtSign,
-    bg: "bg-green-950",
-    color: "text-green-400",
   },
   group_added: {
     Icon: UsersRound,
-    bg: "bg-cyan-950",
-    color: "text-cyan-400",
   },
   reply: {
     Icon: Reply,
-    bg: "bg-blue-950",
-    color: "text-blue-400",
   },
 };
 
@@ -86,7 +73,10 @@ function buildMessage(notification: InboxNotification) {
     case "friend_request_received":
       return { title: `${name} sent you a friend request` };
     case "mention":
-      return { title: `${name} mentioned you`, subtitle: notification.message?.content };
+      return {
+        title: `${name} mentioned you`,
+        subtitle: notification.message?.content,
+      };
     case "group_added":
       return {
         title: `${name} added you to ${notification.group?.chatName}`,
@@ -110,9 +100,13 @@ export default function NotificationCard({
 }: NotificationCardProps) {
   const dispatch = useAppDispatch();
 
-  const { Icon, bg, color } = iconConfig[notification.type];
+  const { Icon } = iconConfig[notification.type];
+
+  // const { Icon, bg, color } = iconConfig[notification.type];
+
   const { title, subtitle } = buildMessage(notification);
-  const url = useSignedUrl(notification.actor?.profilePicture?.key) || defaultPFP;
+  const url =
+    useSignedUrl(notification.actor?.profilePicture?.key) || defaultPFP;
   const isFriendRequest = notification.type === "friend_request_received";
 
   const handleAccept = (e: React.MouseEvent) => {
@@ -144,19 +138,41 @@ export default function NotificationCard({
       role="button"
       tabIndex={0}
       onClick={() => onClick?.(notification)}
-      onKeyDown={(e) => e.key === "Enter" && onClick?.(notification)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onClick?.(notification);
+      }}
       className={`
-        relative w-full flex items-start gap-3 px-3 py-3 rounded-xl
-        transition-colors duration-150 text-left cursor-pointer group mb-1
-        ${notification.read ? "hover:bg-base-content/5" : "bg-base-content/[0.03] hover:bg-base-content/5"}
-      `}
+      group relative mb-1.5 flex w-full cursor-pointer items-start
+      gap-3 rounded-xl px-3 py-3.5 text-left
+      transition-all duration-200 overflow-hidden
+
+      ${
+        notification.read
+          ? "hover:bg-base-content/5"
+          : `
+          bg-base-content/5
+          hover:bg-base-content/10
+          `
+      }
+    `}
     >
-      {/* Unread left bar */}
+      {/* Unread indicator */}
       {!notification.read && (
-        <span className="absolute top-2 bottom-2 left-0 w-[2px] rounded-full bg-cyan-500/50" />
+        <span
+          className="
+          absolute left-0 top-0 bottom-3
+          w-[2px]
+          h-full
+          rounded-r-full
+          bg-gradient-to-b
+          from-[#17A6E8]
+          via-[#7029F7]
+          to-[#F73EC9]
+        "
+        />
       )}
 
-      {/* Avatar + icon badge */}
+      {/* Avatar */}
       <div className="relative shrink-0">
         <Image
           src={url}
@@ -164,52 +180,91 @@ export default function NotificationCard({
           unoptimized
           width={40}
           height={40}
-          className="rounded-full object-cover border border-base-content/10"
+          className="
+          h-10 w-10 rounded-full
+          border border-base-content/10
+          object-cover
+        "
         />
+
+        {/* Notification type badge */}
         <span
-          className={`absolute -bottom-1 -right-1 w-[18px] h-[18px] rounded-full
-            flex items-center justify-center border-2 border-base-200 ${bg}`}
+          className="
+          absolute -right-1.5 -top-1.5
+          flex h-[22px] w-[22px]
+          items-center justify-center
+          rounded-full
+          border-2 border-base-100
+          bg-base-200
+          shadow-sm
+        "
         >
-          <Icon size={10} className={color} strokeWidth={2.5} />
+          <Icon
+            size={11}
+            strokeWidth={2.5}
+            className={
+              notification.read ? "text-base-content/50" : "text-[#7029F7]"
+            }
+          />
         </span>
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 pr-5">
+      <div className="min-w-0 flex-1 pr-5">
         <p
-          className={`text-sm leading-snug ${
-            notification.read ? "text-base-content/60" : "text-base-content font-medium"
-          }`}
+          className={`
+          text-sm leading-snug
+          ${
+            notification.read
+              ? "text-base-content/65"
+              : "font-medium text-base-content"
+          }
+        `}
         >
           {title}
         </p>
 
         {subtitle && (
-          <p className="text-xs text-base-content/40 mt-0.5 truncate">{subtitle}</p>
+          <p className="mt-1 truncate text-xs text-base-content/40">
+            {subtitle}
+          </p>
         )}
 
-        <p className="text-[11px] text-base-content/30 mt-1 tabular-nums">
+        <p className="mt-1.5 text-[11px] tabular-nums text-base-content/30">
           {timeAgo(notification.createdAt)}
         </p>
 
         {/* Friend request actions */}
         {isFriendRequest && (
-          <div className="flex gap-2 mt-2.5">
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={handleAccept}
-              className="flex-1 py-1.5 text-xs font-medium rounded-lg
-                bg-green-700 text-white hover:bg-green-800 transition-colors cursor-pointer"
+              className="
+              flex-1 cursor-pointer rounded-lg
+              bg-violet-600
+              py-1.5
+              text-xs font-medium text-white
+              transition-all duration-200
+              hover:brightness-110
+            "
             >
               Accept
             </button>
+
             <button
               type="button"
               onClick={handleReject}
-              className="flex-1 py-1.5 text-xs font-medium rounded-lg
-              
-                bg-base-300 text-base-content/60 hover:bg-red-900/40 hover:text-red-400
-                transition-colors cursor-pointer"
+              className="
+              flex-1 cursor-pointer rounded-lg
+              bg-base-content/[0.06]
+              py-1.5
+              text-xs font-medium
+              text-base-content/55
+              transition-all duration-200
+              hover:bg-red-500/10
+              hover:text-red-400
+            "
             >
               Decline
             </button>
@@ -217,16 +272,24 @@ export default function NotificationCard({
         )}
       </div>
 
-      {/* Delete button — visible on group hover */}
+      {/* Dismiss */}
       <button
         type="button"
         aria-label="Dismiss notification"
         onClick={handleDelete}
-        className="absolute top-2 right-2 p-1 rounded-full
-          text-base-content/30 hover:text-base-content/70 hover:bg-base-content/10
-          opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+        className="
+        absolute right-1.5 top-1.5
+        rounded-full p-1
+        text-base-content/35
+        opacity-0
+        transition-all duration-150
+        hover:bg-base-content/[0.07]
+        hover:text-base-content/60
+        group-hover:opacity-100
+        cursor-pointer
+      "
       >
-        <X size={13} />
+        <X size={15} />
       </button>
     </div>
   );

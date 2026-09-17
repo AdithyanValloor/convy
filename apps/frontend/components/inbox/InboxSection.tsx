@@ -122,7 +122,7 @@ export default function InboxSection() {
 
   return (
     <div className="h-full w-full relative overflow-hidden">
-      <div className="h-full w-full p-3 flex flex-col gap-3">
+      <div className="flex h-full w-full flex-col gap-4 p-4">
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold text-base-content p-1">
@@ -180,13 +180,31 @@ export default function InboxSection() {
                   key={type}
                   type="button"
                   onClick={() => setChatType(type)}
-                  className={`flex-1 py-2 text-sm transition-colors duration-200 ${chatType === type ? "cursor-auto" : "cursor-pointer"}`}
+                  className={`
+                    relative flex-1 py-2.5
+                    text-sm
+                    transition-colors duration-200
+                    ${
+                      chatType === type
+                        ? "cursor-default text-base-content"
+                        : "cursor-pointer text-base-content/55 hover:text-base-content/80"
+                    }
+                `}
                 >
-                  <span className="inline-flex relative items-center transition-colors duration-200 text-base-content/90 text-base">
+                  <span
+                    className={`
+                      relative inline-flex items-center
+                      text-[15px]
+                      font-medium
+                      transition-colors duration-200
+                      ${chatType === type ? "text-base-content" : "text-base-content/55"}
+                    `}
+                  >
+                    {" "}
                     {label}
                     {unread > 0 && (
                       <UnreadCountBadge
-                        position="-top-1 -right-4"
+                        position="-top-1.5 -right-4"
                         count={unread}
                       />
                     )}
@@ -194,8 +212,15 @@ export default function InboxSection() {
                 </button>
               ))}
               <span
-                className="absolute bottom-0 left-0 h-[1px] w-1/2 bg-base-content transition-transform duration-300 ease-out"
+                className="
+                  absolute bottom-0 left-0
+                  h-[1px] w-1/2
+                  rounded-full
+                  transition-transform duration-300 ease-out
+                "
                 style={{
+                  background:
+                    "linear-gradient(90deg, #17A6E8, #7029F7, #F73EC9)",
                   transform:
                     chatType === "personal"
                       ? "translateX(0%)"

@@ -10,7 +10,7 @@ export function UnreadCountBadge({count, position}:{count:number, position?:stri
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
       transition={{ type: "spring", stiffness: 400 }}
-      className={`absolute ${pos} bg-red-600 text-white text-xs rounded-full min-w-4 h-4 px-1 flex items-center justify-center font-semibold`}
+      className={`absolute ${pos} bg-red-600 text-white text-xs rounded-full min-w-4 h-4 px-1 shadow-md flex items-center justify-center font-semibold`}
     >
       {count > 99 ? "99+" : count}
     </motion.span>

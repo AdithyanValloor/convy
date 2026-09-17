@@ -15,6 +15,7 @@ interface ConfirmModalProps {
   cancelText?: string;
   confirmLoading?: boolean;
   confirmDisabled?: boolean;
+  showCancel?: boolean;
 }
 
 export default function ConfirmModal({
@@ -26,10 +27,10 @@ export default function ConfirmModal({
   onConfirm,
   confirmText = "Confirm",
   cancelText = "Cancel",
+  showCancel = true,
   confirmLoading = false,
   confirmDisabled = false,
 }: ConfirmModalProps) {
-
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -70,25 +71,49 @@ export default function ConfirmModal({
             )}
 
             <div className="mt-6 flex gap-2">
-              <button
-                onClick={onCancel}
-                className="w-full p-2 cursor-pointer rounded-xl bg-base-300 hover:bg-base-300/50 transition"
-              >
-                {cancelText}
-              </button>
+              {showCancel && (
+                <button
+                  onClick={onCancel}
+                  className="
+                    w-full
+                    p-2
+                    cursor-pointer
+                    rounded-xl
+                    bg-base-300
+                    hover:bg-base-300/50
+                    transition
+                  "
+                >
+                  {cancelText}
+                </button>
+              )}
 
               <button
                 disabled={confirmDisabled || confirmLoading}
                 onClick={onConfirm}
-                className="w-full p-2 cursor-pointer rounded-xl bg-red-900 text-white hover:bg-red-900/80 disabled:opacity-60 transition"
+                className={`
+                  ${showCancel ? "w-full" : "w-full"}
+                  p-2
+                  cursor-pointer
+                  rounded-xl
+                  bg-red-900
+                  text-white
+                  hover:bg-red-900/80
+                  disabled:opacity-60
+                  transition
+                `}
               >
-                {confirmLoading ? <span className="loading loading-dots loading-lg"></span> : confirmText}
+                {confirmLoading ? (
+                  <span className="loading loading-dots loading-lg" />
+                ) : (
+                  confirmText
+                )}
               </button>
             </div>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    document.body,
   );
 }

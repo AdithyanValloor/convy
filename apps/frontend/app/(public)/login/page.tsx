@@ -71,11 +71,31 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="relative w-full max-w-md bg-base-200/40 border border-base-content/20 rounded-3xl shadow-lg p-6 overflow-hidden"
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="
+          relative
+          w-full max-w-md
+          overflow-hidden
+          rounded-xl
+          border border-white/10
+          bg-[#18181B]
+          p-6
+          shadow-[0_20px_50px_-15px_rgba(0,0,0,0.55)]
+          backdrop-blur-xl
+        "
       >
-        <h2 className="text-xl font-semibold text-base-content text-center">
-          Welcome Back
+        {/* Heading */}
+        <h2
+          className="
+        py-3
+        text-center
+        text-2xl
+        font-[var(--font-quicksand)]
+        font-semibold
+        text-white
+      "
+        >
+          Welcome Back!
         </h2>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -86,20 +106,28 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value.toLowerCase())}
               placeholder="Email"
+              autoComplete="email"
               className={`
-                w-full h-10 px-4 text-sm rounded-xl
-                bg-base-300 text-base-content
-                outline-base-content/10 hover:outline
-                focus:outline
+                h-10 w-full
+                rounded-xl
+                border
+                bg-[#0F0F10]
+                px-4
+                text-sm
+                text-white
+                outline-none
+                transition-all duration-200
+                placeholder:text-white/45
                 ${
                   errors.email
-                    ? "border border-red-500"
-                    : "border border-base-content/10"
+                    ? "border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                    : "border-white/10 focus:border-[#2854D9]/70 focus:shadow-[0_0_0_3px_rgba(40,84,217,0.10)]"
                 }
               `}
             />
+
             {errors.email && (
-              <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+              <p className="mt-1 text-xs text-red-500">{errors.email}</p>
             )}
           </div>
 
@@ -111,54 +139,119 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
+                autoComplete="current-password"
                 className={`
-                  w-full h-10 px-4 pr-10 text-sm rounded-xl
-                  bg-base-300 text-base-content
-                  outline-base-content/10 hover:outline
-                  focus:outline
+                  h-10 w-full
+                  rounded-xl
+                  border
+                  bg-[#0F0F10]
+                  px-4 pr-11
+                  text-sm
+                  text-white
+                  outline-none
+                  transition-all duration-200
+                  placeholder:text-white/45
                   ${
                     errors.password
-                      ? "border border-red-500"
-                      : "border border-base-content/10"
+                      ? "border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                      : "border-white/10 focus:border-[#2854D9]/70 focus:shadow-[0_0_0_3px_rgba(40,84,217,0.10)]"
                   }
                 `}
               />
-              <div
+
+              <button
+                type="button"
                 onClick={() => setShowPass((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content cursor-pointer opacity-60 hover:opacity-100"
+                aria-label={showPass ? "Hide password" : "Show password"}
+                className="
+              absolute right-3 top-1/2
+              -translate-y-1/2
+              cursor-pointer
+              text-white/40
+              transition-colors duration-200
+              hover:text-white/80
+            "
               >
                 {showPass ? <Eye size={18} /> : <EyeClosed size={18} />}
-              </div>
+              </button>
             </div>
 
             {errors.password && (
-              <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+              <p className="mt-1 text-xs text-red-500">{errors.password}</p>
             )}
+
+            {/* Forgot Password */}
+            <div className="mt-2 text-right">
+              <Link
+                href="/forgot-password"
+                className="
+              text-xs
+              font-medium
+              text-white/70
+              transition-colors duration-200
+              hover:text-white
+              hover:underline
+            "
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           {/* Submit */}
           <button
             type="submit"
-            className="w-full h-10 rounded-xl border border-base-content/10 bg-cyan-900 text-white cursor-pointer text-md font-semibold hover:opacity-90 transition"
+            className="
+          h-10 w-full
+          cursor-pointer
+          rounded-xl
+          border border-blue-400/10
+          bg-[#2854D9]
+          text-sm
+          font-semibold
+          text-white
+          shadow-md
+          transition-all duration-200
+          hover:bg-[#3262E8]
+          hover:shadow-[0_8px_24px_-8px_rgba(47,102,249,0.65)]
+          active:scale-[0.985]
+        "
           >
             Sign In
           </button>
 
+          {/* Server Error */}
           {error && <p className="text-center text-sm text-red-500">{error}</p>}
         </form>
 
-        <p className="mt-6 text-center text-base-content/70 text-sm opacity-70">
-          Not a whisperer?{" "}
+        {/* Register */}
+        <p className="mt-6 text-center text-sm text-white/65">
+          Not on Melo?{" "}
           <Link
             href="/register"
-            className="font-semibold text-white hover:opacity-80"
+            className="
+          font-semibold
+          text-white
+          transition-colors duration-200
+          hover:text-violet-400
+        "
           >
             Register
           </Link>
         </p>
 
-        {/* Accent bar */}
-        <div className="absolute bottom-0 left-0 w-full h-[3px] bg-cyan-900" />
+        {/* Melo Accent */}
+        <div
+          className="
+        absolute
+        bottom-0 left-0
+        h-[7px] w-full
+        bg-gradient-to-r
+        from-blue-600
+        via-violet-600
+        to-pink-500
+      "
+        />
       </motion.div>
     </>
   );

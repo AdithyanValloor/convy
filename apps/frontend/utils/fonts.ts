@@ -1,4 +1,4 @@
-import { Inter, Poppins, Modak, Poiret_One, Romanesco } from "next/font/google";
+import { Inter, Poppins, Modak, Poiret_One, Quicksand } from "next/font/google";
 
 export const inter = Inter({
   subsets: ["latin"],
@@ -7,7 +7,7 @@ export const inter = Inter({
 
 export const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["400","500","600","700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-poppins",
 });
 
@@ -17,6 +17,12 @@ export const modak = Modak({
 });
 
 export const poiretOne = Poiret_One({
-     subsets: ["latin"],
+  subsets: ["latin"],
   weight: ["400"],
-})
+});
+
+export const quicksand = Quicksand({
+  subsets: ["latin"],
+  variable: "--font-quicksand",
+  display: "swap",
+});

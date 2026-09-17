@@ -6,7 +6,7 @@ import SearchInput from "../GlobalComponents/SearchInput";
 export default function CallSection() {
 
     return (
-        <div className="h-full w-full p-3 flex flex-col gap-3 shadow">
+        <div className="h-full w-full p-4 flex flex-col gap-3 shadow">
             
             {/* Title */}
             <div className="flex items-center justify-between">

@@ -253,12 +253,6 @@ export class MessageService {
               messageId: message._id.toString(),
             }),
           );
-          // await NotificationAPI.notifyReply(
-          //   replyUserId,
-          //   senderId,
-          //   chatId,
-          //   message._id.toString(),
-          // );
         }
       }
     }
@@ -336,13 +330,6 @@ export class MessageService {
               messageId: message._id.toString(),
             })
           )
-          
-          // NotificationAPI.notifyMention(
-          //   userId,
-          //   senderId,
-          //   chatId,
-          //   message._id.toString(),
-          // ),
         ),
     );
 
@@ -940,6 +927,10 @@ export class MessageService {
 
     const chatIds = userChats.map((chat) => chat._id.toString());
 
+    const chatMap = new Map(
+      userChats.map((chat) => [chat._id.toString(), chat]),
+    );
+
     if (chatIds.length === 0) {
       return { messages: [] };
     }
@@ -1004,8 +995,13 @@ export class MessageService {
       messages.map((message) => this.buildMessageResponse(message)),
     );
 
+    const searchMessages = populatedMessages.map((message) => ({
+      ...message,
+      chat: chatMap.get(message.chat.toString()),
+    }));
+
     return {
-      messages: populatedMessages,
+      messages: searchMessages,
     };
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, UserRoundPlus, UsersRound } from "lucide-react";
+import { ArrowLeft, ChevronRight, UserRoundPlus, UsersRound } from "lucide-react";
 import { useState } from "react";
 import IconButton from "../GlobalComponents/IconButtons";
 import SearchInput from "../GlobalComponents/SearchInput";
@@ -45,23 +45,49 @@ function MenuRow({
     <div
       onClick={onClick}
       className="
-        cursor-pointer
-        hover:bg-base-content/5
-        p-2
-        rounded-lg
-        flex items-center
-        transition-colors
-      "
+    group
+    flex cursor-pointer items-center
+    rounded-xl
+    px-3 py-3
+    transition-all duration-200
+    hover:bg-base-content/[0.05]
+    active:scale-[0.99]
+  "
     >
-      <div className="w-[45px] h-[45px] rounded-full bg-base-content/10 flex items-center justify-center">
+      <div
+        className="
+      flex h-11 w-11 shrink-0
+      items-center justify-center
+      rounded-xl
+      bg-base-content/[0.07]
+      text-base-content/75
+      transition-all duration-200
+      group-hover:bg-base-content/[0.10]
+      group-hover:text-base-content
+    "
+      >
         {icon}
       </div>
 
-      <div className="px-2 flex-1 min-w-0">
-        <h3 className="font-medium truncate">{title}</h3>
+      <div className="min-w-0 flex-1 px-3">
+        <h3 className="truncate text-[14px] font-semibold">{title}</h3>
+
         {subtitle && (
-          <p className="text-[13px] opacity-60 truncate">{subtitle}</p>
+          <p className="mt-0.5 truncate text-xs text-base-content/45">
+            {subtitle}
+          </p>
         )}
+      </div>
+
+      <div
+        className="
+      text-base-content/25
+      transition-transform duration-200
+      group-hover:translate-x-0.5
+      group-hover:text-base-content/50
+    "
+      >
+        <ChevronRight size={15} />
       </div>
     </div>
   );
@@ -86,10 +112,19 @@ export default function NewChat({
   return (
     <div className="fixed inset-0 flex pb-3 items-center justify-center z-50 overflow-hidden">
       <div
-        className={`bg-base-200 p-3 overflow-visible ${!isMobile && "rounded-2xl"}  flex flex-col border border-base-content/10 gap-3 w-full h-full`}
+        className={`
+          flex h-full w-full flex-col
+          gap-4
+          overflow-visible
+          bg-base-100
+          p-4
+          border border-base-content/[0.08]
+          shadow-[0_20px_60px_rgba(0,0,0,0.12)]
+          ${!isMobile && "rounded-2xl"}
+        `}
       >
         {/* Header */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <IconButton
             ariaLabel="Back"
             onClick={() => {

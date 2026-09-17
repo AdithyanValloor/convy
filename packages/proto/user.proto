@@ -106,11 +106,21 @@ message GetUserPrivacyResponse {
   Privacy privacy = 1;
 }
 
+message FindAuthUserIdByUserIdResponse {
+  string authUserId = 1;
+}
+
 service UserService {
   rpc FindUserByAuthUserId(
     FindUserByAuthUserIdRequest
   ) returns (
     UserDTOResponse
+  );
+
+  rpc FindAuthUserIdByUserId(
+    UserTargetRequest
+  ) returns (
+    FindAuthUserIdByUserIdResponse
   );
 
   rpc UserNameExists(

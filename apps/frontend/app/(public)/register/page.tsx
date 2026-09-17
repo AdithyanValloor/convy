@@ -208,10 +208,30 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.3 }}
-            className="relative w-full max-w-md bg-base-200/40 border border-base-content/20 rounded-3xl shadow-lg p-6 overflow-hidden"
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="
+              relative
+              w-full max-w-md
+              overflow-hidden
+              rounded-xl
+              border border-white/10
+              bg-[#18181B]
+              p-6
+              shadow-[0_20px_50px_-15px_rgba(0,0,0,0.55)]
+              backdrop-blur-xl
+            "
           >
-            <h2 className="text-xl font-semibold text-base-content text-center">
+            {/* Heading */}
+            <h2
+              className="
+                py-3
+                text-center
+                text-2xl
+                font-[var(--font-quicksand)]
+                font-semibold
+                text-white
+              "
+            >
               Create an Account
             </h2>
 
@@ -222,6 +242,7 @@ export default function RegisterPage() {
               }}
               className="mt-6 space-y-4"
             >
+              {/* Basic Fields */}
               {[
                 {
                   label: "Display Name",
@@ -251,14 +272,34 @@ export default function RegisterPage() {
                     value={field.value}
                     onChange={(e) => field.setter(e.target.value)}
                     placeholder={field.label}
-                    className={`w-full h-10 px-4 text-sm rounded-xl bg-base-300 text-base-content outline-base-content/10 hover:outline focus:outline ${
-                      errors[field.name]
-                        ? "border border-red-500"
-                        : "border border-base-content/10"
-                    }`}
+                    autoComplete={
+                      field.name === "email"
+                        ? "email"
+                        : field.name === "username"
+                          ? "username"
+                          : "name"
+                    }
+                    className={`
+                      h-10 w-full
+                      rounded-xl
+                      border
+                      bg-[#0F0F10]
+                      px-4
+                      text-sm
+                      text-white
+                      outline-none
+                      transition-all duration-200
+                      placeholder:text-white/45
+                      ${
+                        errors[field.name]
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-white/10 focus:border-[#2854D9]/70 focus:shadow-[0_0_0_3px_rgba(40,84,217,0.10)]"
+                      }
+                    `}
                   />
+
                   {errors[field.name] && (
-                    <p className="text-xs text-red-500 mt-1">
+                    <p className="mt-1 text-xs text-red-500">
                       {errors[field.name]}
                     </p>
                   )}
@@ -273,88 +314,177 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className={`w-full h-10 px-4 pr-10 text-sm rounded-xl bg-base-300 text-base-content outline-base-content/10 hover:outline focus:outline ${
-                      errors.password
-                        ? "border border-red-500"
-                        : "border border-base-content/10"
-                    }`}
+                    autoComplete="new-password"
+                    className={`
+                      h-10 w-full
+                      rounded-xl
+                      border
+                      bg-[#0F0F10]
+                      px-4 pr-11
+                      text-sm
+                      text-white
+                      outline-none
+                      transition-all duration-200
+                      placeholder:text-white/45
+                      ${
+                        errors.password
+                          ? "border-red-500 focus:border-red-500"
+                          : "border-white/10 focus:border-[#2854D9]/70 focus:shadow-[0_0_0_3px_rgba(40,84,217,0.10)]"
+                      }
+                    `}
                   />
-                  <div
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-base-content opacity-60 hover:opacity-100"
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPass((prev) => !prev)}
+                    aria-label={showPass ? "Hide password" : "Show password"}
+                    className="
+                      absolute right-3 top-1/2
+                      -translate-y-1/2
+                      cursor-pointer
+                      text-white/40
+                      transition-colors duration-200
+                      hover:text-white/80
+                    "
                   >
                     {showPass ? <Eye size={18} /> : <EyeClosed size={18} />}
-                  </div>
+                  </button>
                 </div>
+
                 {errors.password && (
-                  <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+                  <p className="mt-1 text-xs text-red-500">{errors.password}</p>
                 )}
               </div>
 
+              {/* Continue */}
               <button
                 type="submit"
                 disabled={sendingOtp}
-                className="w-full h-10 rounded-xl border border-base-content/10 bg-cyan-900 text-white cursor-pointer text-md font-semibold hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="
+                  h-10 w-full
+                  cursor-pointer
+                  rounded-xl
+                  border border-blue-400/10
+                  bg-[#2854D9]
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-md
+                  transition-all duration-200
+                  hover:bg-[#3262E8]
+                  hover:shadow-[0_8px_24px_-8px_rgba(47,102,249,0.65)]
+                  active:scale-[0.985]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  disabled:hover:bg-[#2854D9]
+                  disabled:hover:shadow-none
+                "
               >
                 {sendingOtp ? "Sending OTP…" : "Continue"}
               </button>
 
+              {/* Server Error */}
               {error && (
                 <p className="text-center text-sm text-red-500">{error}</p>
               )}
             </form>
 
-            <p className="mt-6 text-center text-sm text-base-content/70 opacity-70">
-              Already a whisperer?{" "}
+            {/* Login */}
+            <p className="mt-6 text-center text-sm text-white/65">
+              Already on Melo?{" "}
               <Link
                 href="/login"
-                className="font-semibold text-white hover:opacity-80"
+                className="
+                  font-semibold
+                  text-white
+                  transition-colors duration-200
+                  hover:text-violet-400
+                "
               >
                 Login
               </Link>
             </p>
 
-            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-cyan-900" />
+            {/* Melo Accent */}
+            <div
+              className="
+              absolute
+              bottom-0 left-0
+              h-[7px] w-full
+              bg-gradient-to-r
+              from-blue-600
+              via-violet-600
+              to-pink-500
+            "
+            />
           </motion.div>
         )}
 
-        {/* ── STEP 2 : OTP Verification ──────────────────────────── */}
+        {/* ── STEP 2 : OTP Verification ─────────────────────────── */}
         {step === "otp" && (
           <motion.div
             key="otp"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.3 }}
-            className="relative w-full max-w-md bg-base-200/40 border border-base-content/20 rounded-3xl shadow-lg p-6 overflow-hidden"
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="
+              relative
+              w-full max-w-md
+              overflow-hidden
+              rounded-xl
+              border border-white/10
+              bg-[#18181B]
+              p-6
+              shadow-[0_20px_50px_-15px_rgba(0,0,0,0.55)]
+              backdrop-blur-xl
+            "
           >
-            {/* Back button */}
+            {/* Back */}
             <button
+              type="button"
               onClick={() => {
                 setStep("form");
                 setOtpError("");
                 setOtp(Array(OTP_LENGTH).fill(""));
                 setError("");
               }}
-              className="absolute top-5 left-5 text-base-content/50 hover:text-base-content transition text-sm flex items-center gap-1"
+              className="
+                absolute left-5 top-5
+                flex items-center gap-1
+                text-sm
+                text-white/45
+                transition-colors duration-200
+                hover:text-white/80
+              "
             >
               ← Back
             </button>
 
-            <div className="text-center mt-4">
-              <h2 className="text-xl font-semibold text-base-content">
+            {/* Heading */}
+            <div className="mt-4 text-center">
+              <h2
+                className="
+                  text-2xl
+                  font-[var(--font-quicksand)]
+                  font-semibold
+                  text-white
+                "
+              >
                 Verify your Email
               </h2>
-              <p className="mt-2 text-sm text-base-content/60">
+
+              <p className="mt-2 text-sm text-white/55">
                 We sent a {OTP_LENGTH}-digit code to
               </p>
-              <p className="text-sm font-medium text-cyan-400 mt-0.5 truncate px-4">
+
+              <p className="mt-0.5 truncate px-4 text-sm font-medium text-[#4B7AFF]">
                 {email}
               </p>
             </div>
 
             <form onSubmit={handleVerifyAndRegister} className="mt-8 space-y-6">
-              {/* OTP boxes */}
+              {/* OTP */}
               <div
                 className="flex justify-center gap-2.5"
                 onPaste={handleOtpPaste}
@@ -375,28 +505,39 @@ export default function RegisterPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05 }}
                     className={`
-                      w-11 h-12 text-center text-lg font-semibold rounded-xl
-                      bg-base-300 text-base-content caret-cyan-400
-                      border transition-all duration-150 outline-none
-                      focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40
-                      ${otpError ? "border-red-500" : "border-base-content/15"}
+                      h-12 w-11
+                      rounded-xl
+                      border
+                      bg-[#0F0F10]
+                      text-center
+                      text-lg
+                      font-semibold
+                      text-white
+                      caret-[#2854D9]
+                      outline-none
+                      transition-all duration-150
+                      focus:border-[#2854D9]
+                      focus:ring-1
+                      focus:ring-[#2854D9]/30
+                      ${otpError ? "border-red-500" : "border-white/10"}
                     `}
                   />
                 ))}
               </div>
 
+              {/* OTP Error */}
               {otpError && (
-                <p className="text-center text-xs text-red-500 -mt-2">
+                <p className="-mt-2 text-center text-xs text-red-500">
                   {otpError}
                 </p>
               )}
 
               {/* Resend */}
-              <div className="text-center text-sm text-base-content/50">
+              <div className="text-center text-sm text-white/50">
                 {countdown > 0 ? (
                   <span>
                     Resend code in{" "}
-                    <span className="text-cyan-400 font-medium tabular-nums">
+                    <span className="font-medium tabular-nums text-[#4B7AFF]">
                       {countdown}s
                     </span>
                   </span>
@@ -405,37 +546,81 @@ export default function RegisterPage() {
                     type="button"
                     onClick={handleResend}
                     disabled={sendingOtp}
-                    className="text-white font-semibold hover:opacity-80 transition disabled:opacity-40"
+                    className="
+                      font-semibold
+                      text-white
+                      transition-colors duration-200
+                      hover:text-[#4B7AFF]
+                      disabled:cursor-not-allowed
+                      disabled:opacity-40
+                    "
                   >
                     {sendingOtp ? "Sending…" : "Resend OTP"}
                   </button>
                 )}
               </div>
 
+              {/* Create Account */}
               <button
                 type="submit"
                 disabled={verifyingOtp || otp.join("").length < OTP_LENGTH}
-                className="w-full h-10 rounded-xl border border-base-content/10 bg-cyan-900 text-white cursor-pointer text-md font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="
+                  h-10 w-full
+                  cursor-pointer
+                  rounded-xl
+                  border border-blue-400/10
+                  bg-[#2854D9]
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-md
+                  transition-all duration-200
+                  hover:bg-[#3262E8]
+                  hover:shadow-[0_8px_24px_-8px_rgba(47,102,249,0.65)]
+                  active:scale-[0.985]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  disabled:hover:bg-[#2854D9]
+                  disabled:hover:shadow-none
+                "
               >
                 {verifyingOtp ? "Verifying…" : "Create Account"}
               </button>
 
+              {/* Server Error */}
               {error && (
                 <p className="text-center text-sm text-red-500">{error}</p>
               )}
             </form>
 
-            <p className="mt-6 text-center text-sm text-base-content/70 opacity-70">
-              Already a whisperer?{" "}
+            {/* Login */}
+            <p className="mt-6 text-center text-sm text-white/65">
+              Already on Melo?{" "}
               <Link
                 href="/login"
-                className="font-semibold text-white hover:opacity-80"
+                className="
+                  font-semibold
+                  text-white
+                  transition-colors duration-200
+                  hover:text-[#4B7AFF]
+                "
               >
                 Login
               </Link>
             </p>
 
-            <div className="absolute bottom-0 left-0 w-full h-[3px] bg-cyan-900" />
+            {/* Melo Accent */}
+            <div
+              className="
+                absolute
+                bottom-0 left-0
+                h-[7px] w-full
+                bg-gradient-to-r
+                from-blue-600
+                via-violet-600
+                to-pink-500
+              "
+            />
           </motion.div>
         )}
       </AnimatePresence>

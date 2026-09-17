@@ -99,7 +99,7 @@ export default function ChatBubble({
         ${isMe ? "chat-end" : "chat-start"}
         hover:bg-base-content/10 rounded-sm transition-colors
         ${isMobile ? "px-2" : "px-4"}
-        ${jumpTo?.messageId === msg._id ? "bg-cyan-900/30" : ""}
+        ${jumpTo?.messageId === msg._id ? "bg-violet-900/30" : ""}
         ${editingMessage?._id === msg._id ? "bg-base-content/10" : ""}
         ${replyingTo?._id === msg._id ? "bg-base-content/10" : ""}
         ${contextMenu.msg?._id === msg._id && !msg.deleted ? "bg-base-content/10" : ""}
@@ -121,7 +121,7 @@ export default function ChatBubble({
       )}
 
       {!grouped && (
-        <div className="chat-header">
+        <div className="chat-header font-light py-1">
           {senderName}
           <time className="opacity-50 ml-1">
             {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -143,7 +143,7 @@ export default function ChatBubble({
             className={`twemoji-container select-none leading-none
               ${isMe ? "text-right" : "text-left"}`}
             dangerouslySetInnerHTML={{
-              __html: renderTwemoji(parseMessageText(content), emojiSize),
+              __html: renderTwemoji(parseMessageText(content, isMe), emojiSize),
             }}
           />
 
@@ -155,20 +155,20 @@ export default function ChatBubble({
 
           {isMe && (
             <div className="flex justify-end">
-              <div className="bg-cyan-900 p-1 px-2 rounded-lg mt-0.5">
+              <div className="p-1 px-2 rounded-xl mt-0.5 bg-violet-800">
                 {msg.seenBy && msg.seenBy.length > 0 ? (
                   <CheckCheck
                     size={16}
-                    strokeWidth={3}
-                    className="text-blue-400"
+                    strokeWidth={2}
+                    className="text-white opacity-80"
                   />
                 ) : msg.deliveredTo && msg.deliveredTo.length > 0 ? (
-                  <Check size={16} strokeWidth={3} className="text-white" />
+                  <Check size={16} strokeWidth={2} className="text-white opacity-80" />
                 ) : (
                   <Check
                     size={16}
-                    strokeWidth={3}
-                    className="opacity-50 text-white"
+                    strokeWidth={2}
+                    className="opacity-50 text-white opacity-80"
                   />
                 )}
               </div>
@@ -196,7 +196,7 @@ export default function ChatBubble({
                 : ""
             }
             ${msg.file ? "p-1" : "p-2"}
-            ${isMe ? "bg-cyan-950 text-white" : "bg-base-100"}
+            ${isMe ? "text-white shadow-md bg-violet-800" : "bg-base-100 text-base-content"}
             ${grouped ? (isMe ? "mx-8" : "mx-8") : ""}
             ${msg.deleted ? "italic opacity-50" : ""}
             break-words overflow-hidden whitespace-pre-wrap
@@ -205,10 +205,10 @@ export default function ChatBubble({
         >
           {msg.forwarded && !msg.deleted && (
             <div
-              className={`flex items-center italic gap-1 opacity-50 pl-3 px-2`}
+              className={`flex items-center italic gap-1 opacity-50 pl-3 pb-1 px-2`}
             >
               <Forward size={15} />
-              <span className={`${isMe ? "pr-8" : ""} text-sm`}>Forwarded</span>
+              <span className={`${isMe ? "pr-8" : ""} text-[10px]`}>Forwarded</span>
             </div>
           )}
 
@@ -217,7 +217,7 @@ export default function ChatBubble({
               onClick={() => {
                 if (msg.replyTo?._id) scrollToMessage(msg.replyTo._id);
               }}
-              className={`bg-base-content/10 cursor-default
+              className={`bg-base-content/20 cursor-pointer
                 ${
                   grouped
                     ? isMe
@@ -244,15 +244,17 @@ export default function ChatBubble({
             <div className="flex items-center">
               {msg.deleted && <BadgeX size={20} className="mr-1" />}
               <div
-                className={`select-text w-full ${!msg.deleted && "px-3"} ${isMe ? "pr-6" : ""} twemoji-container`}
+                className={`select-text w-full ${!msg.deleted && "px-3"}  ${isMe ? (msg.deleted ? "pr-1" : "pr-6") : ""}  twemoji-container`}
                 dangerouslySetInnerHTML={{
                   __html: msg.deleted
                     ? "Deleted message"
-                    : renderTwemoji(parseMessageText(msg.content)),
+                    : renderTwemoji(parseMessageText(msg.content, isMe)),
                 }}
               />
             </div>
-            {!msg.deleted && msg.linkPreview && <LinkPreviewCard preview={msg.linkPreview} />}
+            {!msg.deleted && msg.linkPreview && (
+              <LinkPreviewCard preview={msg.linkPreview} />
+            )}
             {!msg.deleted && msg.file && <FilePreviewCard file={msg.file} />}
             {msg.edited && !msg.deleted && (
               <div className={`flex py-1 ${isMe ? "justify-end" : ""}`}>
@@ -265,18 +267,18 @@ export default function ChatBubble({
             )}
           </div>
 
-          {isMe && (
+          {!msg.deleted && isMe && (
             <div className="absolute bottom-2 right-2 flex items-center">
-              {msg.seenBy && msg.seenBy.length > 0 ? (
+              { msg.seenBy && msg.seenBy.length > 0 ? (
                 <CheckCheck
                   size={16}
-                  strokeWidth={3}
-                  className="text-blue-400"
+                  strokeWidth={2}
+                  className="text-white opacity-80"
                 />
               ) : msg.deliveredTo && msg.deliveredTo.length > 0 ? (
-                <Check size={16} strokeWidth={3} />
+                <Check size={16} strokeWidth={2}  className="opacity-80"/>
               ) : (
-                <Check size={16} strokeWidth={3} className="opacity-50" />
+                <Check size={16} strokeWidth={2} className="opacity-80" />
               )}
             </div>
           )}
@@ -299,7 +301,7 @@ export default function ChatBubble({
           ).map(([emoji, count]) => (
             <span
               key={emoji}
-              className={`flex items-center border border-base-content/10 shadow-md justify-center p-1 gap-[4px] ${isMe ? "bg-base-100" : "bg-cyan-950"} rounded-full cursor-pointer transition-all`}
+              className={`flex items-center border border-base-content/10 shadow-md justify-center p-1 gap-[4px] ${isMe ? "bg-base-100" : "bg-violet-800"} rounded-full cursor-pointer transition-all`}
               onClick={() => handleReaction(msg, emoji)}
             >
               <span

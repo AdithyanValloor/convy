@@ -203,13 +203,13 @@ export default function FriendCard(props: FriendCardProps) {
         _id: props.groupMember!._id,
         name: props.groupMember!.username,
         displayName: props.groupMember!.displayName,
-        profilePic: url ? url : defaultPFPToUse
+        profilePic: url ? url : defaultPFPToUse,
       }
     : {
         _id: props.user!._id,
         name: props.user!.name,
         displayName: props.user!.displayName,
-        profilePic: url ? url : defaultPFPToUse
+        profilePic: url ? url : defaultPFPToUse,
       };
 
   const status = useAppSelector(selectUserStatus(userData._id ?? ""));
@@ -314,7 +314,7 @@ export default function FriendCard(props: FriendCardProps) {
           cursor-pointer w-full px-2 py-2.5 rounded-xl flex items-center gap-3
           transition-colors duration-150
           ${isBlockedByMe ? "opacity-50" : ""}
-          ${isActive ? "bg-base-content/5" : "hover:bg-base-content/5"}
+          ${isActive ? "bg-base-content/10" : "hover:bg-base-content/8"}
           ${ClassName ?? ""}
         `}
       >
@@ -353,7 +353,7 @@ export default function FriendCard(props: FriendCardProps) {
                 !hideLastMessage && (
                   <span
                     className={`text-[11px] font-medium tabular-nums ${
-                      unread ? "text-green-500" : "text-base-content/40"
+                      unread ? "text-base-content" : "text-base-content/40"
                     }`}
                   >
                     {lastMessageTime}
@@ -394,31 +394,27 @@ export default function FriendCard(props: FriendCardProps) {
                   isMyMessage &&
                   (ifSeen ? (
                     <CheckCheck
-                      size={12}
-                      strokeWidth={3}
+                      size={15}
+                      strokeWidth={2}
                       className="text-blue-400"
                     />
                   ) : ifDelivered ? (
                     <Check
-                      size={12}
-                      strokeWidth={3}
+                      size={15}
+                      strokeWidth={2}
                       className="text-base-content/50"
                     />
                   ) : null)}
 
                 {/* Mention */}
                 {hasMention && !isGroupMemberCard && (
-                  <AtSign
-                    size={13}
-                    strokeWidth={3}
-                    className="text-green-500"
-                  />
-                )}
+                <AtSign size={13} strokeWidth={2} className="text-red-600" />
+                )} 
 
                 {/* Unread badge */}
                 {unread > 0 && (
                   <span
-                    className="bg-green-600 text-base-300 text-[10px] font-extrabold
+                    className="bg-purple-600 text-white text-[11px] font-semibold
                       min-w-[18px] h-[18px] px-1 rounded-full
                       flex items-center justify-center"
                   >

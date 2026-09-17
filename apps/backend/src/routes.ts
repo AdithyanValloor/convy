@@ -20,9 +20,9 @@ export const registerRoutes = (app: Application): void => {
   app.use("/api/user", userRouter);
   app.use("/api/profile", profileRouter);
   app.use("/api/friends", friendRouter);
-  app.use("/api/chat", chatRouter);
-  app.use("/api/group", groupChatRouter);
-  app.use("/api/message", messageRouter);
+  app.use("/api/message-service/chat", chatRouter);
+  app.use("/api/message-service/group", groupChatRouter);
+  app.use("/api/message-service/message", messageRouter);
   app.use("/api/block", blockRouter);
   app.use("/api/notifications", inboxNotificationsRouter);
   app.use("/api/message-request", messageRequestRouter);

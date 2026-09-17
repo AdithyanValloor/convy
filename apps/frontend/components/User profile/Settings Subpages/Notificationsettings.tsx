@@ -111,7 +111,7 @@ function SaveBar({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.2 }}
-          className="gap-2 flex flex-col mt-2 bg-base-100 shadow border border-base-content/10 p-2 pl-4 rounded-xl"
+          className="fixed bottom-8 gap-2 flex flex-col mt-2 bg-base-100 shadow border border-base-content/10 p-2 pl-4 rounded-xl"
         >
           <p className="text-sm">You have made changes! Save changes?</p>
           <div className="flex gap-1 justify-end">

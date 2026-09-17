@@ -154,7 +154,9 @@ export const fetchMessages = createAsyncThunk<
         ? { chatId: arg, page: 1, limit: 20 }
         : { chatId: arg.chatId, page: arg.page ?? 1, limit: arg.limit ?? 20 };
 
-    const res = await api.get(`/message-service/message/${chatId}?page=${page}&limit=${limit}`);
+    const res = await api.get(
+      `/message-service/message/${chatId}?page=${page}&limit=${limit}`,
+    );
 
     const payload = res.data;
 
@@ -192,7 +194,7 @@ export const sendMessage = createAsyncThunk<
       withCredentials: true,
     });
     return res.data;
-  } catch (error){
+  } catch (error) {
     return rejectWithValue(getErrorMessage(error));
   }
 });
@@ -238,7 +240,7 @@ export const toggleReaction = createAsyncThunk<
         { withCredentials: true },
       );
       return res.data;
-    } catch (error){
+    } catch (error) {
       return rejectWithValue(getErrorMessage(error));
     }
   },
@@ -298,7 +300,7 @@ export const editMessageApi = createAsyncThunk<
         { withCredentials: true },
       );
       return res.data;
-    } catch (error){
+    } catch (error) {
       return rejectWithValue(getErrorMessage(error));
     }
   },
@@ -317,7 +319,7 @@ export const deleteMessageApi = createAsyncThunk<
       withCredentials: true,
     });
     return res.data;
-  } catch (error){
+  } catch (error) {
     return rejectWithValue(getErrorMessage(error));
   }
 });
@@ -359,7 +361,7 @@ export const searchMessagesApi = createAsyncThunk<
       page: res.data.currentPage,
       hasMore: res.data.hasMore,
     };
-  } catch (error){
+  } catch (error) {
     return rejectWithValue(getErrorMessage(error));
   }
 });
@@ -381,14 +383,16 @@ export const fetchMessageContext = createAsyncThunk<
   "messages/fetchContext",
   async ({ messageId, chatId }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/message-service/message/context/${messageId}`);
+      const res = await api.get(
+        `/message-service/message/context/${messageId}`,
+      );
       return {
         chatId,
         target: res.data.target,
         before: res.data.before,
         after: res.data.after,
       };
-    } catch (error){
+    } catch (error) {
       return rejectWithValue(getErrorMessage(error));
     }
   },
@@ -413,7 +417,7 @@ export const fetchNewerMessages = createAsyncThunk<
         messages: res.data.messages ?? res.data,
         hasMore: res.data.hasMore ?? false,
       };
-    } catch (error){
+    } catch (error) {
       return rejectWithValue(getErrorMessage(error));
     }
   },
@@ -434,7 +438,7 @@ export const getDownloadUrl = createAsyncThunk<
     });
 
     return { key, url: res.data.url };
-  } catch (error){
+  } catch (error) {
     return rejectWithValue(getErrorMessage(error));
   }
 });
@@ -611,6 +615,10 @@ const messagesSlice = createSlice({
         (id) => id !== action.payload,
       );
     },
+    clearMessageSearch: (state) => {
+      state.search.results = [];
+      state.search.loading = false;
+    },
   },
 
   extraReducers: (builder) => {
@@ -782,6 +790,7 @@ export const {
   clearChatMessages,
   addMentionedChat,
   clearMentionedChat,
+  clearMessageSearch
 } = messagesSlice.actions;
 
 export default messagesSlice.reducer;

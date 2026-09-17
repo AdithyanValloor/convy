@@ -118,7 +118,7 @@ const handleCropDone = async (blob: Blob) => {
           ) : canEdit ? (
             <div className="flex flex-col items-center justify-center text-base-content/60">
               <MdAddPhotoAlternate size={24} />
-              <p className="text-[12px] leading-tight text-center">
+              <p className="text-[10px] leading-tight text-center">
                 Add group icon
               </p>
             </div>

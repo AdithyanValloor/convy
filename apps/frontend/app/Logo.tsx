@@ -1,28 +1,26 @@
 import Image from "next/image";
-import logo from "@/public/convyLogo.png";
-import { poiretOne } from "@/utils/fonts";
+import melo from "@/public/melo.png";
+import { quicksand } from "@/utils/fonts";
 
 export function Logo({ isPublic }: { isPublic?: boolean }) {
   return (
-    <div className="flex h-14 md:h-16 items-center justify-center shrink-0">
+    <div className={`flex h-14 md:h-16 items-center justify-center shrink-0 ${!isPublic && " bg-base-300"}`}>
       <h1
-        className={`${poiretOne.className} ${
-          isPublic ? "text-5xl" : "text-4xl"
-        } leading-none tracking-tight text-base-content`}
+        className={`${quicksand.className} ${
+          isPublic ? "text-3xl text-white" : "text-2xl"
+        } leading-none font-bold tracking-tight text-base-content`}
       >
-        c
-        <span
-          className={`inline-block align-middle w-[0.54em] h-[0.54em] ml-[0.05em] `}
-        >
+        <span className={`inline-flex ${isPublic ? "w-10" : "w-8"} mx-2 align-middle`}>
           <Image
-            src={logo}
-            alt="Convy logo"
+            src={melo}
+            alt="Melo logo"
             width={100}
             height={100}
             className="object-contain"
+            priority
           />
         </span>
-        nvy
+        melo
       </h1>
     </div>
   );

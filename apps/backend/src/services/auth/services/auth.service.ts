@@ -218,7 +218,11 @@ export class AuthService {
 
   /** Verifies whether a provided password matches the stored hash. */
   async checkPassword(userId: string, password: string) {
-    const user = await this.authRepository.findAuthUserForPasswordCheck(userId);
+
+    const authUserId = await UserAPI.findAuthUserIdByUserId(userId);
+    if (!authUserId) throw NotFound("User not found");
+
+    const user = await this.authRepository.findAuthUserForPasswordCheck(authUserId);
     if (!user) throw NotFound("User not found");
 
     const isMatch = await bcrypt.compare(password, user.hashedPassword);
@@ -236,10 +240,17 @@ export class AuthService {
       throw BadRequest("New password must be at least 8 characters");
     }
 
-    const user = await this.authRepository.findAuthUserForPasswordCheck(userId);
-    if (!user) throw NotFound("User not found");
+    const authUserId = await UserAPI.findAuthUserIdByUserId(userId);
+    if (!authUserId) throw NotFound("User not found");
 
-    const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
+    const authUser =
+      await this.authRepository.findAuthUserForPasswordCheck(authUserId);
+    if (!authUser) throw NotFound("User not found");
+
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      authUser.hashedPassword,
+    );
 
     if (!isMatch) {
       throw Unauthorized("Current password is incorrect");

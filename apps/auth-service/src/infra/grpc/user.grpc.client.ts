@@ -27,6 +27,10 @@ interface FindUserByAuthUserIdRequest {
   authUserId: string;
 }
 
+interface FindAuthUserIdByUserIdRequest {
+  userId: string;
+}
+
 interface UserNameExistsRequest {
   username: string;
 }
@@ -81,12 +85,24 @@ interface UserNameExistsResponse {
   exists: boolean;
 }
 
+interface FindAuthUserIdByUserIdResponse {
+  authUserId: string;
+}
+
 interface UserServiceClient {
   findUserByAuthUserId(
     request: FindUserByAuthUserIdRequest,
     callback: (
       error: grpc.ServiceError | null,
       response?: UserDTOResponse,
+    ) => void,
+  ): void;
+
+  findAuthUserIdByUserId(
+    request: FindAuthUserIdByUserIdRequest,
+    callback: (
+      error: grpc.ServiceError | null,
+      response?: FindAuthUserIdByUserIdResponse,
     ) => void,
   ): void;
 
@@ -135,6 +151,26 @@ export const findUserByAuthUserId = (
       }
 
       resolve(userDTOResponseToUserDTO(response));
+    });
+  });
+};
+
+export const findAuthUserIdByUserId = (
+  userId: string,
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    userClient.findAuthUserIdByUserId({ userId }, (error, response) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      if (!response) {
+        reject(new Error("User service returned no response"));
+        return;
+      }
+
+      resolve(response.authUserId);
     });
   });
 };

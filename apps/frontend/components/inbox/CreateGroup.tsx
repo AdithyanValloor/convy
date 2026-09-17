@@ -38,21 +38,44 @@ export default function CreateGroup({
 }: CreateGroupProps) {
   const onlineUsers = useAppSelector((state) => state.presence.users);
   return (
-    <div className="h-full w-full flex flex-col gap-3">
+    <div className="h-full w-full flex flex-col gap-3 p-1">
       <div className="flex justify-center">
-        <GroupAvatarUploader canEdit={true} value={groupAvatar} onChange={setGroupAvatar} />
+        <GroupAvatarUploader
+          canEdit={true}
+          value={groupAvatar}
+          onChange={setGroupAvatar}
+        />
       </div>
       <div className="px-2">
         <input
           value={groupName}
           onChange={(e) => setGroupName(e.target.value)}
-          placeholder="Enter a Group name"
-          className="w-full h-10 border-b border-base-content/10 focus:border-base-content focus:outline-0"
+          placeholder="Enter a group name"
+          className="
+      h-11 w-full
+      rounded-xl
+      border border-base-content/[0.07]
+      bg-base-content/[0.045]
+      px-4
+      text-sm
+      text-base-content
+      placeholder:text-base-content/35
+      outline-none
+      transition-all duration-200
+      focus:border-violet-500/40
+      focus:bg-base-content/[0.06]
+      focus:ring-2
+      focus:ring-violet-500/10
+    "
         />
       </div>
 
       {/* Friends list */}
-      <p className="text-center">All friends</p>
+      <div className="px-2 pt-1">
+        <p className="text-xs font-medium uppercase tracking-wider text-base-content/40">
+          All friends
+        </p>
+      </div>
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-1">
         {friends.map((friend) => {
@@ -74,25 +97,36 @@ export default function CreateGroup({
               }}
               rightSlot={
                 selected ? (
-                  <Check className="text-cyan-900" strokeWidth={3} size={18} />
+                  <Check className="text-violet-500 mx-2" strokeWidth={3} size={18} />
                 ) : null
               }
-              ClassName={`border ${selected ? "bg-cyan-900/5 border border-cyan-900" : "border-transparent"} `}
+              ClassName={`border ${selected ? "bg-base-content/10 border border-base-content/10" : "border-transparent"} `}
             />
           );
         })}
       </div>
 
-      <button
+      { selectedUsers.size > 0 && groupName && (<button
         type="button"
         title="Create group"
         aria-label="Create group"
         onClick={handleCreateGroup}
         disabled={actionLoading}
-        className="fixed cursor-pointer disabled:cursor-auto top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-cyan-900 text-white p-2 disabled:opacity-50"
+        className="
+            fixed right-4 top-4
+            flex h-10 w-10
+            cursor-pointer
+            items-center justify-center
+            rounded-xl
+            bg-violet-500
+            p-2
+            text-white
+            transition-all duration-200
+            hover:scale-105
+          "
       >
-        <FaCheck />
-      </button>
+        <FaCheck size={14} />
+      </button>)}
     </div>
   );
 }

@@ -153,7 +153,7 @@ export default function ForwardModal({
                           onClick={() => toggleChatSelection(chat._id)}
                           className={`relative my-1 rounded-xl cursor-pointer border transition ${
                             isSelected
-                              ? "bg-green-900/5 border-green-900"
+                              ? "bg-base-content/10 border-base-content/10"
                               : "border-transparent hover:bg-base-200"
                           }`}
                         >
@@ -174,7 +174,7 @@ export default function ForwardModal({
                           />
 
                           {isSelected && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-900">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500">
                               <Check size={18} strokeWidth={2} />
                             </span>
                           )}
@@ -199,9 +199,9 @@ export default function ForwardModal({
                   type="button"
                   onClick={handleForwardSelected}
                   disabled={selectedChats.size === 0}
-                  className="w-full p-2 flex items-center justify-center gap-3 cursor-pointer bg-[#004030] text-white rounded-xl hover:bg-[#006644] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full p-2 flex items-center justify-center gap-3 cursor-pointer bg-violet-800 text-white rounded-xl hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Foreward <IoSend strokeWidth={1.3} size={20} />
+                  Forward <IoSend strokeWidth={1.3} size={20} />
                 </button>
               </div>
             </div>

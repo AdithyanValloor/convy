@@ -68,4 +68,6 @@ export interface IUserRepository {
     userId: string,
     username: string,
   ): Promise<FlattenMaps<IUser> | null>;
+
+  findAuthUserIdByUserId(userId: string): Promise<string | null>;
 }

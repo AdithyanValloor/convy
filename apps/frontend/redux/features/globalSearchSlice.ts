@@ -74,7 +74,7 @@ const normalizeMessage = (msg: SearchResultMessage): NormalizedSearchMessage => 
 export const globalSearch = createAsyncThunk(
   "globalSearch/search",
   async (query: string) => {
-    const res = await api.get("/message/search/global", {
+    const res = await api.get("/message-service/message/search/global", {
       params: { query },
     });
     return res.data.messages;

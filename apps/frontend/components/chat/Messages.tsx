@@ -1060,8 +1060,10 @@ export default function Messages({
             transition={{ duration: 0.2 }}
             className="absolute flex items-center justify-center 
               bottom-0 right-4 mb-5 p-2 
-              bg-base-200 text-base-content/40 
-              hover:bg-base-200 cursor-pointer 
+              bg-base-100
+              border border-base-content/10 
+              text-base-content/40 
+              hover:scale-105 cursor-pointer 
               rounded-full shadow"
           >
             <ChevronDown size={25} strokeWidth={3} />

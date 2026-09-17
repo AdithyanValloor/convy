@@ -46,54 +46,65 @@ export default function FriendsSection({ setActiveTab }: FriendSectionProps) {
   ];
 
   return (
-    <div className="h-full w-full p-3 flex flex-col gap-3 relative">
-      <h1 className="text-2xl font-semibold text-base-content p-1">Friends</h1>
+  <div className="relative flex h-full w-full flex-col gap-4 p-4">
+    {/* Header */}
+    <div className="flex items-center justify-between px-1">
+      <h1 className="text-2xl font-semibold tracking-tight text-base-content py-1">
+        Friends
+      </h1>
+    </div>
 
-      {/* Tabs */}
-      <div className="relative flex border-b border-base-content/10 mt-2">
+    {/* Tabs */}
+    <div className="relative">
+      <div className="flex rounded-xl bg-base-content/[0.04] p-1">
         {(
           [
             { key: "all", label: "All Friends" },
-            ...(requests.incoming.length > 0 || requests.outgoing.length > 0
-              ? [{ key: "pending", label: "Pending " } as const]
+            ...(requests.incoming.length > 0 ||
+            requests.outgoing.length > 0
+              ? [{ key: "pending", label: "Pending" } as const]
               : []),
             { key: "add", label: "Add Friend" },
           ] as const
-        ).map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => handleTabChange(key)}
-            className="flex-1 py-2 text-sm cursor-pointer"
-          >
-            <span
-              className={`relative inline-flex items-center justify-center gap-2
-                transition-colors duration-200
-                ${tab === key ? "text-base-content" : "text-base-content/70"}`}
+        ).map(({ key, label }) => {
+          const isActive = tab === key;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleTabChange(key)}
+              className={`
+                relative flex flex-1 cursor-pointer
+                items-center justify-center
+                rounded-lg px-3 py-2
+                text-sm font-medium
+                transition-all duration-200
+                ${
+                  isActive
+                    ? "bg-base-100 text-base-content shadow-sm"
+                    : "text-base-content/55 hover:text-base-content/80"
+                }
+              `}
             >
               {label}
+
               {key === "pending" && pendingCount > 0 && (
-                <UnreadCountBadge
-                  position="-top-1 -right-4"
-                  count={pendingCount}
-                />
+                <span className="ml-2">
+                  <UnreadCountBadge
+                    position="static"
+                    count={pendingCount}
+                  />
+                </span>
               )}
-            </span>
-          </button>
-        ))}
-
-        {/* Active underline */}
-        <span
-          className="absolute bottom-0 left-0 h-[1px] w-1/3 bg-base-content
-            transition-transform duration-300 ease-out"
-          style={{
-            transform: `translateX(${tabs.indexOf(tab) * 100}%)`,
-            width: `${100 / tabs.length}%`,
-          }}
-        />
+            </button>
+          );
+        })}
       </div>
+    </div>
 
-      {/* Search / Add */}
+    {/* Search / Add */}
+    <div>
       {tab === "add" ? (
         <AddFriendInput />
       ) : (
@@ -102,22 +113,104 @@ export default function FriendsSection({ setActiveTab }: FriendSectionProps) {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       )}
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {tab === "all" && (
-          <AllFriends setActiveTab={setActiveTab} searchQuery={searchQuery} />
-        )}
-        {tab === "pending" &&
-          (requests.incoming.length > 0 || requests.outgoing.length > 0 ? (
-            <Requests searchQuery={searchQuery} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-base-content/40">
-              <span className="text-4xl">🎉</span>
-              <p className="text-sm">No pending requests</p>
-            </div>
-          ))}
-      </div>
     </div>
-  );
+
+    {/* Content */}
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      {tab === "all" && (
+        <AllFriends
+          setActiveTab={setActiveTab}
+          searchQuery={searchQuery}
+        />
+      )}
+
+      {tab === "pending" &&
+        (requests.incoming.length > 0 ||
+        requests.outgoing.length > 0 ? (
+          <Requests searchQuery={searchQuery} />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-base-content/40">
+            <span className="text-4xl">🎉</span>
+            <p className="text-sm">No pending requests</p>
+          </div>
+        ))}
+    </div>
+  </div>
+);
+
+  // return (
+  //   <div className="h-full w-full p-3 flex flex-col gap-3 relative">
+  //     <h1 className="text-2xl font-semibold text-base-content p-1">Friends</h1>
+
+  //     {/* Tabs */}
+  //     <div className="relative flex border-b border-base-content/10 mt-2">
+  //       {(
+  //         [
+  //           { key: "all", label: "All Friends" },
+  //           ...(requests.incoming.length > 0 || requests.outgoing.length > 0
+  //             ? [{ key: "pending", label: "Pending " } as const]
+  //             : []),
+  //           { key: "add", label: "Add Friend" },
+  //         ] as const
+  //       ).map(({ key, label }) => (
+  //         <button
+  //           key={key}
+  //           type="button"
+  //           onClick={() => handleTabChange(key)}
+  //           className="flex-1 py-2 text-sm cursor-pointer"
+  //         >
+  //           <span
+  //             className={`relative inline-flex items-center justify-center gap-2
+  //               transition-colors duration-200
+  //               ${tab === key ? "text-base-content" : "text-base-content/70"}`}
+  //           >
+  //             {label}
+  //             {key === "pending" && pendingCount > 0 && (
+  //               <UnreadCountBadge
+  //                 position="-top-1 -right-4"
+  //                 count={pendingCount}
+  //               />
+  //             )}
+  //           </span>
+  //         </button>
+  //       ))}
+
+  //       {/* Active underline */}
+  //       <span
+  //         className="absolute bottom-0 left-0 h-[1px] w-1/3 bg-base-content
+  //           transition-transform duration-300 ease-out"
+  //         style={{
+  //           transform: `translateX(${tabs.indexOf(tab) * 100}%)`,
+  //           width: `${100 / tabs.length}%`,
+  //         }}
+  //       />
+  //     </div>
+
+  //     {/* Search / Add */}
+  //     {tab === "add" ? (
+  //       <AddFriendInput />
+  //     ) : (
+  //       <SearchInput
+  //         value={searchQuery}
+  //         onChange={(e) => setSearchQuery(e.target.value)}
+  //       />
+  //     )}
+
+  //     {/* Content */}
+  //     <div className="flex-1 overflow-y-auto">
+  //       {tab === "all" && (
+  //         <AllFriends setActiveTab={setActiveTab} searchQuery={searchQuery} />
+  //       )}
+  //       {tab === "pending" &&
+  //         (requests.incoming.length > 0 || requests.outgoing.length > 0 ? (
+  //           <Requests searchQuery={searchQuery} />
+  //         ) : (
+  //           <div className="flex flex-col items-center justify-center h-full gap-2 text-base-content/40">
+  //             <span className="text-4xl">🎉</span>
+  //             <p className="text-sm">No pending requests</p>
+  //           </div>
+  //         ))}
+  //     </div>
+  //   </div>
+  // );
 }

@@ -110,10 +110,10 @@ export default function AddMembersModal({
                         <li
                           key={u._id}
                           onClick={() => toggleUserSelection(u._id)}
-                          className={`relative my-1 rounded-lg cursor-pointer border transition ${
+                          className={`relative my-1 rounded-xl  cursor-pointer border transition ${
                             isSelected
-                              ? "bg-[#004030]/10 border-[#004030]"
-                              : "border-transparent hover:bg-base-300"
+                              ? "bg-base-content/10 border-base-content/10"
+                              : "border-transparent"
                           }`}
                         >
                           <FriendCard
@@ -127,7 +127,7 @@ export default function AddMembersModal({
                           />
 
                           {isSelected && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#004030]">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500">
                               <Check />
                             </span>
                           )}
@@ -152,7 +152,7 @@ export default function AddMembersModal({
                   type="button"
                   onClick={handleAddSelected}
                   disabled={selectedUsers.size === 0}
-                  className="w-full p-2 cursor-pointer bg-[#004030] text-white rounded-xl hover:bg-[#006644] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full p-2 cursor-pointer bg-violet-800 text-white rounded-xl hover:bg-violet-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Add Selected
                 </button>

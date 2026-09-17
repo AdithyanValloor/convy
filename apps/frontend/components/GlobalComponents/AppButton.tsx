@@ -28,8 +28,8 @@ const AppButton: React.FC<AppButtonProps> = ({
         stiffness: 500,
         damping: 30
       }}
-      className={`btn btn-sm rounded-full px-4 cursor-pointer border border-base-content/10 text-white opacity-80 hover:opacity-100 transition ${
-        color ?? "bg-cyan-950"
+      className={`btn btn-sm rounded-full px-4 cursor-pointer border border-base-content/10 text-white hover:opacity-80 transition ${
+        color ?? "bg-violet-600"
       } ${className}`}
       {...props}
     >

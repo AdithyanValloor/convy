@@ -108,7 +108,7 @@ export default function UserSettings({
     <>
       <div className="w-full h-full relative">
         {/* Header */}
-        <div className="flex items-center gap-2 p-3 justify-between border-b border-base-content/10">
+        <div className="flex items-center gap-2 p-4 justify-between border-b border-base-content/10">
           <h2 className="text-2xl font-semibold text-base-content p-1">
             Settings
           </h2>
@@ -134,11 +134,11 @@ export default function UserSettings({
                 key={item.label}
                 type="button"
                 onClick={item.action}
-                className="w-full flex items-center justify-between gap-3 p-3 py-4 rounded-lg
+                className="w-full flex items-center justify-between gap-3 p-4 py-4 rounded-xl
                   hover:bg-base-content/10 transition-colors cursor-pointer group text-left"
               >
                 <div className="flex items-center gap-3">
-                  <Icon size={18} className="text-base-content/60 shrink-0" />
+                  <Icon size={18} className="text-base-content/80 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-base-content">
                       {item.label}
@@ -167,13 +167,13 @@ export default function UserSettings({
                 key={item.label}
                 type="button"
                 onClick={item.action}
-                className="w-full flex items-center justify-between gap-3 p-3 py-4 rounded-lg
+                className="w-full flex items-center justify-between gap-3 p-4 py-4 rounded-lg
                   hover:bg-base-content/10 transition-colors cursor-pointer group text-left"
               >
                 <div className="flex items-center gap-3">
-                  <Icon size={18} className="text-red-400 shrink-0" />
+                  <Icon size={18} className="text-red-500 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-red-400">
+                    <p className="text-sm font-medium text-red-500">
                       {item.label}
                     </p>
                     <p className="text-xs text-base-content/50 mt-0.5">

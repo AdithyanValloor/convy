@@ -1,4 +1,4 @@
-export function parseMessageText(text: string): string {
+export function parseMessageText(text: string, isMe: boolean): string {
   if (!text) return "";
 
   // Regex to detect URLs
@@ -14,7 +14,7 @@ export function parseMessageText(text: string): string {
       // Even-indexed parts are plain text, odd-indexed are URLs
       if (i % 2 === 1) {
         // This is a URL
-        return `<a href="${part}" target="_blank" rel="noopener noreferrer" class="text-cyan-500 hover:underline hover:text-primary-focus">${part}</a>`;
+        return `<a href="${part}" target="_blank" rel="noopener noreferrer" class=" ${isMe ? "text-blue-400" : "text-blue-500"}  hover:underline hover:text-primary-focus">${part}</a>`;
       }
       // Plain text — highlight @mentions
       return part.replace(

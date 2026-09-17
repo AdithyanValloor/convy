@@ -11,12 +11,9 @@ import { motion } from "framer-motion";
 // ---------------------------------------------------------------------------
 const THEME_BASE: Record<string, string> = {
   light:    "#ffffff",
-  forest:   "#171212",
-  sunset:   "#121c22",
   business: "#202020",
-  dracula:  "#282a36",
-  lemonade: "#ffffff",
-  retro:    "#e4d8b4",
+  dim:  "#282a36",
+  nord: "#ffffff",
 };
 
 // ---------------------------------------------------------------------------

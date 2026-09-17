@@ -1,8 +1,13 @@
 "use client";
 
-import EmojiPicker, { EmojiClickData, EmojiStyle, Theme } from "emoji-picker-react";
+import EmojiPicker, {
+  EmojiClickData,
+  EmojiStyle,
+  Theme,
+} from "emoji-picker-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface UniversalEmojiPickerProps {
   visible: boolean;
@@ -57,9 +62,11 @@ export default function UniversalEmojiPicker({
       "https://cdn.jsdelivr.net/npm/emoji-datasource-twitter/img/twitter/sheets-256/64.png";
   }, []);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <>
-      {/* Backdrop — visual only, no pointer events so clicks pass through to our handler */}
+      {/* Backdrop */}
       <motion.div
         className="fixed inset-0 bg-black/10 z-[100000]"
         initial={false}
@@ -92,6 +99,7 @@ export default function UniversalEmojiPicker({
           />
         </div>
       </motion.div>
-    </>
+    </>,
+    document.body,
   );
 }

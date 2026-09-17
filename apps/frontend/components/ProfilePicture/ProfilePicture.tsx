@@ -19,7 +19,7 @@ function ProfilePicture({ src, status, size, showStatus = true }: ProfilePicture
   } as const;
 
   return (
-    <div className="relative ">
+    <div className="relative">
       <Image 
         src={src || defaultPFP} 
         unoptimized
@@ -31,7 +31,7 @@ function ProfilePicture({ src, status, size, showStatus = true }: ProfilePicture
       
       {showStatus && (
         <Circle
-          size={size === "lg" ? 20 : 12}
+          size={size === "lg" ? 23 : 14}
           strokeWidth={0}
           fill={status ? statusColors[status] : ""}
           className="absolute bg-base-100 rounded-full bottom-0 right-0"

@@ -7,7 +7,7 @@ import AuthBootstrap from "./AuthBootstrap";
 import { inter, poppins } from "@/utils/fonts";
 
 export const metadata: Metadata = {
-  title: "Convy",
+  title: "Melo",
   description: "Conversations made simple",
 };
 

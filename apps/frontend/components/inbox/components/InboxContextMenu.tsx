@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { LogOut, ChevronRight, Check, X } from "lucide-react";
@@ -358,6 +358,49 @@ export default function InboxContextMenu({
     }
   };
 
+  // ─── Desktop: position menu to the right of the click, clamped to viewport ─
+  // We ignore the incoming x/y as a literal top-left/bottom-anchor and instead
+  // measure the rendered menu after mount, then place it so it opens toward
+  // the right of the click point and never overflows the bottom (or top) of
+  // the viewport. `position` is only used for the entrance animation offset.
+  const desktopMenuRef = useRef<HTMLDivElement | null>(null);
+  const [menuPos, setMenuPos] = useState<{ left: number; top: number }>({
+    left: x,
+    top: y,
+  });
+
+  useLayoutEffect(() => {
+    if (isMobile) return;
+    const menuEl = desktopMenuRef.current;
+    if (!menuEl) return;
+
+    const margin = 8;
+    const { innerWidth, innerHeight } = window;
+    const rect = menuEl.getBoundingClientRect();
+    const menuWidth = rect.width;
+    const menuHeight = rect.height;
+
+    // Horizontal: open to the right of the click point.
+    // If there isn't enough room on the right, fall back to the left side.
+    let left = x;
+    if (left + menuWidth + margin > innerWidth) {
+      left = x - menuWidth;
+    }
+    left = Math.max(margin, Math.min(left, innerWidth - menuWidth - margin));
+
+    // Vertical: keep the menu's top at the click point, but if that would
+    // push it past the bottom edge, shift it up just enough to fit.
+    let top = y;
+    if (top + menuHeight + margin > innerHeight) {
+      top = innerHeight - menuHeight - margin;
+    }
+    top = Math.max(margin, top);
+
+    setMenuPos({ left, top });
+    // Re-measure whenever the menu's content (item count) or the click point changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [x, y, isMobile, menuItems.length]);
+
   if (typeof document === "undefined") return null;
 
   // ─── Mobile: full-width bottom sheet ────────────────────────────────────────
@@ -497,17 +540,19 @@ export default function InboxContextMenu({
       />
 
       <motion.div
-        ref={menuRef}
+        ref={(el) => {
+          (menuRef as React.MutableRefObject<HTMLDivElement | null>).current =
+            el;
+          desktopMenuRef.current = el;
+        }}
         initial={{ opacity: 0, scale: 0.96, y: position === "bottom" ? 6 : -6 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.14, ease: "easeOut" }}
         className="fixed z-[99999] bg-base-100 border border-base-content/10 shadow-2xl rounded-xl w-52 py-1.5 backdrop-blur-md"
         style={{
-          left: x,
-          ...(position === "bottom"
-            ? { top: y }
-            : { bottom: window.innerHeight - y }),
+          left: menuPos.left,
+          top: menuPos.top,
         }}
       >
         <ul className="flex flex-col gap-1">

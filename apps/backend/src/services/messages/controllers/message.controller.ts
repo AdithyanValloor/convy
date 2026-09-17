@@ -20,7 +20,7 @@ import {
 import { fetchLinkPreview } from "../utils/linkPreview.js";
 import { Message } from "../models/message.model.js";
 import * as ChatAPI from "../../chat/api/chat.api.js";
-import * as UserAPI from "../../user/api/user.api.js"
+import * as UserAPI from "../../user/api/user.api.js";
 import { messageService } from "../composition/container.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -133,10 +133,6 @@ export const sendMessage = async (
 
     emitNewMessage(chatId, toMessageSocketPayload(populated));
 
-    console.log("POPULATED : ", populated);
-    console.log("NORM : ", toMessageSocketPayload(populated));
-    
-
     mentionedUserIds.forEach((mentionedId) => {
       emitMentionNotification(
         mentionedId,
@@ -195,7 +191,9 @@ export const sendMessage = async (
 
           emitEditMessage(chatId, toMessageSocketPayload(populatedUpdated));
         })
-        .catch(() => {});
+        .catch((error) => {
+          console.error("❌ Async link preview failed:", error);
+        });
     }
   } catch (err) {
     next(err);

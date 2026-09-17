@@ -1,6 +1,8 @@
 "use client";
 
-import { Phone, UsersRound, Inbox, Archive, Settings, User } from "lucide-react";
+import { Settings } from "lucide-react";
+import { IoCall } from "react-icons/io5";
+import { FaInbox, FaArchive, FaUserFriends, FaUser } from "react-icons/fa";
 
 function EmptyPage({
   icon,
@@ -12,13 +14,19 @@ function EmptyPage({
   description: string;
 }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-4 select-none px-6">
-      <div className="bg-base-100 p-3 rounded-xl text-base-content/50">
+    <div className="flex h-full flex-col items-center justify-center gap-4 select-none px-6">
+      <div className="rounded-xl bg-base-100 p-3 text-base-content/50">
         {icon}
       </div>
-      <div className="text-center space-y-1">
-        <p className="text-xl font-semibold text-base-content/70 tracking-tight">{label}</p>
-        <p className="text-sm text-base-content/35 max-w-[220px] leading-relaxed">{description}</p>
+
+      <div className="space-y-1 text-center">
+        <p className="text-xl font-semibold tracking-tight text-base-content/70">
+          {label}
+        </p>
+
+        <p className="max-w-[220px] text-sm leading-relaxed text-base-content/35">
+          {description}
+        </p>
       </div>
     </div>
   );
@@ -27,7 +35,7 @@ function EmptyPage({
 export function CallHistoryPage() {
   return (
     <EmptyPage
-      icon={<Phone size={32} strokeWidth={1.25} />}
+      icon={<IoCall size={28} />}
       label="Call History"
       description="Your past voice and video calls will appear here."
     />
@@ -37,7 +45,7 @@ export function CallHistoryPage() {
 export function FriendsPage() {
   return (
     <EmptyPage
-      icon={<UsersRound size={32} strokeWidth={1.25} />}
+      icon={<FaUserFriends size={27} />}
       label="Friends"
       description="Add people to your friends list to chat and call."
     />
@@ -47,7 +55,7 @@ export function FriendsPage() {
 export function InboxPage() {
   return (
     <EmptyPage
-      icon={<Inbox size={32} strokeWidth={1.25} />}
+      icon={<FaInbox size={27} />}
       label="Inbox"
       description="Mentions, reactions, and activity will show up here."
     />
@@ -57,7 +65,7 @@ export function InboxPage() {
 export function ArchivedChatsPage() {
   return (
     <EmptyPage
-      icon={<Archive size={32} strokeWidth={1.25} />}
+      icon={<FaArchive size={27} />}
       label="Archived Chats"
       description="Chats you archive won't show in your main list."
     />
@@ -67,7 +75,7 @@ export function ArchivedChatsPage() {
 export function SettingsPage() {
   return (
     <EmptyPage
-      icon={<Settings size={32} strokeWidth={1.25} />}
+      icon={<Settings size={28} strokeWidth={1.7} />}
       label="Settings"
       description="Manage your account, privacy, and preferences."
     />
@@ -77,7 +85,7 @@ export function SettingsPage() {
 export function UserProfilePage() {
   return (
     <EmptyPage
-      icon={<User size={32} strokeWidth={1.25} />}
+      icon={<FaUser size={28} strokeWidth={1.7} />}
       label="Profile"
       description="Your profile, status, and account details live here."
     />

@@ -1,28 +1,129 @@
-export const Glows = () => (
-  <>
-    <div className="absolute top-[-120px] left-[18%] w-[26rem] h-[26rem] bg-cyan-900/25 rounded-full blur-[140px]" />
-    <div className="absolute top-[-100px] left-[22%] w-[20rem] h-[20rem] bg-cyan-800/15 rounded-full blur-3xl" />
-    <div className="absolute bottom-[-120px] right-[12%] w-[24rem] h-[24rem] bg-cyan-900/20 rounded-full blur-[140px]" />
-    <div className="absolute top-[45%] left-[65%] w-40 h-40 bg-cyan-500/15 rounded-full blur-2xl" />
-    <div className="absolute top-0 left-1/2 w-[420px] h-[420px] bg-cyan-500/8 blur-[120px] -translate-x-1/2" />
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.04),_transparent_65%)]" />
-  </>
-);
 
-export const MinimalGlow = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.06] via-transparent to-blue-500/[0.06]" />
+"use client";
 
-    <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-cyan-400/[0.12] blur-[160px] rounded-full" />
+import { useReducedMotion } from "framer-motion";
 
-    <div className="absolute top-[25%] -left-32 w-[30rem] h-[30rem] bg-cyan-300/[0.08] blur-[140px] rounded-full" />
+export function Glows() {
+  const reduceMotion = useReducedMotion();
 
-    <div className="absolute bottom-[-25%] right-[-10%] w-[28rem] h-[28rem] bg-blue-400/[0.08] blur-[140px] rounded-full" />
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
+      <svg
+        className="absolute inset-x-0 bottom-0 h-[50%] w-full"
+        viewBox="0 0 800 300"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <filter id="whisp-soften" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.4" />
+          </filter>
 
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.035),transparent_75%)]" />
+          <linearGradient id="whisp-fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="white" stopOpacity="0" />
+            <stop offset="45%" stopColor="white" stopOpacity="1" />
+            <stop offset="100%" stopColor="white" stopOpacity="1" />
+          </linearGradient>
+          <mask id="whisp-fade-mask">
+            <rect width="800" height="300" fill="url(#whisp-fade)" />
+          </mask>
 
-    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20" />
+          {/* Back layer: slow, wide, faintest */}
+          <pattern
+            id="whisp-wave-a"
+            x="0"
+            y="0"
+            width="400"
+            height="300"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M0,210 C50,168 150,252 200,210 C250,168 350,252 400,210"
+              fill="none"
+              stroke="#2854D9"
+              strokeOpacity="0.16"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            {!reduceMotion && (
+              <animateTransform
+                attributeName="patternTransform"
+                type="translate"
+                from="0 0"
+                to="400 0"
+                dur="26s"
+                repeatCount="indefinite"
+              />
+            )}
+          </pattern>
 
-    <div className="absolute inset-0 opacity-[0.025] mix-blend-overlay pointer-events-none bg-[url('/noise.png')]" />
-  </div>
-);
+          {/* Middle layer: opposite direction, tighter wavelength */}
+          <pattern
+            id="whisp-wave-b"
+            x="0"
+            y="0"
+            width="320"
+            height="300"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M0,160 C40,128 120,192 160,160 C200,128 280,192 320,160"
+              fill="none"
+              stroke="#2854D9"
+              strokeOpacity="0.2"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            {!reduceMotion && (
+              <animateTransform
+                attributeName="patternTransform"
+                type="translate"
+                from="320 0"
+                to="0 0"
+                dur="19s"
+                repeatCount="indefinite"
+              />
+            )}
+          </pattern>
+
+          {/* Front layer: fastest, smallest amplitude, most visible */}
+          <pattern
+            id="whisp-wave-c"
+            x="0"
+            y="0"
+            width="220"
+            height="300"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M0,120 C27,102 83,138 110,120 C137,102 193,138 220,120"
+              fill="none"
+              stroke="#2854D9"
+              strokeOpacity="0.28"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            {!reduceMotion && (
+              <animateTransform
+                attributeName="patternTransform"
+                type="translate"
+                from="0 0"
+                to="220 0"
+                dur="13s"
+                repeatCount="indefinite"
+              />
+            )}
+          </pattern>
+        </defs>
+
+        <g mask="url(#whisp-fade-mask)" filter="url(#whisp-soften)">
+          <rect width="800" height="300" fill="url(#whisp-wave-a)" />
+          <rect width="800" height="300" fill="url(#whisp-wave-b)" />
+          <rect width="800" height="300" fill="url(#whisp-wave-c)" />
+        </g>
+      </svg>
+    </div>
+  );
+}

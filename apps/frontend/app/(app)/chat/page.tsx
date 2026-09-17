@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare } from "lucide-react";
+import { AiFillMessage } from "react-icons/ai";
 
 export default function ChatIndexPage() {
   return (
@@ -8,7 +8,7 @@ export default function ChatIndexPage() {
       
       {/* Icon */}
       <div className="bg-base-100 p-3 rounded-2xl text-base-content/50 shadow-sm">
-        <MessageSquare size={32} strokeWidth={1.2} />
+        <AiFillMessage size={32} strokeWidth={1.2} />
       </div>
 
       {/* Text */}
