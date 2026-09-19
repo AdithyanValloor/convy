@@ -5,7 +5,6 @@ import { PrivacySettings } from "../services/user.privacy.service.js";
 import { UpdateProfileInput } from "../services/user.profile.service.js";
 
 export interface IUserRepository {
-
   createProfile(data: {
     authUserId: string;
     username: string;
@@ -70,4 +69,5 @@ export interface IUserRepository {
   ): Promise<FlattenMaps<IUser> | null>;
 
   findAuthUserIdByUserId(userId: string): Promise<string | null>;
+
 }

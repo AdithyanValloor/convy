@@ -237,5 +237,4 @@ export class MongoUserRepository implements IUserRepository {
       const user = await UserModel.findById(userId);
       return user?.authUserId ?? null
   }
-
 }

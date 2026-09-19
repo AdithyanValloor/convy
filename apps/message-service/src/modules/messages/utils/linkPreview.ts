@@ -60,9 +60,6 @@ export async function fetchLinkPreview(originalUrl: string) {
       timeout: 5000,
     });
 
-    console.log("🔗 OGS RESULT");
-    console.dir(result, { depth: null });
-
     if (!result.success) return null;
 
     const finalUrl = result.requestUrl || originalUrl;

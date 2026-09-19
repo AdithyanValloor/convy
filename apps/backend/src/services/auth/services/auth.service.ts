@@ -104,6 +104,14 @@ export class AuthService {
     await sendOtpToEmail(email);
   }
 
+  async sendForgotEmailOtp(email: string): Promise<void> {
+    if (!email) throw BadRequest("Email is required");
+
+    if (await this.authRepository.emailExists(email)) {
+      await sendOtpToEmail(email);
+    }
+  }
+
   async verifyRegistrationOtp(email: string, otp: string): Promise<void> {
     if (!email || !otp) throw BadRequest("Email and OTP are required");
 
@@ -218,11 +226,11 @@ export class AuthService {
 
   /** Verifies whether a provided password matches the stored hash. */
   async checkPassword(userId: string, password: string) {
-
     const authUserId = await UserAPI.findAuthUserIdByUserId(userId);
     if (!authUserId) throw NotFound("User not found");
 
-    const user = await this.authRepository.findAuthUserForPasswordCheck(authUserId);
+    const user =
+      await this.authRepository.findAuthUserForPasswordCheck(authUserId);
     if (!user) throw NotFound("User not found");
 
     const isMatch = await bcrypt.compare(password, user.hashedPassword);
@@ -257,7 +265,23 @@ export class AuthService {
     }
 
     const newHashedPassword = await bcrypt.hash(newPassword, this.HASH_SALT);
-    await this.authRepository.updatePassword(userId, newHashedPassword);
+    await this.authRepository.updatePassword(authUserId, newHashedPassword);
+  }
+
+  /** Replaces a user's password after forgot password */
+  async forgotPassword(email: string, newPassword: string) {
+    if (!email) throw BadRequest("Email is required");
+
+    // Changing password on forgot password is only allowed after the OTP flow marks the email as verified.
+    if (!(await isVerified(email))) throw BadRequest("Email not verified");
+
+    const authUser = await this.authRepository.findByEmail(email);
+    if (!authUser) throw Unauthorized("User not found");
+
+    const newHashedPassword = await bcrypt.hash(newPassword, this.HASH_SALT);
+    await this.authRepository.updatePassword(authUser.id, newHashedPassword);
+
+    clearEmail(email);
   }
 
   /** Generates and emails an OTP for confirming a new email address. */

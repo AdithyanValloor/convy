@@ -213,11 +213,13 @@ export const sendMessage = async (
           await publishMessageEdited(
             createEvent("message.edited", {
               chatId,
-              message: toMessageSocketPayload(populated),
+              message: toMessageSocketPayload(populatedUpdated),
             }),
           );
         })
-        .catch(() => {});
+        .catch((error) => {
+          console.error("❌ Async link preview failed:", error);
+        });
     }
   } catch (err) {
     next(err);

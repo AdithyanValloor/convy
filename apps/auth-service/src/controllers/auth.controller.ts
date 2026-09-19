@@ -35,6 +35,26 @@ export const sendOtp = async (
   }
 };
 
+/** Sends a forgot password OTP to the provided email address. */
+export const sendForgotPasswordOtp = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email } = req.body;
+
+    await authService.sendForgotEmailOtp(email);
+
+    res.status(200).json({
+      success: true,
+      message: "If an account exists for that email, an OTP has been sent.",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /** Verifies a registration OTP for the provided email address. */
 export const verifyOtp = async (
   req: Request,
@@ -230,6 +250,26 @@ export const changePasswordController = async (
     const { currentPassword, newPassword } = req.body;
 
     await authService.changePassword(userId, currentPassword, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** Changes the authenticated user's password. */
+export const forgotPasswordController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { email, newPassword } = req.body;
+
+    await authService.forgotPassword(email, newPassword);
 
     res.status(200).json({
       success: true,

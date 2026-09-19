@@ -16,17 +16,30 @@ export const sendOtpEmail = async (
   otp: string,
 ): Promise<void> => {
   await transporter.sendMail({
-    from: `"Convy" <${process.env.MAIL_USER}>`,
+    from: `"Melo" <${process.env.MAIL_USER}>`,
     to: email,
-    subject: "Your Convy verification code",
-    text: `Your Convy verification code is ${otp}. It expires in 10 minutes. Do not share this code with anyone.`,
+    subject: "Your Melo verification code",
+    text: `Your Melo verification code is ${otp}. It expires in 10 minutes. Do not share this code with anyone.`,
     html: `
-      <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 600px; margin: 0 auto;">
-        <h2>Your Convy verification code</h2>
+      <div
+        style="
+          font-family: Arial, sans-serif;
+          color: #1a1a1a;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 24px;
+        "
+      >
+        <h2 style="margin-bottom: 20px;">
+          Your Melo verification code
+        </h2>
 
         <p>Hi,</p>
 
-        <p>Use the verification code below to continue with your Convy account:</p>
+        <p>
+          Use the verification code below to continue with your
+          Melo account:
+        </p>
 
         <div
           style="
@@ -43,11 +56,13 @@ export const sendOtpEmail = async (
           ${otp}
         </div>
 
-        <p>This code will expire in <strong>10 minutes</strong>.</p>
+        <p>
+          This code will expire in <strong>10 minutes</strong>.
+        </p>
 
         <p style="color: #666;">
           For your security, please do not share this code with anyone.
-          Convy will never ask you for your verification code.
+          Melo will never ask you for your verification code.
         </p>
 
         <p style="color: #666;">
@@ -57,7 +72,7 @@ export const sendOtpEmail = async (
         <br />
 
         <p>
-          — <strong>The Convy Team</strong>
+          — <strong>The Melo Team</strong>
         </p>
       </div>
     `,

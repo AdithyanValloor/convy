@@ -72,7 +72,7 @@ export default function MainSection({
   return (
 <div
   className={`
-    ml-2 flex h-full flex-col pb-3
+    ${!isMobile && "ml-2 "} flex h-full flex-col pb-3
     text-base-content
     transition-transform duration-300 ease-in-out
     ${isMobile && isChatOpen ? "-translate-x-full" : "translate-x-0"}

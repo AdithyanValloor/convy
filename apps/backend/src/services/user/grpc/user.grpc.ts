@@ -94,14 +94,21 @@ interface FindAuthUserIdByUserIdCallback {
   (error: grpc.ServiceError | null, response?: { authUserId: string }): void;
 }
 
-const dateToTimestamp = (date: Date | null | undefined) => {
+
+const dateToTimestamp = (date: Date | string | null | undefined) => {
   if (date == null) {
     return undefined;
   }
 
+  const value = date instanceof Date ? date : new Date(date);
+
+  if (Number.isNaN(value.getTime())) {
+    throw new Error(`Invalid date: ${date}`);
+  }
+
   return {
-    seconds: Math.floor(date.getTime() / 1000),
-    nanos: (date.getTime() % 1000) * 1_000_000,
+    seconds: Math.floor(value.getTime() / 1000),
+    nanos: (value.getTime() % 1000) * 1_000_000,
   };
 };
 

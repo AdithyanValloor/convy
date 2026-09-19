@@ -2,11 +2,13 @@ import { Router } from "express";
 import {
   changePasswordController,
   checkPasswordController,
+  forgotPasswordController,
   login,
   logout,
   refreshToken,
   register,
   sendEmailChangeOtpController,
+  sendForgotPasswordOtp,
   sendOtp,
   updateEmailController,
   verifyOtp,
@@ -15,9 +17,14 @@ import { protect } from "../../../utils/middleware/protect.js";
 
 const router = Router();
 
-// Registration OTP routes.
+//OTP routes.
 router.post("/send-otp", sendOtp);
+
+router.post("/forgot-password-send-otp", sendForgotPasswordOtp);
+
 router.post("/verify-otp", verifyOtp);
+
+
 
 // Public authentication routes.
 router.post("/register", register);
@@ -34,5 +41,7 @@ router.patch("/email", protect, updateEmailController);
 
 // Password and account state management.
 router.patch("/password", protect, changePasswordController);
+
+router.patch("/forgot-password", forgotPasswordController);
 
 export { router as authRouter };
