@@ -7,14 +7,16 @@ import {
   emitNewMessage,
   emitUnreadUpdate,
 } from "../../socket/emitters/message.emmitter.js";
+import {
+  emitMessageRequestAccepted,
+  emitMessageRequestRejected,
+  emitMessageRequestSent,
+} from "../../socket/emitters/messageRequest.emitters.js";
 
 export const handleMessageEvent = async (event: any) => {
   switch (event.eventType) {
     case "message.created":
-      emitNewMessage(
-        event.payload.chatId,
-        event.payload.message,
-      );
+      emitNewMessage(event.payload.chatId, event.payload.message);
       break;
 
     case "message.mentioned":
@@ -34,24 +36,15 @@ export const handleMessageEvent = async (event: any) => {
       break;
 
     case "message.edited":
-      emitEditMessage(
-        event.payload.chatId,
-        event.payload.message,
-      );
+      emitEditMessage(event.payload.chatId, event.payload.message);
       break;
 
     case "message.reaction":
-      emitMessageReaction(
-        event.payload.chatId,
-        event.payload.message,
-      );
+      emitMessageReaction(event.payload.chatId, event.payload.message);
       break;
 
     case "message.delete":
-      emitDeleteMessage(
-        event.payload.chatId,
-        event.payload.message,
-      );
+      emitDeleteMessage(event.payload.chatId, event.payload.message);
       break;
 
     case "message.seen":
@@ -62,9 +55,31 @@ export const handleMessageEvent = async (event: any) => {
       );
       break;
 
-    default:
-      console.warn(
-        `Unknown message event: ${event.eventType}`,
+    case "message-request.created":
+      emitMessageRequestSent(
+        event.payload.senderId,
+        event.payload.toUserId,
+        event.payload.request
       );
+      break;
+
+    case "message-request.rejected":
+      emitMessageRequestRejected(
+        event.payload.fromUserId,
+        event.payload.requestId,
+        event.payload.chatId
+      );
+      break;
+
+    case "message-request.accepted":
+      emitMessageRequestAccepted(
+        event.payload.userA,
+        event.payload.userB,
+        event.payload.requestPayload
+      );
+      break;
+
+    default:
+      console.warn(`Unknown message event: ${event.eventType}`);
   }
 };

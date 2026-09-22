@@ -57,11 +57,7 @@ export default function Personal({
       {personalChats.map((chat) => {
         const otherUser = chat.members.find((m) => m._id !== user?._id);
 
-        console.log("OTHER USER :", otherUser);
-
         const unreadCount = perChatUnread[chat._id] || 0;
-
-        console.log("Last Messages : ", chat.lastMessage?.file);
 
         const lastMessage = getLastMessagePreview(chat.lastMessage);
 

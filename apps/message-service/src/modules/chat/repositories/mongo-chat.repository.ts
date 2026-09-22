@@ -52,21 +52,20 @@ export class ChatRepository implements IChatRepository {
     }).lean();
   }
 
-  async canJoinChat(chatId: string, userId: string): Promise<IChat | null> {
-    return Chat.findOne({
+  async canJoinChat(chatId: string, userId: string): Promise<boolean> {
+    const chat = await Chat.exists({
       _id: chatId,
       members: userId,
       isDeleted: false,
-    })
-      .select("_id")
-      .lean();
+    });
+
+    return !!chat;
   }
 
   async findUserChatIds(userId: string): Promise<IChat[]> {
     return Chat.find({
       members: userId,
-    })
-      .lean();
+    }).lean();
   }
 
   async updateLastMessage(

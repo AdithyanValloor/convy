@@ -19,7 +19,7 @@ import {
 } from "../user/controllers/profile.controller.js";
 import {
   getAvatarDownloadUrl,
-  updateGroupAvatar,
+  // updateGroupAvatar,
 } from "../chat/controllers/group.controller.js";
 import { protect } from "../../utils/middleware/protect.js";
 
@@ -39,9 +39,9 @@ router.put("/profile-picture", protect, updateProfilePicture);
 router.delete("/profile-picture", protect, deleteProfilePicture);
 
 // Group avatar upload, attach, download, and deletion routes.
-router.get("/avatar/:chatId", protect, getAvatarDownloadUrl);
+// router.get("/avatar/:chatId", protect, getAvatarDownloadUrl);
 router.post("/avatar", protect, uploadGroupAvatar);
-router.put("/avatar", protect, updateGroupAvatar);
+// router.put("/avatar", protect, updateGroupAvatar);
 router.delete("/avatar", protect, deleteGroupAvatar);
 router.post("/temp-avatar", protect, attachGroupAvatarFromTemp);
 

@@ -3,7 +3,8 @@ import {
   heartbeat,
   userDisconnected,
 } from "../presence.js";
-import * as ChatAPI from "../../services/chat/api/chat.api.js";
+
+import { canJoinChat } from "../../grpc/chat/chat.grpc.client.js";
 
 export const registerConnectionHandlers = (socket: Socket): void => {
   // Only join group chats the user currently belongs to.
@@ -11,7 +12,8 @@ export const registerConnectionHandlers = (socket: Socket): void => {
     const userId = socket.data.userId;
     if (!chatId || !userId) return;
 
-    const chat = await ChatAPI.canJoinChat(chatId, userId)
+    // const chat = await ChatAPI.canJoinChat(chatId, userId)
+    const chat = await canJoinChat(chatId, userId)
     if (!chat) return;
 
     console.log(`User ${userId} joined chat: ${chatId}`);

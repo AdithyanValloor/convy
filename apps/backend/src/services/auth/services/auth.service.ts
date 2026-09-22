@@ -23,7 +23,6 @@ import {
 import { IAuthUser } from "../models/auth.model.js";
 import { randomUUID } from "crypto";
 import { UserDTO } from "../../user/types/user.dto.js";
-//TODO fix register accessing UserModel when implementing message queue.
 
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
 

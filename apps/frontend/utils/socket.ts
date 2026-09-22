@@ -75,16 +75,14 @@ const getCurrentUserId = (): string | undefined =>
  * Joins a Socket.IO room for a chat.
  * Reads userId from the store at call-time — never from a stale closure.
  */
-export const joinGroupRoom = (chatId: string) => {
-  
-  console.log(
-    "[CLIENT] joinGroupRoom",
-    chatId,
-    socket?.connected
-  );
 
+export const joinGroupRoom = (chatId: string) => {
   const userId = getCurrentUserId();
-  if (!userId || !socket) return;
+
+  if (!userId || !socket) {
+    return;
+  }
+
   socket.emit("joinGroup", { chatId });
 };
 
@@ -102,7 +100,7 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
   if (socket && socket.connected) return socket;
 
   if (!socket) {
-    socket = io(socketURL , {
+    socket = io({
       transports: ["websocket", "polling"],
       autoConnect: true,
       reconnection: true,
@@ -119,8 +117,6 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
         store.dispatch(updatePresence({ userId, status: "online" }));
       }
 
-      console.log("====================== ALL chats :", allChats);
-      
       allChats.forEach((chatId) => joinGroupRoom(chatId));
 
       if (heartbeatInterval) clearInterval(heartbeatInterval);
@@ -143,7 +139,6 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
       const normalized = normalizeSocketMessage(msg);
 
       console.log("Message :", normalized);
-      
 
       store.dispatch(
         insertMessage({ chatId: normalized.chat, message: normalized }),
@@ -170,12 +165,18 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
           type: "message",
           title,
           description: msg.content,
-          profilePicture:{ key: msg.sender.profilePicture?.key ?? null},
+          profilePicture: { key: msg.sender.profilePicture?.key ?? null },
           chatId: msg.chat,
         });
       }
     });
 
+    /* -------------------- CHAT CREATED -------------------- */
+
+    socket.on("chat_created", (chat: Chat) => {
+      console.log("💬 CHAT CREATED:", chat);
+      store.dispatch(upsertChat(chat));
+    });
     /* -------------------- EDIT MESSAGE -------------------- */
 
     socket.on("edit_message", (msg) => {
@@ -251,7 +252,7 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
       if (!me) return;
       const friend = req.from._id === me ? req.to : req.from;
       store.dispatch(addFriendFromSocket({ requestId: req._id, friend }));
-      store.dispatch(accessChat({ userId: friend._id }));
+      // store.dispatch(accessChat({ userId: friend._id }));
     });
 
     socket.on("friend_request_rejected", (requestId) => {

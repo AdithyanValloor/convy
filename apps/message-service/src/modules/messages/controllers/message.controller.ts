@@ -133,18 +133,13 @@ export const sendMessage = async (
       mentionIds,
       file,
     );
-
-    // emitNewMessage(chatId, toMessageSocketPayload(populated));
-
+    
     await publishMessageCreated(
       createEvent("message.created", {
         chatId,
         message: toMessageSocketPayload(populated),
       }),
     );
-
-    console.log("POPULATED : ", populated);
-    console.log("NORM : ", toMessageSocketPayload(populated));
 
     mentionedUserIds.forEach(async (mentionedId) => {
       await publishMessageMentioned(

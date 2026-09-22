@@ -25,8 +25,6 @@ export const socketAuth = async (
       return;
     }
 
-    console.log("SOCKER USERID ======================== ", user.id);
-
     socket.data.userId = user.id;
 
     next();

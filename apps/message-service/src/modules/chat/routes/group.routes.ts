@@ -9,6 +9,8 @@ import {
   deleteGroup,
   transferOwnership,
   editName,
+  updateGroupAvatar,
+  getAvatarDownloadUrl,
 } from "../controllers/group.controller.js";
 import { protect } from "../../../middlewares/protect.js";
 
@@ -32,5 +34,8 @@ router.patch("/admin", protect, toggleAdmin);
 router.post("/leave", protect, leaveGroup);
 router.delete("/delete", protect, deleteGroup);
 router.patch("/transfer-ownership", protect, transferOwnership);
+
+router.put("/avatar", protect, updateGroupAvatar);
+router.get("/avatar/:chatId", protect, getAvatarDownloadUrl);
 
 export { router as groupChatRouter };

@@ -1,5 +1,6 @@
-import mongoose, { Document, Schema, Types, model } from "mongoose";
-export interface IUser extends Document {
+import { Schema, Types, model } from "mongoose";
+
+export interface IUser {
   _id: Types.ObjectId;
   authUserId: string;
   username: string;
@@ -118,49 +119,67 @@ const userSchema: Schema<IUser> = new Schema(
       default: null,
     },
     privacy: {
-      friendRequests: {
-        type: String,
-        enum: ["everyone", "friends", "nobody"],
-        default: "everyone",
+      type: {
+        friendRequests: {
+          type: String,
+          enum: ["everyone", "friends", "nobody"],
+          default: "everyone",
+        },
+        readReceipts: {
+          type: Boolean,
+          default: true,
+        },
+        typingIndicators: {
+          type: Boolean,
+          default: true,
+        },
       },
-      readReceipts: {
-        type: Boolean,
-        default: true,
-      },
-      typingIndicators: {
-        type: Boolean,
-        default: true,
-      },
+      default: () => ({
+        friendRequests: "everyone",
+        readReceipts: true,
+        typingIndicators: true,
+      }),
     },
     notificationSettings: {
-      allNotifications: {
-        type: Boolean,
-        default: true,
+      type: {
+        allNotifications: {
+          type: Boolean,
+          default: true,
+        },
+        newMessages: {
+          type: Boolean,
+          default: true,
+        },
+        mentions: {
+          type: Boolean,
+          default: true,
+        },
+        replies: {
+          type: Boolean,
+          default: true,
+        },
+        friendRequests: {
+          type: Boolean,
+          default: true,
+        },
+        friendRequestAccepted: {
+          type: Boolean,
+          default: true,
+        },
+        groupAdded: {
+          type: Boolean,
+          default: true,
+        },
       },
-      newMessages: {
-        type: Boolean,
-        default: true,
-      },
-      mentions: {
-        type: Boolean,
-        default: true,
-      },
-      replies: {
-        type: Boolean,
-        default: true,
-      },
-      friendRequests: {
-        type: Boolean,
-        default: true,
-      },
-      friendRequestAccepted: {
-        type: Boolean,
-        default: true,
-      },
-      groupAdded: {
-        type: Boolean,
-        default: true,
-      },
+      default: () => ({
+        allNotifications: true,
+        newMessages: true,
+        mentions: true,
+        replies: true,
+        friendRequests: true,
+        friendRequestAccepted: true,
+        groupAdded: true,
+      }),
     },
   },
   {

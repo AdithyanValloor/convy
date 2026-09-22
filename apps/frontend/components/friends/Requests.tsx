@@ -18,6 +18,7 @@ import {
   deleteNotificationLocal,
   InboxNotification,
 } from "@/redux/features/notificationSlice";
+import { joinGroupRoom } from "@/utils/socket";
 
 interface RequestsProps {
   searchQuery: string;
@@ -30,7 +31,10 @@ export default function Requests({ searchQuery }: RequestsProps) {
   const { notifications } = useAppSelector((state) => state.notifications);
   const { incoming, outgoing } = requests;
 
-  const filterRequests = (list: FriendRequest[], type: "incoming" | "outgoing") => {
+  const filterRequests = (
+    list: FriendRequest[],
+    type: "incoming" | "outgoing",
+  ) => {
     if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
     return list.filter((r) => {
@@ -56,7 +60,10 @@ export default function Requests({ searchQuery }: RequestsProps) {
     dispatch(fetchRequests());
   }, [dispatch]);
 
-  const renderRequestCard = (request: FriendRequest, type: "incoming" | "outgoing") => {
+  const renderRequestCard = (
+    request: FriendRequest,
+    type: "incoming" | "outgoing",
+  ) => {
     const user = type === "incoming" ? request.from : request.to;
     const notification: InboxNotification | undefined = notifications.find(
       (n) => n.friendRequest === request._id,
@@ -78,12 +85,19 @@ export default function Requests({ searchQuery }: RequestsProps) {
             <div className="flex gap-1">
               <IconButton
                 ariaLabel="Accept friend request"
-                onClick={() => {
-                  dispatch(acceptFriend(request._id));
-                  dispatch(accessChat({ userId: request.from._id }));
-                  if (notification) {
-                    dispatch(deleteNotification(notification._id));
-                    dispatch(deleteNotificationLocal(notification._id));
+                onClick={async () => {
+                  try {
+                    await dispatch(acceptFriend(request._id)).unwrap();
+
+                    if (notification) {
+                      dispatch(deleteNotification(notification._id));
+                      dispatch(deleteNotificationLocal(notification._id));
+                    }
+                  } catch (error) {
+                    console.error(
+                      "Failed to accept friend / access chat:",
+                      error,
+                    );
                   }
                 }}
               >

@@ -277,7 +277,7 @@ export default function InboxContextMenu({
         break;
       case "delete":
         dispatch(deleteChatLocal(chatId));
-        dispatch(deleteChat(chatId));
+        dispatch(clearChat(chatId));
         dispatch(resetUnread(chatId));
         if (isChatOpen) router.replace("/chat");
         break;

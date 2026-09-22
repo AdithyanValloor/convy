@@ -38,7 +38,6 @@ export const fetchChats = createAsyncThunk<
 >("chat/fetchChats", async (_, { rejectWithValue }) => {
   try {
     const res = await api.get("/message-service/chat");
-    console.log("Chats : ", res.data);
     
     return res.data;
   } catch (err) {
@@ -237,7 +236,7 @@ export const updateAvatar = createAsyncThunk<
 >("profile/updateAvatar", async ({ chatId, key }, { rejectWithValue }) => {
   try {
     const res = await api.put(
-      "/file/avatar",
+      "/message-service/group/avatar",
       { chatId, key },
       { withCredentials: true },
     );
@@ -257,7 +256,7 @@ export const getGroupAvatarDownloadUrl = createAsyncThunk<
   { key: string; url: string },
   { chatId: string; key: string }
 >("profile/getGroupAvatarDownloadUrl", async ({ chatId, key }) => {
-  const res = await api.get(`/file/avatar/${chatId}`);
+  const res = await api.get(`/message-service/group/avatar/${chatId}`);
 
   return { key, url: res.data.url };
 });

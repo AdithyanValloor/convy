@@ -28,7 +28,10 @@ import { blockExists } from "../../../grpc/social/social.grpc.client.js";
 import { publishMediaDeleteFile } from "../../../rabbitmq/publisher/media.publisher.js";
 import { publishMessagerequestCreated } from "../../../rabbitmq/publisher/message.publisher.js";
 import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
-import { publishNotificationNotifyMention, publishNotificationNotifyReply } from "../../../rabbitmq/publisher/notification.publisher.js";
+import {
+  publishNotificationNotifyMention,
+  publishNotificationNotifyReply,
+} from "../../../rabbitmq/publisher/notification.publisher.js";
 
 /** Message service helpers for message delivery, search, reactions, and read state. */
 
@@ -263,6 +266,18 @@ export class MessageService {
     // Update latest message
     await ChatAPI.updateLastMessage(chatId, message._id.toString());
 
+    console.log("========== MESSAGE REQUEST DEBUG ==========");
+    console.log("chatId:", chatId);
+    console.log("senderId:", senderId);
+    console.log("isGroup:", chat.isGroup);
+    console.log("requestPending:", chat.requestPending);
+    console.log("requestInitiator:", chat.requestInitiator?.toString());
+    console.log(
+      "initiator matches sender:",
+      chat.requestInitiator?.toString() === senderId,
+    );
+    console.log("===========================================");
+
     // Message request
     if (
       !chat.isGroup &&
@@ -323,13 +338,13 @@ export class MessageService {
         .filter((id) => id !== senderId && memberIds.includes(id))
         .map((userId) =>
           publishNotificationNotifyMention(
-            createEvent("notification.notify-mention",{
+            createEvent("notification.notify-mention", {
               userId,
               senderId,
               chatId,
               messageId: message._id.toString(),
-            })
-          )
+            }),
+          ),
         ),
     );
 

@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package chat;
+
+import "google/protobuf/timestamp.proto";
+
+message CanJoinChatRequest {
+  string chatId = 1;
+  string userId = 2;
+}
+
+message CanJoinChatResponse {
+  bool canJoin = 1;
+}
+
+message EnsureChatExistsRequest {
+  string user1 = 1;
+  string user2 = 2;
+}
+
+message ChatAvatar {
+  optional string key = 1;
+}
+
+message Chat {
+  string _id = 1;
+  repeated string members = 2;
+  bool isGroup = 3;
+  optional string chatName = 4;
+  optional ChatAvatar avatar = 5;
+  optional string lastMessage = 6;
+  repeated string admin = 7;
+  optional string createdBy = 8;
+  bool isDeleted = 9;
+  optional google.protobuf.Timestamp deletedAt = 10;
+  optional string deletedBy = 11;
+  google.protobuf.Timestamp createdAt = 12;
+  google.protobuf.Timestamp updatedAt = 13;
+  bool requestPending = 14;
+  optional string requestInitiator = 15;
+}
+
+message EnsureChatExistsResponse {
+  Chat chat = 1;
+}
+
+message FindChatByIdRequest {
+  string chatId = 1;
+}
+
+message FindChatByIdResponse {
+  Chat chat = 1;
+}
+
+// --------------------------------------------------
+// Group Avatar
+// --------------------------------------------------
+
+message UpdateGroupAvatarRequest {
+  string chatId = 1;
+  string key = 2;
+}
+
+message UpdateGroupAvatarResponse {
+  bool success = 1;
+}
+
+message DeleteGroupAvatarRequest {
+  string chatId = 1;
+}
+
+message DeleteGroupAvatarResponse {
+  bool success = 1;
+}
+
+// --------------------------------------------------
+// Service
+// --------------------------------------------------
+
+service ChatService {
+  rpc CanJoinChat(
+    CanJoinChatRequest
+  ) returns (
+    CanJoinChatResponse
+  );
+
+  rpc EnsureChatExists(
+    EnsureChatExistsRequest
+  ) returns (
+    EnsureChatExistsResponse
+  );
+
+  rpc FindChatById(
+    FindChatByIdRequest
+  ) returns (
+    FindChatByIdResponse
+  );
+
+  rpc UpdateGroupAvatar(
+    UpdateGroupAvatarRequest
+  ) returns (
+    UpdateGroupAvatarResponse
+  );
+
+  rpc DeleteGroupAvatar(
+    DeleteGroupAvatarRequest
+  ) returns (
+    DeleteGroupAvatarResponse
+  );
+}

@@ -1,24 +1,23 @@
-import { FlattenMaps } from "mongoose";
+
 import { IUser, UserModel } from "../models/user.model.js";
 import { IUserRepository } from "./user.repository.js";
 import { NotificationSettings } from "../services/user.preferences.service.js";
 import { PrivacySettings } from "../services/user.privacy.service.js";
-import { UpdateProfileInput } from "../services/user.profile.service.js";
+
 
 export class MongoUserRepository implements IUserRepository {
-  async findById(userId: string): Promise<FlattenMaps<IUser> | null> {
+  async findById(userId: string): Promise<IUser | null> {
     return UserModel.findById(userId).lean();
   }
 
-  async findByUsername(username: string): Promise<FlattenMaps<IUser> | null> {
+  async findByUsername(username: string): Promise<IUser | null> {
     return UserModel.findOne({ username }).lean();
   }
 
-  async findByIds(userIds: string[]): Promise<FlattenMaps<IUser>[]> {
+  async findByIds(userIds: string[]): Promise<IUser[]> {
     return UserModel.find({
       _id: { $in: userIds },
-    })
-      .lean();
+    }).lean();
   }
 
   async usernameExists(username: string): Promise<boolean> {
@@ -31,13 +30,15 @@ export class MongoUserRepository implements IUserRepository {
     authUserId: string;
     username: string;
     displayName: string;
-  }): Promise<IUser> {
-    return UserModel.create(data);
+  }):Promise<IUser>{
+    const user = await UserModel.create(data)
+
+    return user.toObject();
   }
 
   async findByAuthUserId(
     authUserId: string,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     return UserModel.findOne({ authUserId }).lean();
   }
 
@@ -55,7 +56,7 @@ export class MongoUserRepository implements IUserRepository {
     );
   }
 
-  async deactivate(userId: string): Promise<FlattenMaps<IUser> | null> {
+  async deactivate(userId: string): Promise<IUser | null> {
     const user = await UserModel.findByIdAndUpdate(
       userId,
       {
@@ -71,7 +72,7 @@ export class MongoUserRepository implements IUserRepository {
   async scheduleDeletion(
     userId: string,
     scheduledDeletionAt: Date,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     const user = await UserModel.findByIdAndUpdate(userId, {
       scheduledDeletionAt,
       isActive: false,
@@ -89,7 +90,7 @@ export class MongoUserRepository implements IUserRepository {
   async updateNotificationSettings(
     userId: string,
     updates: Partial<NotificationSettings>,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     const updateFields: Record<string, boolean> = {};
 
     if (updates.allNotifications !== undefined) {
@@ -133,7 +134,7 @@ export class MongoUserRepository implements IUserRepository {
   async updatePrivacySettings(
     userId: string,
     updates: Partial<PrivacySettings>,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     const updateFields: Record<string, boolean | string> = {};
 
     if (updates.friendRequests !== undefined) {
@@ -163,7 +164,7 @@ export class MongoUserRepository implements IUserRepository {
       bio: string | null;
       status: string | null;
     }>,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     const updateFields: Record<string, unknown> = {};
 
     if (updates.displayName !== undefined) {
@@ -192,7 +193,7 @@ export class MongoUserRepository implements IUserRepository {
   async updateProfilePicture(
     userId: string,
     key: string,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     return UserModel.findByIdAndUpdate(
       userId,
       {
@@ -221,7 +222,7 @@ export class MongoUserRepository implements IUserRepository {
   async updateUsername(
     userId: string,
     username: string,
-  ): Promise<FlattenMaps<IUser> | null> {
+  ): Promise<IUser | null> {
     return UserModel.findByIdAndUpdate(
       userId,
       {
@@ -232,9 +233,9 @@ export class MongoUserRepository implements IUserRepository {
       { new: true },
     ).lean();
   }
-  
+
   async findAuthUserIdByUserId(userId: string): Promise<string | null> {
-      const user = await UserModel.findById(userId);
-      return user?.authUserId ?? null
+    const user = await UserModel.findById(userId);
+    return user?.authUserId ?? null;
   }
 }

@@ -94,7 +94,6 @@ interface FindAuthUserIdByUserIdCallback {
   (error: grpc.ServiceError | null, response?: { authUserId: string }): void;
 }
 
-
 const dateToTimestamp = (date: Date | string | null | undefined) => {
   if (date == null) {
     return undefined;
@@ -218,7 +217,7 @@ export const userGrpcService = {
     try {
       const { authUserId, username, displayName } = call.request;
       const user = await createProfile({ authUserId, username, displayName });
-
+      
       callback(null, {
         id: user.id,
         username: user.username,

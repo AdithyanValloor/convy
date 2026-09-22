@@ -25,20 +25,20 @@ const mediaProto = grpc.loadPackageDefinition(packageDefinition) as unknown as {
   };
 };
 
-interface GenerateDownloadUrlApiCall {
+interface GenerateDownloadUrlCall {
   request: {
     key: string;
   };
 }
 
-interface GenerateDownloadUrlApiCallback {
+interface GenerateDownloadUrlCallback {
   (error: grpc.ServiceError | null, response?: { url: string }): void;
 }
 
 export const mediaGrpcService = {
-  generateDownloadUrlApi: async (
-    call: GenerateDownloadUrlApiCall,
-    callback: GenerateDownloadUrlApiCallback,
+  generateDownloadUrl: async (
+    call: GenerateDownloadUrlCall,
+    callback: GenerateDownloadUrlCallback,
   ) => {
     try {
       const { key } = call.request;

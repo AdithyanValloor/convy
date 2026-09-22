@@ -22,7 +22,7 @@ export interface IChatRepository {
   canJoinChat(
     chatId: string,
     userId: string,
-  ): Promise<FlattenMaps<IChat> | null>;
+  ): Promise<boolean | null>;
 
   findUserChatIds(userId: string): Promise<FlattenMaps<IChat>[]>;
 

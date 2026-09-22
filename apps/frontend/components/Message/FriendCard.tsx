@@ -261,7 +261,7 @@ export default function FriendCard(props: FriendCardProps) {
   const { lastMessageText, lastMessageTime } = useMemo(() => {
     const lastMsg = messages.at(-1);
     if (!lastMsg?.sender)
-      return { lastMessageText: "No messages yet", lastMessageTime: "" };
+      return { lastMessageText: "", lastMessageTime: "" };
 
     const text = getLastMessagePreview(lastMsg);
 

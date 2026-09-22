@@ -51,7 +51,6 @@ export default function ChatLayout({
 
   const { user, sessionLoading } = useAppSelector((state) => state.auth);
 
-
   const socketRef = useRef<Socket | null>(null);
   const allChatIdsRef = useRef<string[]>([]);
 
@@ -73,10 +72,10 @@ export default function ChatLayout({
 
   useEffect(() => {
     if (!bootstrapDone) return;
-
     chats.forEach((chat) => {
       if (!allChatIdsRef.current.includes(chat._id)) {
         allChatIdsRef.current.push(chat._id);
+
         joinGroupRoom(chat._id);
       }
     });
@@ -93,8 +92,7 @@ export default function ChatLayout({
       .unwrap()
       .then((res) => {
         allChatIdsRef.current = res.chats.map((c) => c._id);
-        console.log("ALL CHATS : ", allChatIdsRef.current);
-        
+
         setBootstrapDone(true);
       })
       .catch((err) => {
@@ -109,7 +107,6 @@ export default function ChatLayout({
     return () => disconnectSocket();
   }, [user?._id, bootstrapDone]);
 
-
   if (!user || !bootstrapDone) {
     return (
       <div className="h-screen flex items-center justify-center text-base-content bg-base-200">
@@ -121,8 +118,7 @@ export default function ChatLayout({
   return (
     <SocketContext.Provider value={socketRef.current}>
       <div className="relative  flex flex-col bg-base-300 h-screen transition-all ease-in-out duration-300 bg-gradient-to-br from-base-300 via-base-200 to-base-100 overflow-y-hidden">
-    
-        <Logo/>
+        <Logo />
 
         {/* Main body */}
         <div className="flex flex-1 overflow-hidden bg-base-300">

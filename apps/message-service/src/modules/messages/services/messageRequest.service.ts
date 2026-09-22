@@ -1,15 +1,19 @@
-import {
-  BadRequest,
-  NotFound,
-  Forbidden,
-} from "../../../errors/httpErrors.js";
+import { BadRequest, NotFound, Forbidden } from "../../../errors/httpErrors.js";
 
 import * as ChatAPI from "../../chat/api/chat.api.js";
 
 import { IMessageRequestRepository } from "../repositories/messageRequest.repository.js";
 import { IMessageRepository } from "../repositories/message.repository.js";
-import { fetchUsers, findUserById } from "../../../grpc/user/user.grpc.client.js";
-import { areFriends, blockExists } from "../../../grpc/social/social.grpc.client.js";
+import {
+  fetchUsers,
+  findUserById,
+} from "../../../grpc/user/user.grpc.client.js";
+import {
+  areFriends,
+  blockExists,
+} from "../../../grpc/social/social.grpc.client.js";
+import { IChat } from "../../chat/models/chat.model.js";
+import { latestMessage } from "../api/messages.api.js";
 
 /** Message request helpers for inbox retrieval and request review actions. */
 
@@ -18,6 +22,17 @@ export class MessageRequestService {
     private readonly messageRequestRepository: IMessageRequestRepository,
     private readonly messageRepository: IMessageRepository,
   ) {}
+
+  private async populateChatMembers(chat: IChat) {
+    const members = await fetchUsers(
+      chat.members.map((memberId) => memberId.toString()),
+    );
+
+    return {
+      ...chat,
+      members,
+    };
+  }
 
   /** Returns pending incoming message requests for the recipient. */
   async getMessageRequests(userId: string) {
@@ -60,12 +75,9 @@ export class MessageRequestService {
 
     if (exists) throw Forbidden("Cannot message this user");
 
-    const friends = await areFriends(
-      fromUserId,
-      toUser.id.toString(),
-    );
+    const friends = await areFriends(fromUserId, toUser.id.toString());
 
-    if (friends) throw BadRequest("Users are already friends");
+    if (friends.areFriends) throw BadRequest("Users are already friends");
 
     // Rate-limit new requests per sender on a calendar-day basis.
     const dailyCount =
@@ -120,9 +132,14 @@ export class MessageRequestService {
       request.to.toString(),
     );
 
+    if (!newChat) throw NotFound("New chat not found");
+
     await this.messageRequestRepository.acceptRequest(requestId);
 
-    return { chat: newChat };
+    const populatedChat = await this.populateChatMembers(newChat);
+    const lastMessage = await latestMessage(populatedChat._id.toString());
+
+    return { chat: { ...populatedChat, lastMessage } };
   }
 
   /** Rejects a pending request and removes its temporary chat history. */

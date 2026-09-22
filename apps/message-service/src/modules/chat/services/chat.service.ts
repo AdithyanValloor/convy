@@ -148,12 +148,17 @@ export class ChatService {
 
     const friends = await areFriends(currentUserId, userId);
 
-    if (!friends) {
+    console.log("FRIENDS ========================= ", friends);
+    
+
+    if (!friends.areFriends) {
       const chat = await this.chatRepository.createPendingDirectChat(
         userId,
         currentUserId,
       );
 
+      console.log("Pending chat created...................... =====================================");
+      
       const populatedChat = await this.populateChatMembers(chat);
 
       return {
@@ -174,6 +179,7 @@ export class ChatService {
       data: populatedChat,
     };
   }
+  
   /** Toggles the pinned state for a user's chat. */
   async togglePinChatFunction(userId: string, chatId: string) {
     if (!userId) throw Unauthorized();

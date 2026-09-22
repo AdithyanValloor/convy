@@ -1,4 +1,4 @@
-import { FlattenMaps } from "mongoose";
+
 import { NotFound } from "../../../utils/errors/httpErrors.js";
 import {
   getCachedUser,
@@ -11,7 +11,9 @@ import { UserDTO } from "../types/user.dto.js";
 
 const userRepository = new MongoUserRepository();
 
-export const normalizeUser = (user: FlattenMaps<IUser> | IUser): UserDTO => ({
+export const normalizeUser = (
+  user: IUser
+): UserDTO => ({
   ...user,
   id: String(user._id),
   _id: String(user._id),

@@ -1,6 +1,5 @@
 import { emitInboxNotification } from "../../../socket/emitters/notification.emitters.js";
 import { NotFound } from "../../../utils/errors/httpErrors.js";
-import { InboxNotificationModel } from "../models/inboxNotification.model.js";
 import { IInboxNotificationRepository } from "../repositories/inboxNotification.repository.js";
 import {
   InboxNotificationDTO,
@@ -8,8 +7,10 @@ import {
   InboxNotificationSocketPayload,
 } from "../types/notification.socket.js";
 import * as UserAPI from "../../user/api/user.api.js";
-import * as ChatAPI from "../../chat/api/chat.api.js";
-import * as MessageAPI from "../../messages/api/messages.api.js";
+// import * as ChatAPI from "../../chat/api/chat.api.js";
+// import * as MessageAPI from "../../messages/api/messages.api.js";
+import { findChatById } from "../../../grpc/chat/chat.grpc.client.js";
+import { findMessageById } from "../../../grpc/message/message.grpc.client.js";
 
 /** Inbox notification helpers for creation, read state, and inbox retrieval. */
 
@@ -42,11 +43,11 @@ export class InboxNotificationService {
     const [actor, chat, message, group] = await Promise.all([
       actorId ? UserAPI.findUserById(actorId) : null,
 
-      chatId ? ChatAPI.findChatById(chatId) : null,
+      chatId ? findChatById(chatId) : null,
 
-      messageId ? MessageAPI.findMessageById(messageId) : null,
+      messageId ? findMessageById(messageId) : null,
 
-      groupId ? ChatAPI.findChatById(groupId) : null,
+      groupId ? findChatById(groupId) : null,
     ]);
 
     const dto: InboxNotificationDTO = {
@@ -136,13 +137,13 @@ export class InboxNotificationService {
             ? UserAPI.findUserById(notification.actor.toString())
             : null,
           notification.chat
-            ? ChatAPI.findChatById(notification.chat.toString())
+            ? findChatById(notification.chat.toString())
             : null,
           notification.message
-            ? MessageAPI.findMessageById(notification.message.toString())
+            ? findMessageById(notification.message.toString())
             : null,
           notification.group
-            ? ChatAPI.findChatById(notification.group.toString())
+            ? findChatById(notification.group.toString())
             : null,
         ]);
 

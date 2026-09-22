@@ -29,7 +29,6 @@ import {
   userNameExists,
 } from "../infra/grpc/user.grpc.client.js";
 
-//TODO fix register accessing UserModel when implementing message queue.
 
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
 export class AuthService {

@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package message;
+
+import "google/protobuf/timestamp.proto";
+
+message FindMessageByIdRequest {
+  string messageId = 1;
+}
+
+message MessageReaction {
+  string emoji = 1;
+  string user = 2;
+}
+
+message MessageLinkPreview {
+  optional string url = 1;
+  optional string title = 2;
+  optional string description = 3;
+  optional string image = 4;
+  optional string siteName = 5;
+  optional bool isLargeImage = 6;
+}
+
+message MessageFile {
+  string key = 1;
+  string mimeType = 2;
+  double size = 3;
+}
+
+message Message {
+  string _id = 1;
+
+  string chat = 2;
+  string sender = 3;
+
+  optional string content = 4;
+
+  bool edited = 5;
+  bool deleted = 6;
+
+  repeated string deliveredTo = 7;
+  repeated string seenBy = 8;
+  repeated string mentions = 9;
+
+  optional string replyTo = 10;
+
+  bool forwarded = 11;
+  optional string forwardedFrom = 12;
+
+  repeated MessageReaction reactions = 13;
+
+  optional MessageLinkPreview linkPreview = 14;
+  optional MessageFile file = 15;
+
+  google.protobuf.Timestamp createdAt = 16;
+  google.protobuf.Timestamp updatedAt = 17;
+}
+
+message FindMessageByIdResponse {
+  Message message = 1;
+}
+
+service MessageService {
+  rpc FindMessageById(
+    FindMessageByIdRequest
+  ) returns (
+    FindMessageByIdResponse
+  );
+}

@@ -14,7 +14,6 @@ import { IChatRepository } from "../repositories/chat.repository.js";
 import { UserDTO } from "../../user/types/user.dto.js";
 import { IChat } from "../models/chat.model.js";
 
-// TODO populate lastMessage with Message API...
 
 export class GroupService {
   constructor(private readonly chatRepository: IChatRepository) {}

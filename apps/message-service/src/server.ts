@@ -4,6 +4,7 @@ import { createApp } from "./app.js";
 import { connectRedis } from "./config/redis.js";
 import { connectDb } from "./config/db.js";
 import { getRabbitMQChannel } from "./rabbitmq/connection.js";
+import { startChatGrpcServer } from "./grpc/grpc.server.js";
 
 const PORT = Number(process.env.PORT) || 9001;
 
@@ -15,6 +16,8 @@ export const startServer = async (): Promise<void> => {
     await getRabbitMQChannel()
 
     const app = createApp();
+
+    startChatGrpcServer()
 
     app.get("/", (_, res) => {
       res.status(200).json({

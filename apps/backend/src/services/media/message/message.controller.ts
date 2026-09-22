@@ -5,7 +5,7 @@ import {
   generateDownloadUrl,
   generateUploadUrl,
 } from "../s3.service.js";
-import * as ChatAPI from "../../chat/api/chat.api.js"
+import { findChatById } from "../../../grpc/chat/chat.grpc.client.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -27,7 +27,7 @@ export const getChatUploadUrl = async (
 
     if (!chatId) throw BadRequest("ChatId required");
 
-    const chat = await ChatAPI.findChatById(chatId)
+    const chat = await findChatById(chatId)
 
     if (!chat || !chat.members.some((id) => id.toString() === userId)) {
       throw Unauthorized("Not part of this chat");
@@ -86,7 +86,7 @@ export const getChatDownloadUrl = async (
 
     if (!chatId) throw BadRequest("Invalid key structure");
 
-    const chat = await ChatAPI.findChatById(chatId);
+    const chat = await findChatById(chatId);
 
     if (!chat || !chat.members.some((id) => id.toString() === userId)) {
       throw Unauthorized("Not allowed to access this file");

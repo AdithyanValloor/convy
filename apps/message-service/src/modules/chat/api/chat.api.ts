@@ -1,3 +1,5 @@
+import { NotFound } from "../../../errors/httpErrors.js";
+import { ChatDto, toChatDto } from "../../../types/chat.dto.js";
 import { chatService } from "../composition/container.js";
 import { IChat } from "../models/chat.model.js";
 import { ChatRepository } from "../repositories/mongo-chat.repository.js";
@@ -9,12 +11,16 @@ const chatUserStateRepository = new ChatUserStateRepository();
 export const ensureChatExists = async (
   user1: string,
   user2: string,
-): Promise<IChat> => {
-  return chatRepository.ensureChatExists(user1, user2);
+): Promise<ChatDto> => {
+  const chat = await chatRepository.ensureChatExists(user1, user2);
+  return toChatDto(chat) 
 };
 
 export const findChatById = async (id: string) => {
-  return chatRepository.findById(id);
+  const chat = await chatRepository.findById(id);
+  if (!chat) throw NotFound("Chat not found");
+  
+  return toChatDto(chat)
 };
 
 export const findChat = async (chatId: string, userId: string) => {

@@ -93,8 +93,6 @@ export const bootstrapApp = createAsyncThunk<
       dispatch(fetchMessageRequests()).unwrap(),
     ]);
 
-    console.log("✅ Core data fetched, now fetching last messages");
-
     if (chats.length > 0) {
       const messagePromises = chats.map((chat) =>
         dispatch(

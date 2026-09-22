@@ -3,15 +3,10 @@ services:
     image: redis:7-alpine
     container_name: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:4-management
     container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -23,12 +18,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/backend/Dockerfile
-    image: whisp-backend:v1
-    container_name: whisp-backend
+    image: melo-backend:v1
+    container_name: melo-backend
     restart: unless-stopped
-
-    ports:
-      - "9000:9000"
     env_file:
       - ./apps/backend/.env
     depends_on:
@@ -41,12 +33,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/auth-service/Dockerfile
-    image: whisp-auth-service:v1
-    container_name: whisp-auth
+    image: melo-auth-service:v1
+    container_name: melo-auth
     restart: unless-stopped
-
-    ports:
-      - "9001:9001"
     env_file:
       - ./apps/auth-service/.env
     depends_on:
@@ -57,12 +46,10 @@ services:
     build:
       context: .
       dockerfile: ./apps/message-service/Dockerfile
-    image: whisp-message-service:v1
-    container_name: whisp-message-service
+    image: melo-message-service:v1
+    container_name: melo-message-service
     restart: unless-stopped
 
-    ports:
-      - "9002:9002"
     env_file:
       - ./apps/message-service/.env
     depends_on:
@@ -76,13 +63,11 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API: http://localhost/api
-        NEXT_PUBLIC_SOCKET_URL: http://localhost
+        NEXT_PUBLIC_API: /api
 
-    image: whisp-frontend:v1
-    container_name: whisp-frontend
-    ports:
-      - "3000:3000"
+    image: melo-frontend:v1
+    container_name: melo-frontend
+
     restart: unless-stopped
 
   nginx:
@@ -90,6 +75,7 @@ services:
     container_name: nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro

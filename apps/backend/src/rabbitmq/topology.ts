@@ -21,14 +21,15 @@ export const setupRabbitMQTopology = async () => {
     "message.reaction",
     "message.delete",
     "message.seen",
+
+    // Message request events
+    "message-request.created",
+    "message-request.accepted",
+    "message-request.rejected",
   ];
 
   for (const routingKey of messageEvents) {
-    await channel.bindQueue(
-      "backend.messages",
-      "message.events",
-      routingKey,
-    );
+    await channel.bindQueue("backend.messages", "message.events", routingKey);
   }
 
   // Group events queue
@@ -48,11 +49,7 @@ export const setupRabbitMQTopology = async () => {
   ];
 
   for (const routingKey of groupEvents) {
-    await channel.bindQueue(
-      "backend.groups",
-      "message.events",
-      routingKey,
-    );
+    await channel.bindQueue("backend.groups", "message.events", routingKey);
   }
 
   // Notification events queue
@@ -79,16 +76,10 @@ export const setupRabbitMQTopology = async () => {
     durable: true,
   });
 
-  const mediaEvents = [
-    "media.delete-file",
-  ];
+  const mediaEvents = ["media.delete-file"];
 
   for (const routingKey of mediaEvents) {
-    await channel.bindQueue(
-      "backend.media",
-      "message.events",
-      routingKey,
-    );
+    await channel.bindQueue("backend.media", "message.events", routingKey);
   }
 
   console.log("🐇 RabbitMQ topology ready");

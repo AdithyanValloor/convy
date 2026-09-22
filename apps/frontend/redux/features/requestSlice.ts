@@ -31,7 +31,10 @@ export const fetchMessageRequests = createAsyncThunk<
   { rejectValue: string }
 >("requests/fetch", async (_, { rejectWithValue }) => {
   try {
-    const res = await api.get("/message-request");
+    const res = await api.get("/message-service/message-request");
+
+    
+
     return {
       incoming: res.data.incoming,
     };
@@ -46,7 +49,7 @@ export const acceptMessageRequestThunk = createAsyncThunk<
   { rejectValue: string }
 >("requests/accept", async (requestId, { rejectWithValue }) => {
   try {
-    const res = await api.post(`/message-request/${requestId}/accept`);
+    const res = await api.post(`/message-service/message-request/${requestId}/accept`);
     return { requestId, chat: res.data.chat };
   } catch {
     return rejectWithValue("Failed to accept request");
@@ -59,7 +62,7 @@ export const rejectMessageRequestThunk = createAsyncThunk<
   { rejectValue: string }
 >("requests/reject", async (requestId, { rejectWithValue }) => {
   try {
-    await api.post(`/message-request/${requestId}/reject`);
+    await api.post(`/message-service/message-request/${requestId}/reject`);
     return requestId;
   } catch {
     return rejectWithValue("Failed to reject request");

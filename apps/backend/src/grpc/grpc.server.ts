@@ -29,11 +29,11 @@ export const startUserGrpcServer = () => {
     grpc.ServerCredentials.createInsecure(),
     (error, port) => {
       if (error) {
-        console.error("Failed to start User gRPC server:", error);
+        console.error("Failed to start gRPC server:", error);
         return;
       }
 
-      console.log(`User gRPC server listening on port ${port}`);
+      console.log(`gRPC server listening on port ${port}`);
     },
   );
 

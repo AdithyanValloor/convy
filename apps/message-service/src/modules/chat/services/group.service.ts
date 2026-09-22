@@ -18,8 +18,6 @@ import { publishMediaDeleteFile } from "../../../rabbitmq/publisher/media.publis
 import { createEvent } from "../../../rabbitmq/helpers/event.helper.js";
 import { publishNotificationNotifyGroupAdded } from "../../../rabbitmq/publisher/notification.publisher.js";
 
-// TODO populate lastMessage with Message API...
-
 export class GroupService {
   constructor(private readonly chatRepository: IChatRepository) {}
 
@@ -469,7 +467,8 @@ export class GroupService {
       throw NotFound("Avatar not found");
     }
 
-    return generateDownloadUrl(avatarKey);
+    const result = await generateDownloadUrl(avatarKey);
+    return result.url;
   }
 
   /** Updates the group name. */

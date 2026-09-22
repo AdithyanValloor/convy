@@ -35,4 +35,4 @@ export const startMessageRabbitMQConsumer = async () => {
   });
 
   console.log("🐇 Message consumer started");
-};
+}; 

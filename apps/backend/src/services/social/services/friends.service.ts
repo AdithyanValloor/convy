@@ -17,12 +17,14 @@ import {
   PopulatedFriendRequest,
   toFriendRequestSocketPayload,
 } from "../utils/normalizeFriendRequest.js";
-import * as ChatAPI from "../../chat/api/chat.api.js";
+
 import * as UserAPI from "../../user/api/user.api.js";
 import * as NotificationAPI from "../../notifications/api/notifications.api.js";
 import { IFriendsRepository } from "../repositories/friends.repository.js";
 import { IRequestRepository } from "../repositories/request.repository.js";
 import { IBlockRepository } from "../repositories/block.repository.js";
+import { ensureChatExists } from "../../../grpc/chat/chat.grpc.client.js";
+import { ChatSocketResponseDTO } from "../../../types/chat.dto.js";
 
 /** Friend service helpers for friendship and request workflows. */
 
@@ -210,7 +212,10 @@ export class FriendsService {
   /** Accepts a pending friend request and creates the friendship. */
   async acceptFriendRequest(requestId: string, userId: string) {
     const request = await this.requestRepository.findById(requestId);
-    if (!request) throw NotFound("Request not found");
+
+    if (!request) {
+      throw NotFound("Request not found");
+    }
 
     if (request.status !== "pending") {
       throw BadRequest("Request has already been processed");
@@ -230,6 +235,7 @@ export class FriendsService {
     const [user1, user2] = normalizeFriendship(fromUserId, toUserId);
 
     const session = await mongoose.startSession();
+
     try {
       await session.withTransaction(async () => {
         await this.friendsRepository.createFriendShip(user1, user2, session);
@@ -240,12 +246,29 @@ export class FriendsService {
       await session.endSession();
     }
 
-    await ChatAPI.ensureChatExists(fromUserId, toUserId);
-
     await NotificationAPI.notifyFriendRequestAccepted(fromUserId, toUserId);
-    await NotificationAPI.deleteNotificationByFriendReq(requestId)
+
+    await NotificationAPI.deleteNotificationByFriendReq(requestId);
 
     const populated = await this.populateUsersInRequest(request);
+
+    const chat = await ensureChatExists(user1, user2);
+
+    const memberIds = chat.members.map((memberId) => memberId.toString());
+
+    const users = await UserAPI.fetchUsers(memberIds);
+
+    const userMap = new Map(users.map((user) => [user.id.toString(), user]));
+
+    const members = memberIds.map((id) => {
+      const user = userMap.get(id);
+
+      if (!user) {
+        throw new Error(`Could not populate chat member: ${id}`);
+      }
+
+      return user;
+    });
 
     return {
       request,
@@ -254,6 +277,10 @@ export class FriendsService {
       ),
       fromUserId,
       toUserId,
+      chat: {
+        ...chat,
+        members
+      } as unknown as ChatSocketResponseDTO,
     };
   }
 

@@ -14,6 +14,7 @@ import {
 } from "../../../socket/emitters/friend.emitter.js";
 
 import { friendsService } from "../composition/container.js";
+import { emitChatCreated } from "../../../socket/emitters/chat.emitter.js";
 
 /** Friend controller handlers for authenticated friendship actions. */
 
@@ -103,11 +104,13 @@ export const acceptReq = async (
     if (!userId) throw Unauthorized();
     if (!id) throw BadRequest("Request ID is required");
 
-    const { request, payload, fromUserId, toUserId } =
+    const { request, payload, fromUserId, toUserId, chat } =
       await friendsService.acceptFriendRequest(id, userId);
 
     emitFriendRequestAccepted(fromUserId, payload);
     emitFriendRequestAccepted(toUserId, payload);
+
+    emitChatCreated(fromUserId,toUserId,chat)
 
     res.status(200).json({
       message: "Friend request accepted",
