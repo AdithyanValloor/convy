@@ -35,6 +35,6 @@ COPY --from=builder /app/packages /app/packages
 
 USER node
 
-EXPOSE 900
+EXPOSE 9002
 
 CMD ["node", "dist/src/index.js"]
