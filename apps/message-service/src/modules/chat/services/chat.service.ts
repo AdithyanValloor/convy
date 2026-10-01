@@ -148,17 +148,12 @@ export class ChatService {
 
     const friends = await areFriends(currentUserId, userId);
 
-    console.log("FRIENDS ========================= ", friends);
-    
-
     if (!friends.areFriends) {
       const chat = await this.chatRepository.createPendingDirectChat(
         userId,
         currentUserId,
       );
 
-      console.log("Pending chat created...................... =====================================");
-      
       const populatedChat = await this.populateChatMembers(chat);
 
       return {

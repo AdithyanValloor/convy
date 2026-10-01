@@ -9,4 +9,10 @@ export const registerRoutes = (app: Application): void => {
   app.use("/api/message-service/message-request", messageRequestRouter);
   app.use("/api/message-service/chat", chatRouter);
   app.use("/api/message-service/group", groupChatRouter);
+  app.get("/api/message-service/health", (_, res) => {
+    res.status(200).json({
+      success: true,
+      message: "message-service is running",
+    });
+  });
 };

@@ -29,6 +29,12 @@ export const createApp = (): Application => {
   );
 
   app.use("/api/auth", authRouter);
+  app.get("/api/auth/health", (_, res) => {
+    res.status(200).json({
+      success: true,
+      message: "auth-service is running",
+    });
+  });
 
   app.use(errorHandler);
 

@@ -255,7 +255,7 @@ export class MessageService {
               chatId,
               messageId: message._id.toString(),
             }),
-          );
+          ); 
         }
       }
     }

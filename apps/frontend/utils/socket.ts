@@ -111,8 +111,6 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
     /* -------------------- CONNECT -------------------- */
 
     socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket?.id);
-
       if (userId) {
         store.dispatch(updatePresence({ userId, status: "online" }));
       }
@@ -137,8 +135,6 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
       if (msg.sender._id === currentUserId) return;
 
       const normalized = normalizeSocketMessage(msg);
-
-      console.log("Message :", normalized);
 
       store.dispatch(
         insertMessage({ chatId: normalized.chat, message: normalized }),
@@ -174,13 +170,11 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
     /* -------------------- CHAT CREATED -------------------- */
 
     socket.on("chat_created", (chat: Chat) => {
-      console.log("💬 CHAT CREATED:", chat);
       store.dispatch(upsertChat(chat));
     });
     /* -------------------- EDIT MESSAGE -------------------- */
 
     socket.on("edit_message", (msg) => {
-      console.log("EDIT SOCKET:", msg);
       store.dispatch(editMessage({ message: normalizeSocketMessage(msg) }));
     });
 
@@ -564,8 +558,6 @@ export const getSocket = (userId?: string, allChats: string[] = []): Socket => {
 
 export const disconnectSocket = () => {
   if (!socket) return;
-
-  console.log("🧹 Disconnecting socket");
 
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);

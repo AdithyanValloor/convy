@@ -43,7 +43,7 @@ interface ProtoBlockExistsResponse {
   };
 }
 
-interface Block {
+export interface Block {
   blocker: string;
   blocked: string;
   createdAt: Date;

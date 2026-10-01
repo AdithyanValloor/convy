@@ -16,7 +16,7 @@ import { blockRouter } from "./services/social/routes/block.routes.js";
 
 // Central place for attaching feature routers to the app instance.
 export const registerRoutes = (app: Application): void => {
-  app.use("/api/auth", authRouter)
+  app.use("/api/auth", authRouter);
   app.use("/api/user", userRouter);
   app.use("/api/profile", profileRouter);
   app.use("/api/friends", friendRouter);
@@ -28,4 +28,11 @@ export const registerRoutes = (app: Application): void => {
   app.use("/api/message-request", messageRequestRouter);
 
   app.use("/api/file", s3Router);
+
+  app.get("/api/health", (_, res) => {
+    res.status(200).json({
+      success: true,
+      message: "Melo backend is running",
+    });
+  });
 };

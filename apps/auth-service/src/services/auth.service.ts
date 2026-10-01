@@ -244,10 +244,8 @@ export class AuthService {
     }
 
     const authUserId = await findAuthUserIdByUserId(userId);
-    if (!authUserId) throw NotFound("User not found");
 
-    const authUser =
-      await this.authRepository.findAuthUserForPasswordCheck(authUserId);
+    const authUser = await this.authRepository.findAuthUserForPasswordCheck(authUserId);
     if (!authUser) throw NotFound("User not found");
 
     const isMatch = await bcrypt.compare(

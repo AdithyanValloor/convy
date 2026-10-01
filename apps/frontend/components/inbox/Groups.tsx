@@ -63,8 +63,6 @@ export default function GroupChat({
       {groupChats.map((chat) => {
         const unreadCount = perChatUnread[chat._id] || 0;
 
-        console.log("CHAT AVATAR:", chat.avatar);
-
         return (
           <FriendCard
             key={chat._id}

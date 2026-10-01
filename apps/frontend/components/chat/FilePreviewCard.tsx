@@ -35,14 +35,6 @@ export default function FilePreviewCard({ file }: FilePreviewCardProps) {
     }
   }, [url, file.key, loading, dispatch]);
 
-  useEffect(() => {
-  console.log("🟢 FilePreviewCard MOUNTED", file.key);
-
-  return () => {
-    console.log("🔴 FilePreviewCard UNMOUNTED", file.key);
-  };
-}, []);
-
   const isImage = file.mimeType.startsWith("image/");
   const isPdf = file.mimeType === "application/pdf";
 

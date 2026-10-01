@@ -115,8 +115,6 @@ export const bootstrapApp = createAsyncThunk<
       await Promise.allSettled(messagePromises);
     }
 
-    console.log("✅ Bootstrap complete");
-
     return {
       profile,
       currentUser,
