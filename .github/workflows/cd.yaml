@@ -14,17 +14,28 @@ jobs:
     steps:
       - name: Configure SSH
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.MELO_SSH_PRIVATE_KEY }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.MELO_SSH_PRIVATE_KEY_B64 }}
           SSH_KNOWN_HOSTS: ${{ secrets.MELO_SSH_KNOWN_HOSTS }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/melo_github_actions
+          printf '%s' "$SSH_PRIVATE_KEY_B64" \
+            | base64 --decode \
+            > ~/.ssh/melo_github_actions
+
           chmod 600 ~/.ssh/melo_github_actions
 
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+
+      - name: Validate SSH key
+        run: |
+          ssh-keygen -y \
+            -f ~/.ssh/melo_github_actions \
+            > /tmp/derived_public_key
+
+          echo "SSH private key parsed successfully"
 
       - name: Test SSH connection
         run: |
