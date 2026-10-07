@@ -3,9 +3,25 @@ name: CD
 on:
   workflow_dispatch:
 
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    environment:
+      name: production
+      url: https://melo.adithyanvalloor.com
+
+    concurrency:
+      group: production
+      cancel-in-progress: false
 
     env:
       DEPLOY_HOST: melo.adithyanvalloor.com
@@ -64,19 +80,66 @@ jobs:
 
       - name: Deploy services
         run: |
-            ssh \
-              -i ~/.ssh/melo_github_actions \
-              -o IdentitiesOnly=yes \
-              -o StrictHostKeyChecking=yes \
-              "$DEPLOY_USER@$DEPLOY_HOST" \
-              '
-                set -e
+          ssh \
+            -i ~/.ssh/melo_github_actions \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            '
+              set -e
 
-                cd ~/melo
+              cd ~/melo
 
-                docker compose up -d --build \
-                  auth-service \
-                  message-service
+              docker compose up -d --build \
+                auth-service \
+                message-service \
+                backend \
+                frontend
 
-                docker compose ps
-              '
+              docker compose ps
+            '
+
+      - name: Health check
+        run: |
+          set -e
+
+          check_health() {
+            local name="$1"
+            local url="$2"
+
+            echo "Checking $name: $url"
+
+            for attempt in {1..10}; do
+              if curl \
+                --fail \
+                --silent \
+                --show-error \
+                --max-time 10 \
+                "$url" > /tmp/health_response; then
+
+                echo "$name is healthy ✅"
+                cat /tmp/health_response
+                return 0
+              fi
+
+              echo "$name is not ready yet (attempt $attempt/10)"
+              sleep 5
+            done
+
+            echo "$name health check failed ❌"
+            return 1
+          }
+
+          check_health \
+            "Backend" \
+            "https://$DEPLOY_HOST/api/health"
+
+          check_health \
+            "Auth Service" \
+            "https://$DEPLOY_HOST/api/auth/health"
+
+          check_health \
+            "Message Service" \
+            "https://$DEPLOY_HOST/api/message-service/health"
+
+          echo "All health checks passed ✅"
