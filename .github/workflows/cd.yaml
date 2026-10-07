@@ -37,11 +37,46 @@ jobs:
 
           echo "SSH private key parsed successfully"
 
-      - name: Test SSH connection
+      - name: Update production source 
         run: |
-          ssh \
-            -i ~/.ssh/melo_github_actions \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            "$DEPLOY_USER@$DEPLOY_HOST" \
-            'cd ~/melo && echo "Connected to production" && git rev-parse --short HEAD'
+            ssh \
+              -i ~/.ssh/melo_github_actions \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              "$DEPLOY_USER@$DEPLOY_HOST" \
+              '
+                set -e
+
+                cd ~/melo
+
+                echo "Current commit:"
+                git rev-parse --short HEAD
+
+                echo "Fetching latest main..."
+                git fetch origin main
+
+                echo "Updating production checkout..."
+                git reset --hard origin/main
+
+                echo "New commit:"
+                git rev-parse --short HEAD
+              '
+
+      - name: Deploy services
+        run: |
+            ssh \
+              -i ~/.ssh/melo_github_actions \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              "$DEPLOY_USER@$DEPLOY_HOST" \
+              '
+                set -e
+
+                cd ~/melo
+
+                docker compose up -d --build \
+                  auth-service \
+                  message-service
+
+                docker compose ps
+              '
