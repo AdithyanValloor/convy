@@ -44,4 +44,4 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            'whoami && hostname && echo "SSH connection successful"'
+            'cd ~/melo && echo "Connected to production" && git rev-parse --short HEAD'
