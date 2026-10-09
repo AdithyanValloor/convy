@@ -1,14 +1,12 @@
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import dotenv from "dotenv";
+import { logger } from "../infra/logger/logger.js";
 
 dotenv.config();
 
 /**
  * PostgreSQL connection configuration.
- *
- * Loads the PostgreSQL connection string from environment variables
- * and creates a shared connection pool for the application.
  */
 
 const POSTGRES_URL = process.env.POSTGRES_URL;
@@ -26,16 +24,28 @@ export const postgresDb = drizzle({
   client: postgresPool,
 });
 
-
 export const checkPostgresConnection = async (): Promise<void> => {
   try {
     await postgresPool.query("SELECT 1");
 
-    console.log("PostgreSQL connected");
+    logger.info(
+      {
+        event: "postgres_connection_ready",
+      },
+      "PostgreSQL connection established",
+    );
   } catch (error) {
-    console.error("PostgreSQL connection failed:");
-    console.dir(error, { depth: null });
+    logger.fatal(
+      {
+        event: "postgres_connection_failed",
+        errorName:
+          error instanceof Error ? error.name : "UnknownError",
+        errorMessage:
+          error instanceof Error ? error.message : String(error),
+      },
+      "PostgreSQL connection check failed",
+    );
 
-    process.exit(1);
+    throw error;
   }
 };

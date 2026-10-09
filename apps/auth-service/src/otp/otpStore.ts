@@ -1,6 +1,5 @@
 /**
- * In-memory OTP store.
- * Replace with Redis or another shared store for multi-instance deployments.
+ * Redis OTP store.
  */
 
 import { redis } from "../config/redis.config.js";

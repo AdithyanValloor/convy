@@ -15,6 +15,8 @@ declare global {
     /** Adds the decoded authenticated user to Express requests. */
     interface Request {
       user: UserPayload;
+      requestId: string;
+      log: import("pino").Logger;
     }
   }
 }

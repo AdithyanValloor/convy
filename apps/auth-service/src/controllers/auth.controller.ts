@@ -29,6 +29,11 @@ export const sendOtp = async (
 
     await authService.sendRegistrationOtp(email);
 
+    req.log.info(
+      { event: "registration_otp_requested" },
+      "Registration OTP request processed",
+    );
+
     res.status(200).json({ message: `OTP sent to ${email}` });
   } catch (err) {
     next(err);
@@ -45,6 +50,11 @@ export const sendForgotPasswordOtp = async (
     const { email } = req.body;
 
     await authService.sendForgotEmailOtp(email);
+
+    req.log.info(
+      { event: "password_reset_otp_requested" },
+      "Password reset OTP request processed",
+    );
 
     res.status(200).json({
       success: true,
@@ -65,6 +75,11 @@ export const verifyOtp = async (
     const { email, otp } = req.body;
 
     await authService.verifyRegistrationOtp(email, otp);
+
+    req.log.info(
+      { event: "registration_otp_verified" },
+      "Registration OTP verified successfully",
+    );
 
     res.status(200).json({ message: "Email verified" });
   } catch (err) {
@@ -92,10 +107,16 @@ export const register = async (
       password,
     );
 
+    req.log.info(
+      { event: "user_registered" },
+      "User registration completed successfully",
+    );
+
     res.cookie("accessToken", accessToken, {
       ...authCookieOptions,
       maxAge: 15 * 60 * 1000,
     });
+
     res.cookie("refreshToken", refreshToken, {
       ...authCookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -125,10 +146,13 @@ export const login = async (
       password,
     );
 
+    req.log.info({ event: "login_success" }, "User authenticated successfully");
+
     res.cookie("accessToken", accessToken, {
       ...authCookieOptions,
       maxAge: 15 * 60 * 1000,
     });
+
     res.cookie("refreshToken", refreshToken, {
       ...authCookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -141,9 +165,18 @@ export const login = async (
 };
 
 /** Clears the active auth cookies for the current session. */
-export const logout = (_req: Request, res: Response) => {
+export const logout = (req: Request, res: Response) => {
+  req.log.info(
+    {
+      event: "user_logged_out",
+      userId: req.user?.id,
+    },
+    "Logout processed",
+  );
+
   res.clearCookie("refreshToken", authCookieOptions);
   res.clearCookie("accessToken", authCookieOptions);
+
   res.status(200).json({ message: "Logged out successfully" });
 };
 
@@ -155,7 +188,13 @@ export const refreshToken = async (
 ) => {
   try {
     const token = req.cookies?.refreshToken;
+
     const { accessToken, user } = await authService.refreshTokenFunction(token);
+
+    req.log.info(
+      { event: "token_refreshed" },
+      "Access token refreshed successfully",
+    );
 
     res.cookie("accessToken", accessToken, {
       ...authCookieOptions,
@@ -176,10 +215,16 @@ export const checkPasswordController = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
+
     if (!userId) throw Unauthorized();
 
     const { password } = req.body;
     const { isMatch } = await authService.checkPassword(userId, password);
+
+    req.log.info(
+      { event: "password_check_completed", userId },
+      "Password check completed",
+    );
 
     res.status(200).json({ success: true, isMatch });
   } catch (err) {
@@ -195,11 +240,17 @@ export const sendEmailChangeOtpController = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
+
     if (!userId) throw Unauthorized();
 
     const { email } = req.body;
 
     await authService.sendEmailChangeOtp(userId, email);
+
+    req.log.info(
+      { event: "email_change_otp_requested", userId },
+      "Email change OTP request processed",
+    );
 
     res.status(200).json({
       success: true,
@@ -218,13 +269,20 @@ export const updateEmailController = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
+
     if (!userId) throw Unauthorized();
 
     const { email, otp } = req.body;
+
     const updatedUser = await authService.verifyAndUpdateEmail(
       userId,
       email,
       otp,
+    );
+
+    req.log.info(
+      { event: "email_updated", userId },
+      "Email updated successfully",
     );
 
     res.status(200).json({
@@ -245,11 +303,17 @@ export const changePasswordController = async (
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
+
     if (!userId) throw Unauthorized();
 
     const { currentPassword, newPassword } = req.body;
 
     await authService.changePassword(userId, currentPassword, newPassword);
+
+    req.log.info(
+      { event: "password_changed", userId },
+      "Password changed successfully",
+    );
 
     res.status(200).json({
       success: true,
@@ -260,7 +324,7 @@ export const changePasswordController = async (
   }
 };
 
-/** Changes the authenticated user's password. */
+/** Changes the user's password through the forgot-password flow. */
 export const forgotPasswordController = async (
   req: Request,
   res: Response,
@@ -270,6 +334,11 @@ export const forgotPasswordController = async (
     const { email, newPassword } = req.body;
 
     await authService.forgotPassword(email, newPassword);
+
+    req.log.info(
+      { event: "password_reset_completed" },
+      "Password reset completed successfully",
+    );
 
     res.status(200).json({
       success: true,

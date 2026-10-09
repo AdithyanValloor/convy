@@ -69,8 +69,6 @@ export const bootstrapApp = createAsyncThunk<
       };
     }
 
-    console.log("🚀 Bootstrapping app for user:", currentUser.username);
-
     const [
       profile,
       friends,

@@ -28,7 +28,7 @@ import {
   findUserByAuthUserId,
   userNameExists,
 } from "../infra/grpc/user.grpc.client.js";
-
+import { authServiceLogger } from "../infra/logger/auth-service.logger.js";
 
 /** Authentication service helpers for OTP, registration, login, and refresh flows. */
 export class AuthService {
@@ -63,9 +63,22 @@ export class AuthService {
       try {
         await this.authRepository.deleteById(authUserId);
       } catch (compensationError) {
-        console.error(
-          "Failed to compensate auth user creation:",
-          compensationError,
+        authServiceLogger.error(
+          {
+            event: "account_creation_compensation_failed",
+            authUserId,
+            error: {
+              name:
+                compensationError instanceof Error
+                  ? compensationError.name
+                  : "UnknownError",
+              message:
+                compensationError instanceof Error
+                  ? compensationError.message
+                  : String(compensationError),
+            },
+          },
+          "Failed to roll back auth user after profile creation failed",
         );
       }
 
@@ -245,7 +258,8 @@ export class AuthService {
 
     const authUserId = await findAuthUserIdByUserId(userId);
 
-    const authUser = await this.authRepository.findAuthUserForPasswordCheck(authUserId);
+    const authUser =
+      await this.authRepository.findAuthUserForPasswordCheck(authUserId);
     if (!authUser) throw NotFound("User not found");
 
     const isMatch = await bcrypt.compare(
@@ -260,7 +274,7 @@ export class AuthService {
     const newHashedPassword = await bcrypt.hash(newPassword, this.HASH_SALT);
     await this.authRepository.updatePassword(userId, newHashedPassword);
   }
-  
+
   /** Replaces a user's password after forgot password */
   async forgotPassword(email: string, newPassword: string) {
     if (!email) throw BadRequest("Email is required");

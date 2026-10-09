@@ -33,6 +33,12 @@ vi.mock("../../src/composition/auth.container.js", () => ({
   },
 }));
 
+const mockLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+};
+
 describe("Auth Controller", () => {
   let req: any;
   let res: any;
@@ -44,8 +50,10 @@ describe("Auth Controller", () => {
     req = {
       body: {},
       cookies: {},
+      params: {},
+      log: mockLogger,
       user: undefined,
-    };
+    } as unknown as Request;
 
     res = {
       status: vi.fn().mockReturnThis(),
@@ -113,8 +121,7 @@ describe("Auth Controller", () => {
 
       expect(res.json).toHaveBeenCalledWith({
         success: true,
-        message:
-          "If an account exists for that email, an OTP has been sent.",
+        message: "If an account exists for that email, an OTP has been sent.",
       });
     });
   });
@@ -569,4 +576,3 @@ describe("Auth Controller", () => {
     });
   });
 });
-

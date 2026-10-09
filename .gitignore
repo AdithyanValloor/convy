@@ -10,7 +10,7 @@
 npm-debug.log*
 
 # Env files
-**/.env
+**/.env*
 
 # OS junk
 .DS_Store
