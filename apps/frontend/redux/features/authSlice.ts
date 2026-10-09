@@ -14,7 +14,7 @@ export interface AuthUser {
   _id: string;
   displayName: string;
   username: string;
-  
+
   profilePicture?: {
     key: string | null;
   };
@@ -62,18 +62,20 @@ interface AuthSuccessPayload {
  * Log in a user using email and password.
  * On success, stores the authenticated user.
  */
+
 export const loginUser = createAsyncThunk<
-  void,
+  AuthUser,
   { email: string; password: string },
   { rejectValue: string }
 >("auth/loginUser", async ({ email, password }, { rejectWithValue }) => {
   try {
     await api.post("/auth/login", { email, password });
+
+    const res = await api.get("/user/me");
+    return mapAuthUser(res.data.user);
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
-      return rejectWithValue(
-        err.response?.data?.message ?? "Login failed",
-      );
+      return rejectWithValue(err.response?.data?.message ?? "Login failed");
     }
 
     return rejectWithValue("Login failed");
@@ -148,7 +150,7 @@ export const updateUsername = createAsyncThunk<
  */
 export const updateEmail = createAsyncThunk<
   AuthUser,
-  { email: string, otp: string },
+  { email: string; otp: string },
   { rejectValue: string }
 >("auth/updateEmail", async ({ email, otp }, { rejectWithValue }) => {
   try {
@@ -305,9 +307,11 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.sessionLoading = false;
+        state.user = action.payload;
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.sessionLoading = false;
         state.error = action.payload ?? "Login failed";
       })
 

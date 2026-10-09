@@ -158,10 +158,9 @@ export default function RegisterPage() {
       });
 
       // 3. Login
-      const res = await dispatch(loginUser({ email, password }));
-      if (res.type === "auth/loginUser/fulfilled") {
-        router.push("/chat");
-      }
+      await dispatch(loginUser({ email, password })).unwrap();
+      router.replace("/chat");
+      
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const msg = err.response?.data?.message || "";

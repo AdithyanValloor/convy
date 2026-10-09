@@ -22,3 +22,6 @@ Thumbs.db
 
 # Optional Docker stuff
 **/.docker/
+
+# Local Docker Compose overrides
+**/docker-compose.local.yaml

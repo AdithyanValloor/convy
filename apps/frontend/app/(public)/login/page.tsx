@@ -6,11 +6,14 @@ import { Eye, EyeClosed } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+
 
 type Errors = {
   email: string;
   password: string;
 };
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState<string>("");
@@ -21,7 +24,8 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
-
+  
+  const router = useRouter();
   const dispatch = useAppDispatch();
 
   const validate = () => {
@@ -56,13 +60,9 @@ export default function LoginPage() {
 
     try {
       await dispatch(loginUser({ email, password })).unwrap();
-      window.location.replace("/chat");
+      router.replace("/chat");
     } catch (err: unknown) {
-      if (typeof err === "string") {
-        setError(err);
-      } else {
-        setError("Something went wrong");
-      }
+      setError(typeof err === "string" ? err : "Something went wrong");
     }
   };
 
